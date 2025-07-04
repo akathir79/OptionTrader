@@ -47,57 +47,189 @@ class ColumnVisibilityController {
         const container = document.getElementById('columnCheckboxes');
         if (!container) return;
         
+        // Clear container completely
         container.innerHTML = '';
         
-        // Define column groups
-        const columnGroups = [
-            {
-                title: 'Core Trading Columns',
-                columns: [0, 17, 18, 19, 20, 21, 38] // CE B/S, LTP, Δ, Strike, Δ, LTP, PE B/S
-            },
-            {
-                title: 'Volume & Open Interest',
-                columns: [1, 8, 13, 14, 15, 22, 23, 24] // CE Chng, CE Chng in OI, CE OI, CE Vol, PE Vol, PE OI, PE Chng in OI, PE Chng
-            },
-            {
-                title: 'Order Book',
-                columns: [2, 3, 4, 5, 25, 26, 27, 28] // CE Bid Qty, CE Bid, CE Ask, CE Ask Qty, PE Bid Qty, PE Bid, PE Ask, PE Ask Qty
-            },
-            {
-                title: 'Greeks',
-                columns: [6, 7, 9, 10, 11, 12, 29, 30, 31, 32, 33, 34, 35, 36] // CE Greeks and PE Greeks
-            },
-            {
-                title: 'Charts',
-                columns: [16, 37] // CE Chart, PE Chart
-            }
-        ];
-        
-        // Create grouped checkboxes
-        columnGroups.forEach(group => {
-            // Group header
-            const groupHeader = document.createElement('div');
-            groupHeader.className = 'fw-bold text-primary mb-2 mt-3';
-            groupHeader.style.fontSize = '11px';
-            groupHeader.textContent = group.title;
-            container.appendChild(groupHeader);
+        // Define column groups with proper HTML structure
+        const groupsHTML = `
+            <div class="column-group mb-3">
+                <div class="fw-bold text-primary mb-2" style="font-size: 12px; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">Core Trading Columns</div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_0" data-column="0" ${this.columnStates[0] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_0" style="font-size: 11px;">CE B/S</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_17" data-column="17" ${this.columnStates[17] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_17" style="font-size: 11px;">LTP</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_18" data-column="18" ${this.columnStates[18] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_18" style="font-size: 11px;">Δ</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_19" data-column="19" ${this.columnStates[19] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_19" style="font-size: 11px;">Strike</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_20" data-column="20" ${this.columnStates[20] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_20" style="font-size: 11px;">Δ</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_21" data-column="21" ${this.columnStates[21] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_21" style="font-size: 11px;">LTP</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_38" data-column="38" ${this.columnStates[38] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_38" style="font-size: 11px;">PE B/S</label>
+                </div>
+            </div>
             
-            // Group checkboxes
-            group.columns.forEach(index => {
-                if (index < this.columnNames.length) {
-                    const isChecked = this.columnStates[index] ? 'checked' : '';
-                    const checkboxDiv = document.createElement('div');
-                    checkboxDiv.className = 'form-check mb-1';
-                    checkboxDiv.innerHTML = `
-                        <input class="form-check-input" type="checkbox" id="col_${index}" data-column="${index}" ${isChecked}>
-                        <label class="form-check-label" for="col_${index}" style="font-size: 11px;">
-                            ${this.columnNames[index]}
-                        </label>
-                    `;
-                    container.appendChild(checkboxDiv);
-                }
-            });
-        });
+            <div class="column-group mb-3">
+                <div class="fw-bold text-primary mb-2" style="font-size: 12px; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">Volume & Open Interest</div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_1" data-column="1" ${this.columnStates[1] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_1" style="font-size: 11px;">CE Chng</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_8" data-column="8" ${this.columnStates[8] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_8" style="font-size: 11px;">CE Chng in OI</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_13" data-column="13" ${this.columnStates[13] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_13" style="font-size: 11px;">CE OI</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_14" data-column="14" ${this.columnStates[14] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_14" style="font-size: 11px;">CE Vol</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_15" data-column="15" ${this.columnStates[15] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_15" style="font-size: 11px;">PE Vol</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_22" data-column="22" ${this.columnStates[22] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_22" style="font-size: 11px;">PE OI</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_23" data-column="23" ${this.columnStates[23] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_23" style="font-size: 11px;">PE Chng in OI</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_24" data-column="24" ${this.columnStates[24] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_24" style="font-size: 11px;">PE Chng</label>
+                </div>
+            </div>
+            
+            <div class="column-group mb-3">
+                <div class="fw-bold text-primary mb-2" style="font-size: 12px; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">Order Book</div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_2" data-column="2" ${this.columnStates[2] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_2" style="font-size: 11px;">CE Bid Qty</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_3" data-column="3" ${this.columnStates[3] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_3" style="font-size: 11px;">CE Bid</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_4" data-column="4" ${this.columnStates[4] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_4" style="font-size: 11px;">CE Ask</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_5" data-column="5" ${this.columnStates[5] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_5" style="font-size: 11px;">CE Ask Qty</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_25" data-column="25" ${this.columnStates[25] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_25" style="font-size: 11px;">PE Bid Qty</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_26" data-column="26" ${this.columnStates[26] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_26" style="font-size: 11px;">PE Bid</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_27" data-column="27" ${this.columnStates[27] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_27" style="font-size: 11px;">PE Ask</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_28" data-column="28" ${this.columnStates[28] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_28" style="font-size: 11px;">PE Ask Qty</label>
+                </div>
+            </div>
+            
+            <div class="column-group mb-3">
+                <div class="fw-bold text-primary mb-2" style="font-size: 12px; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">Greeks</div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_6" data-column="6" ${this.columnStates[6] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_6" style="font-size: 11px;">CE Gamma</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_7" data-column="7" ${this.columnStates[7] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_7" style="font-size: 11px;">CE Theta</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_9" data-column="9" ${this.columnStates[9] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_9" style="font-size: 11px;">CE Vega</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_10" data-column="10" ${this.columnStates[10] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_10" style="font-size: 11px;">CE Vanna</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_11" data-column="11" ${this.columnStates[11] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_11" style="font-size: 11px;">CE Charm</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_12" data-column="12" ${this.columnStates[12] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_12" style="font-size: 11px;">CE Volga</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_29" data-column="29" ${this.columnStates[29] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_29" style="font-size: 11px;">PE Gamma</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_30" data-column="30" ${this.columnStates[30] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_30" style="font-size: 11px;">PE Theta</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_31" data-column="31" ${this.columnStates[31] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_31" style="font-size: 11px;">PE Vega</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_32" data-column="32" ${this.columnStates[32] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_32" style="font-size: 11px;">PE Vanna</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_33" data-column="33" ${this.columnStates[33] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_33" style="font-size: 11px;">PE Charm</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_34" data-column="34" ${this.columnStates[34] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_34" style="font-size: 11px;">PE Volga</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_35" data-column="35" ${this.columnStates[35] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_35" style="font-size: 11px;">PE Veta</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_36" data-column="36" ${this.columnStates[36] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_36" style="font-size: 11px;">CE Veta</label>
+                </div>
+            </div>
+            
+            <div class="column-group mb-3">
+                <div class="fw-bold text-primary mb-2" style="font-size: 12px; border-bottom: 1px solid #dee2e6; padding-bottom: 5px;">Charts</div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_16" data-column="16" ${this.columnStates[16] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_16" style="font-size: 11px;">CE Chart</label>
+                </div>
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_37" data-column="37" ${this.columnStates[37] ? 'checked' : ''}>
+                    <label class="form-check-label" for="col_37" style="font-size: 11px;">PE Chart</label>
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = groupsHTML;
     }
 
     setupEventListeners() {
