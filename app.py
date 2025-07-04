@@ -1,31 +1,45 @@
-import os
-import logging
 from flask import Flask, render_template
+from APP_Extensions.db import db
+from APP_Routes.symbol_selector import symbol_selector_bp
+from APP_Routes.broker_settings import bp           #  ← just “bp”, not bp_broker
+from flask import jsonify, request
+from models import BrokerSettings
+import os
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
-
-# Create the Flask app
 app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key-change-in-production")
+app.config.update(
+    SQLALCHEMY_DATABASE_URI=os.environ.get("DATABASE_URL"),
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    DEBUG=True,
+)
 
-# Import routes after app creation to avoid circular imports
-from routes import *
+db.init_app(app)
+import models                                       # registers BrokerSettings
 
-# Error handlers
-@app.errorhandler(404)
-def not_found_error(error):
-    """Handle 404 errors"""
-    return render_template('error.html', 
-                         error_code=404, 
-                         error_message="Page not found"), 404
+# register blueprints
+app.register_blueprint(symbol_selector_bp)
+app.register_blueprint(bp)                          # ← same symbol as above
 
-@app.errorhandler(500)
-def internal_error(error):
-    """Handle 500 errors"""
-    return render_template('error.html', 
-                         error_code=500, 
-                         error_message="Internal server error"), 500
+@app.route("/")
+def live_trade():
+    return render_template("live_trade.html")
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+
+@app.route('/get_access_token', methods=['GET'])
+def get_access_token():
+    brokername = request.args.get('brokername')
+    broker_user_id = request.args.get('broker_user_id')
+    if not brokername or not broker_user_id:
+        return jsonify({"error": "Missing parameters"}), 400
+
+    broker_setting = BrokerSettings.query.filter_by(
+        brokername=brokername, broker_user_id=broker_user_id
+    ).first()
+
+    if broker_setting and broker_setting.access_token:
+        return jsonify({"access_token": broker_setting.access_token})
+    else:
+        return jsonify({"error": "Token not found"}), 404
+
+if __name__ == "__main__":
+    app.run(port=5000, debug=True)

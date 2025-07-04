@@ -1,107 +1,103 @@
-# Flask Web Application
+# Trading Platform
 
 ## Overview
 
-This is a clean, minimal Flask web application designed as a foundation for custom development. It follows Flask best practices with proper separation of concerns, error handling, and a responsive Bootstrap-based frontend.
+This is a Flask-based trading platform that provides live trading functionality with support for multiple brokers, options chain analysis, and market data visualization. The application features a modular architecture with separate components for broker management, symbol selection, and trading interfaces.
 
 ## System Architecture
 
-### Frontend Architecture
-- **Template Engine**: Jinja2 templates with a base template inheritance pattern
-- **CSS Framework**: Bootstrap 5 with dark theme
-- **Icons**: Font Awesome 6.0 for consistent iconography
-- **JavaScript**: Vanilla JavaScript with component initialization pattern
-- **Responsive Design**: Mobile-first approach using Bootstrap's grid system
-
 ### Backend Architecture
-- **Framework**: Flask (Python web framework)
-- **Structure**: Modular approach with separate files for routes, main application, and configuration
-- **Error Handling**: Custom error pages for 404 and 500 errors
-- **Logging**: Debug-level logging configured for development
-- **Session Management**: Flask sessions with configurable secret key
+- **Framework**: Flask web application with SQLAlchemy ORM
+- **Database**: PostgreSQL (configurable via DATABASE_URL environment variable)
+- **Modular Design**: Blueprint-based routing system for organized code structure
+- **API Integration**: REST endpoints for broker authentication and market data
 
-### Application Structure
-```
-├── app.py              # Main Flask application factory
-├── main.py             # Application entry point
-├── routes.py           # Route definitions
-├── templates/          # Jinja2 templates
-│   ├── base.html       # Base template with navigation
-│   ├── index.html      # Home page
-│   ├── about.html      # About page
-│   └── error.html      # Error page template
-└── static/             # Static assets
-    ├── css/style.css   # Custom CSS
-    └── js/main.js      # JavaScript functionality
-```
+### Frontend Architecture
+- **Template Engine**: Jinja2 with base template inheritance
+- **CSS Framework**: Bootstrap 5 for responsive design
+- **JavaScript**: Vanilla JS with modular components for interactive features
+- **UI Components**: Resizable panels, carousels, and modal dialogs
+
+### Database Schema
+- **BrokerSettings Model**: Stores broker credentials and access tokens
+  - Supports multiple brokers per user
+  - Includes token management with timestamps
+  - Development-friendly with default user_id=0
 
 ## Key Components
 
-### Core Flask Application (app.py)
-- Configures Flask app with environment-based secret key
-- Sets up debug logging
-- Implements centralized error handling
-- Imports routes after app creation to avoid circular imports
+### 1. Broker Management (`APP_Routes/broker_settings.py`)
+- Handles broker authentication and token management
+- Supports multiple broker integrations (Fyers SDK ready)
+- RESTful API endpoints for CRUD operations on broker settings
+- Token refresh and validation mechanisms
 
-### Routing System (routes.py)
-- **Home Route** (`/`): Serves the main landing page
-- **About Route** (`/about`): Displays application information
-- **Health Check** (`/api/health`): JSON endpoint for monitoring
-- **Contact Route** (`/contact`): Placeholder for future form handling
+### 2. Symbol Selection (`APP_Routes/symbol_selector.py`)
+- Fetches expiry dates for index symbols (NIFTY, BANKNIFTY, etc.)
+- Integrates with external CSV data sources (NSE/BSE)
+- Provides symbol lookup and filtering capabilities
 
-### Template System
-- **Base Template**: Provides consistent layout with navigation and footer
-- **Component Templates**: Modular pages extending the base template
-- **Error Templates**: User-friendly error pages with navigation back to safety
+### 3. Live Trading Interface (`templates/live_trade.html`)
+- Real-time options chain display
+- ATM (At-the-Money) strike highlighting
+- ITM/OTM color coding for options
+- Payoff chart visualization
+- Market data carousel
 
-### Static Assets
-- **CSS**: Custom styles with hover effects and responsive utilities
-- **JavaScript**: Component initialization and smooth scrolling functionality
+### 4. Frontend Controllers
+- **ChartController**: Manages chart visibility and fullscreen modes
+- **ResizableLayout**: Handles drag-and-drop panel resizing
+- **MarketDataCarousel**: Navigation for market data display
+- **SymbolSelector**: Dynamic symbol and expiry selection
 
 ## Data Flow
 
-1. **Request Processing**: Flask receives HTTP requests and routes them through the URL dispatcher
-2. **Route Handling**: Routes process requests and prepare data for templates
-3. **Template Rendering**: Jinja2 renders HTML templates with context data
-4. **Response**: Flask returns rendered HTML or JSON responses
-5. **Error Handling**: Custom error handlers catch exceptions and render appropriate error pages
+1. **User Authentication**: Broker credentials stored in BrokerSettings model
+2. **Symbol Selection**: Index/exchange selection triggers API calls to fetch symbols and expiry dates
+3. **Market Data**: Real-time data fetched via broker APIs using stored access tokens
+4. **Options Chain**: Live options data displayed with visual indicators for ITM/OTM status
+5. **Chart Integration**: Payoff calculations and visualization based on selected options
 
 ## External Dependencies
 
-### CDN Dependencies
-- **Bootstrap 5**: CSS framework for responsive design
-- **Font Awesome 6**: Icon library for UI elements
-- **Bootstrap Agent Dark Theme**: Custom dark theme CSS
+### Python Packages
+- Flask and Flask-SQLAlchemy for web framework and ORM
+- requests for HTTP API calls
+- pytz for timezone handling
+- fyers_apiv3 (optional) for Fyers broker integration
 
-### Python Dependencies
-- **Flask**: Core web framework
-- **Jinja2**: Template engine (included with Flask)
-- **Werkzeug**: WSGI utilities (included with Flask)
+### Frontend Libraries
+- Bootstrap 5 for UI components
+- Font Awesome for icons
+- CSV data from public.fyers.in for symbol information
 
-### Environment Configuration
-- **SESSION_SECRET**: Environment variable for session security (falls back to development key)
+### Data Sources
+- NSE/BSE CSV files for options symbols and expiry dates
+- Broker APIs for real-time market data and order execution
 
 ## Deployment Strategy
 
-### Development Setup
-- **Debug Mode**: Enabled for development with auto-reload
-- **Host Configuration**: Binds to `0.0.0.0:5000` for Replit compatibility
-- **Entry Points**: Both `app.py` and `main.py` can serve as entry points
+### Environment Configuration
+- DATABASE_URL for PostgreSQL connection
+- DEBUG mode enabled for development
+- Port 5000 default with host binding for containerization
 
-### Production Considerations
-- **Secret Key**: Should be set via environment variable in production
-- **Debug Mode**: Must be disabled in production
-- **Static Files**: Can be served by web server (nginx/Apache) in production
-- **Error Handling**: Custom error pages provide user-friendly experience
+### File Structure
+- Modular blueprint organization in APP_Routes/
+- Static assets in static/ directory
+- Templates with inheritance in templates/
+- Database extensions in APP_Extensions/
 
-### Scalability Preparation
-- **Modular Structure**: Easy to extend with additional routes and templates
-- **Static Assets**: Organized for potential CDN deployment
-- **API Endpoints**: Health check endpoint ready for load balancer integration
-
-## Changelog
-- July 04, 2025. Initial setup
+### Database Management
+- SQLAlchemy models with automatic table creation
+- Development-friendly foreign key handling
+- Token expiration tracking for security
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Changelog
+
+Changelog:
+- July 04, 2025. Initial setup
