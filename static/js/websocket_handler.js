@@ -216,9 +216,14 @@ class WebSocketHandler {
         }
         
         try {
-            // Use symbol as-is since it should already be in correct format from symbol lookup
-            const response = await fetch(`/get_option_chain?symbol=${encodeURIComponent(this.currentSymbol)}&expiry_timestamp=${encodeURIComponent(this.currentExpiry)}&strike_count=${this.strikeCount}`);
+            const url = `/get_option_chain?symbol=${encodeURIComponent(this.currentSymbol)}&expiry_timestamp=${encodeURIComponent(this.currentExpiry)}&strike_count=${this.strikeCount}`;
+            console.log(`Making API call to: ${url}`);
+            console.log(`Just before fetch - Symbol: "${this.currentSymbol}", Expiry: "${this.currentExpiry}"`);
+            
+            const response = await fetch(url);
+            console.log(`API response status: ${response.status}`);
             const data = await response.json();
+            console.log(`API response data:`, data);
             
             if (data.success) {
                 this.updateOptionChainTable(data.strikes);
