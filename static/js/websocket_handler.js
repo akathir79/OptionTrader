@@ -285,8 +285,8 @@ class WebSocketHandler {
         row.innerHTML = `
             <td class="text-center buy_sell_cell"><span class="option_button buy_button">B</span><span class="option_button sell_button">S</span></td>
             <td class="text-center ce-veta">0</td>
+            <td class="text-center ce-volga">0</td>
             <td class="text-center ce-charm">0</td>
-            <td class="text-center ce-vanna">0</td>
             <td class="text-center ce-vega">0</td>
             <td class="text-center ce-theta">0</td>
             <td class="text-center ce-gamma">0</td>
@@ -320,8 +320,8 @@ class WebSocketHandler {
             <td class="text-center pe-gamma">0</td>
             <td class="text-center pe-theta">0</td>
             <td class="text-center pe-vega">0</td>
-            <td class="text-center pe-vanna">0</td>
             <td class="text-center pe-charm">0</td>
+            <td class="text-center pe-volga">0</td>
             <td class="text-center pe-veta">0</td>
             <td class="text-center buy_sell_cell"><span class="option_button buy_button">B</span><span class="option_button sell_button">S</span></td>
         `;
