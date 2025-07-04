@@ -274,14 +274,14 @@ class WebSocketHandler {
             <td class="text-center">0</td>
             <td class="text-center">0</td>
             <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
+            <td class="text-center ${strike.ce_ltpch >= 0 ? 'text-success' : 'text-danger'}">${strike.ce_ltpch || 0}</td>
+            <td class="text-center">${strike.ce_bid_qty || 0}</td>
+            <td class="text-center">${this.formatPrice(strike.ce_bid)}</td>
+            <td class="text-center">${this.formatPrice(strike.ce_ask)}</td>
+            <td class="text-center">${strike.ce_ask_qty || 0}</td>
+            <td class="text-center ${strike.ce_oich >= 0 ? 'text-success' : 'text-danger'}">${strike.ce_oich || 0}</td>
             <td class="text-center">${strike.ce_oi || 0}</td>
-            <td class="text-center">0</td>
+            <td class="text-center">${strike.ce_volume || 0}</td>
             <td class="text-center call-ltp ${isCallITM ? 'itm' : 'otm'}" data-symbol="${strike.ce_symbol}">
                 ${this.formatPrice(strike.ce_ltp)}
             </td>
@@ -291,14 +291,14 @@ class WebSocketHandler {
             <td class="text-center put-ltp ${isPutITM ? 'itm' : 'otm'}" data-symbol="${strike.pe_symbol}">
                 ${this.formatPrice(strike.pe_ltp)}
             </td>
-            <td class="text-center">0</td>
+            <td class="text-center">${strike.pe_volume || 0}</td>
             <td class="text-center">${strike.pe_oi || 0}</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
+            <td class="text-center ${strike.pe_oich >= 0 ? 'text-success' : 'text-danger'}">${strike.pe_oich || 0}</td>
+            <td class="text-center">${strike.pe_ask_qty || 0}</td>
+            <td class="text-center">${this.formatPrice(strike.pe_ask)}</td>
+            <td class="text-center">${this.formatPrice(strike.pe_bid)}</td>
+            <td class="text-center">${strike.pe_bid_qty || 0}</td>
+            <td class="text-center ${strike.pe_ltpch >= 0 ? 'text-success' : 'text-danger'}">${strike.pe_ltpch || 0}</td>
             <td class="text-center">0</td>
             <td class="text-center">0</td>
             <td class="text-center">0</td>

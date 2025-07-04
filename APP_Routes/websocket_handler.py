@@ -193,12 +193,19 @@ def get_option_chain():
             if strike not in strikes:
                 strikes[strike] = {
                     'strike': strike,
-                    'ce_ltp': 0,
-                    'pe_ltp': 0,
-                    'ce_symbol': '',
-                    'pe_symbol': '',
-                    'ce_oi': 0,
-                    'pe_oi': 0,
+                    'ce_ltp': 0, 'pe_ltp': 0,
+                    'ce_symbol': '', 'pe_symbol': '',
+                    'ce_oi': 0, 'pe_oi': 0,
+                    'ce_oich': 0, 'pe_oich': 0,
+                    'ce_oichp': 0, 'pe_oichp': 0,
+                    'ce_volume': 0, 'pe_volume': 0,
+                    'ce_bid': 0, 'pe_bid': 0,
+                    'ce_ask': 0, 'pe_ask': 0,
+                    'ce_bid_qty': 0, 'pe_bid_qty': 0,
+                    'ce_ask_qty': 0, 'pe_ask_qty': 0,
+                    'ce_ltpch': 0, 'pe_ltpch': 0,
+                    'ce_ltpchp': 0, 'pe_ltpchp': 0,
+                    'ce_prev_oi': 0, 'pe_prev_oi': 0,
                     'is_atm': strike == atm_strike
                 }
                 
@@ -206,12 +213,28 @@ def get_option_chain():
                 strikes[strike]['ce_ltp'] = option.get('ltp', 0)
                 strikes[strike]['ce_symbol'] = option.get('symbol', '')
                 strikes[strike]['ce_oi'] = option.get('oi', 0)
+                strikes[strike]['ce_oich'] = option.get('oich', 0)
+                strikes[strike]['ce_oichp'] = option.get('oichp', 0)
+                strikes[strike]['ce_volume'] = option.get('volume', 0)
+                strikes[strike]['ce_bid'] = option.get('bid', 0)
+                strikes[strike]['ce_ask'] = option.get('ask', 0)
+                strikes[strike]['ce_ltpch'] = option.get('ltpch', 0)
+                strikes[strike]['ce_ltpchp'] = option.get('ltpchp', 0)
+                strikes[strike]['ce_prev_oi'] = option.get('prev_oi', 0)
                 if option.get('symbol'):
                     symbols_to_subscribe.append(option.get('symbol'))
             elif option.get('option_type') == 'PE':
                 strikes[strike]['pe_ltp'] = option.get('ltp', 0)
                 strikes[strike]['pe_symbol'] = option.get('symbol', '')
                 strikes[strike]['pe_oi'] = option.get('oi', 0)
+                strikes[strike]['pe_oich'] = option.get('oich', 0)
+                strikes[strike]['pe_oichp'] = option.get('oichp', 0)
+                strikes[strike]['pe_volume'] = option.get('volume', 0)
+                strikes[strike]['pe_bid'] = option.get('bid', 0)
+                strikes[strike]['pe_ask'] = option.get('ask', 0)
+                strikes[strike]['pe_ltpch'] = option.get('ltpch', 0)
+                strikes[strike]['pe_ltpchp'] = option.get('ltpchp', 0)
+                strikes[strike]['pe_prev_oi'] = option.get('prev_oi', 0)
                 if option.get('symbol'):
                     symbols_to_subscribe.append(option.get('symbol'))
         
