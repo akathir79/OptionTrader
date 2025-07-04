@@ -824,6 +824,39 @@
                 <i class="fas fa-expand"></i>
               </button>
               <div id="liveDataControls" class="d-flex align-items-center gap-2">
+              <div class="dropdown">
+                <button class="btn btn-outline-light btn-sm dropdown-toggle p-1" type="button" id="columnVisibilityDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px; font-size: 11px;" title="Column Visibility">
+                  <i class="fas fa-columns"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="columnVisibilityDropdown" style="min-width: 250px; max-height: 400px; overflow-y: auto;">
+                  <li><h6 class="dropdown-header">Column Visibility</h6></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li class="px-3 py-1">
+                    <div class="d-flex gap-2 mb-2">
+                      <button id="selectAllColumns" class="btn btn-success btn-sm flex-fill" style="font-size: 10px;">Select All</button>
+                      <button id="deselectAllColumns" class="btn btn-secondary btn-sm flex-fill" style="font-size: 10px;">Clear All</button>
+                      <button id="resetToDefaults" class="btn btn-primary btn-sm flex-fill" style="font-size: 10px;">Defaults</button>
+                    </div>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li class="px-3">
+                    <div class="row" style="font-size: 11px;">
+                      <div class="col-6">
+                        <div class="form-check"><input class="form-check-input" type="checkbox" data-column="16" id="col16"><label class="form-check-label" for="col16">CE Chart</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" data-column="17" id="col17"><label class="form-check-label" for="col17">CE LTP</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" data-column="15" id="col15"><label class="form-check-label" for="col15">CE Vol</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" data-column="14" id="col14"><label class="form-check-label" for="col14">CE OI</label></div>
+                      </div>
+                      <div class="col-6">
+                        <div class="form-check"><input class="form-check-input" type="checkbox" data-column="21" id="col21"><label class="form-check-label" for="col21">PE LTP</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" data-column="22" id="col22"><label class="form-check-label" for="col22">PE Chart</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" data-column="23" id="col23"><label class="form-check-label" for="col23">PE Vol</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" data-column="24" id="col24"><label class="form-check-label" for="col24">PE OI</label></div>
+                      </div>
+                    </div>
+                  </li>
+                </ul>
+              </div>
                 <span id="liveDataStatus" style="font-size: 12px; color: #6c757d;">
                   <i class="fas fa-circle text-secondary"></i> Live Data Ready
                 </span>
@@ -864,15 +897,15 @@
                     <th>Chng in OI</th>
                     <th>OI</th>
                     <th>Vol</th>
-                    <th>LTP</th>
                     <th>Chart</th>
+                    <th>LTP</th>
                     <th>Δ</th>
                     <th style="background-color: #f39c12; color: #000;">Strike</th>
                     <th>Δ</th>
                     <th>LTP</th>
                     <th>Vol</th>
                     <th>Chart</th>
-                    <th>OI</th>
+                    <th>Chart</th>
                     <th>Chng in OI</th>
                     <th>Ask Qty</th>
                     <th>Ask</th>
