@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Flask App{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <!-- Hero Section -->
+        <div class="text-center mb-5">
+            <h1 class="display-4 mb-3">
+                <i class="fas fa-flask text-primary me-3"></i>
+                Welcome to Flask App
+            </h1>
+            <p class="lead text-muted">
+                A clean, minimal Flask application ready for your custom code
+            </p>
+        </div>
+
+        <!-- Features Cards -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-rocket fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">Ready to Deploy</h5>
+                        <p class="card-text">Clean structure with proper error handling and logging setup.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-cog fa-3x text-info mb-3"></i>
+                        <h5 class="card-title">Customizable</h5>
+                        <p class="card-text">Easily replace with your own code while maintaining the structure.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-mobile-alt fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">Responsive</h5>
+                        <p class="card-text">Built with Bootstrap for mobile-first responsive design.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Start -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-play-circle me-2"></i>
+                    Quick Start
+                </h5>
+            </div>
+            <div class="card-body">
+                <p>Your Flask application is running and ready for customization!</p>
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Flask server running on port 5000
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Bootstrap 5 styling with dark theme
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Static file serving configured
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Error handling and logging setup
+                    </li>
+                </ul>
+                <div class="mt-3">
+                    <a href="{{ url_for('about') }}" class="btn btn-primary me-2">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Learn More
+                    </a>
+                    <a href="/api/health" class="btn btn-outline-secondary" target="_blank">
+                        <i class="fas fa-heartbeat me-1"></i>
+                        API Health Check
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {% if message %}
+        <div class="alert alert-success mt-4" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            {{ message }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
