@@ -206,6 +206,9 @@ class WebSocketHandler {
     
     async startOptionChainUpdates() {
         console.log(`Starting option chain updates - Symbol: ${this.currentSymbol}, Expiry: ${this.currentExpiry}`);
+        console.log(`DEBUG: this.currentSymbol type: ${typeof this.currentSymbol}, value: "${this.currentSymbol}"`);
+        console.log(`DEBUG: this.currentExpiry type: ${typeof this.currentExpiry}, value: "${this.currentExpiry}"`);
+        console.log(`DEBUG: Boolean check - Symbol: ${!!this.currentSymbol}, Expiry: ${!!this.currentExpiry}`);
         
         if (!this.currentSymbol || !this.currentExpiry) {
             console.error('Missing symbol and/or expiry:', this.currentSymbol, this.currentExpiry);
