@@ -166,6 +166,15 @@ def get_option_chain():
         option_data = response.get('data', {})
         options_list = option_data.get('optionsChain', [])
         
+        # Print option chain data to console
+        print(f"\n=== OPTION CHAIN DATA ===")
+        print(f"Symbol: {symbol}")
+        print(f"Expiry: {expiry_timestamp}")
+        print(f"Spot Price: {spot_price}")
+        print(f"Total Options: {len(options_list)}")
+        print(f"Option Data Sample: {options_list[:3] if options_list else 'No data'}")
+        print(f"========================\n")
+        
         if not options_list:
             return jsonify({"error": "No option data found"}), 500
             
@@ -207,6 +216,15 @@ def get_option_chain():
                     symbols_to_subscribe.append(option.get('symbol'))
         
         strike_list = sorted(strikes.values(), key=lambda x: x['strike'])
+        
+        # Print final processed strikes data
+        print(f"\n=== PROCESSED STRIKES DATA ===")
+        print(f"Total strikes processed: {len(strike_list)}")
+        print(f"ATM Strike: {atm_strike}")
+        print(f"Symbols to subscribe: {len(symbols_to_subscribe)}")
+        for i, strike in enumerate(strike_list):
+            print(f"Strike {i+1}: {strike['strike']} - CE LTP: {strike['ce_ltp']}, PE LTP: {strike['pe_ltp']}")
+        print(f"==============================\n")
         
         # Start WebSocket subscription
         start_websocket_subscription(symbols_to_subscribe)
