@@ -58,13 +58,17 @@ class WebSocketHandler {
     
     async startLiveData(symbol, expiry = null) {
         try {
-            // Stop existing subscriptions before starting new ones
-            this.stop();
-            
+            // Store the new values first
             this.currentSymbol = symbol;
             this.currentExpiry = expiry;
             
             console.log(`Starting live data for ${symbol}, expiry: ${expiry}`);
+            
+            // Stop existing subscriptions (but preserve the symbol/expiry values)
+            if (this.updateInterval) {
+                clearInterval(this.updateInterval);
+                this.updateInterval = null;
+            }
             
             // Start spot price updates
             this.startSpotPriceUpdates();
@@ -209,6 +213,8 @@ class WebSocketHandler {
     }
     
     async startOptionChainUpdates() {
+        console.log(`Starting option chain updates - Symbol: ${this.currentSymbol}, Expiry: ${this.currentExpiry}`);
+        
         if (!this.currentSymbol || !this.currentExpiry) {
             console.error('Missing symbol and/or expiry:', this.currentSymbol, this.currentExpiry);
             return;
