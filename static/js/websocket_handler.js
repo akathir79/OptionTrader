@@ -332,32 +332,11 @@ class WebSocketHandler {
             `<td class="text-center buy_sell_cell pe-buy-sell-cell"><span class="option_button buy_button">B</span><span class="option_button sell_button">S</span></td>`
         ];
         
-        // Generate only visible cells based on column visibility
-        const visibleCells = this.getVisibleColumnCells(cells);
-        row.innerHTML = visibleCells.join('');
+        row.innerHTML = cells.join('');
         return row;
     }
 
-    getVisibleColumnCells(allCells) {
-        // Get column visibility states from column visibility controller
-        const columnVisibilityController = window.columnVisibilityController;
-        if (!columnVisibilityController) {
-            // If no controller available, return all cells
-            return allCells;
-        }
 
-        const columnStates = columnVisibilityController.columnStates;
-        const visibleCells = [];
-
-        // Filter cells based on column visibility states
-        allCells.forEach((cell, index) => {
-            if (columnStates[index]) {
-                visibleCells.push(cell);
-            }
-        });
-
-        return visibleCells;
-    }
     
     async loadMicroCharts(strikes) {
         console.log('Loading microcharts for strikes:', strikes);
