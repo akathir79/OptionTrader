@@ -26,8 +26,8 @@ class ColumnVisibilityController {
         // Default visible columns for essential trading data
         const defaults = {};
         // Make essential columns visible by default
-        // Updated for 40-column structure: Vol(15), Chart(16), LTP(17), Strike(19), LTP(20), Chart(21), Vol(22), OI(23), PE B/S(38), Columns(39) hidden
-        const essentialColumns = [0, 8, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 28, 38];
+        // Default visible columns: CE B/S(0), LTP(17), Δ(18), Strike(19), Δ(20), LTP(21), PE B/S(38)
+        const essentialColumns = [0, 17, 18, 19, 20, 21, 38];
         
         for (let i = 0; i < 40; i++) {
             defaults[i] = essentialColumns.includes(i);
