@@ -134,6 +134,16 @@ class OptionMicroChart {
         svg.addEventListener('mouseleave', () => {
             this.hideTooltip();
         });
+        
+        // Add click event for detailed popup
+        svg.addEventListener('click', () => {
+            if (window.chartPopup) {
+                window.chartPopup.show(this.symbol, this.containerId);
+            }
+        });
+        
+        // Add cursor pointer style
+        svg.style.cursor = 'pointer';
     }
 
     showTooltip() {
