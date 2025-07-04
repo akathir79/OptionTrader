@@ -5,6 +5,7 @@ from APP_Routes.broker_settings import bp           #  ← just “bp”, not bp
 from flask import jsonify, request
 from models import BrokerSettings
 import os
+from APP_Routes.websocket_data import websocket_bp
 
 app = Flask(__name__)
 app.config.update(
@@ -19,6 +20,7 @@ import models                                       # registers BrokerSettings
 # register blueprints
 app.register_blueprint(symbol_selector_bp)
 app.register_blueprint(bp)                          # ← same symbol as above
+app.register_blueprint(websocket_bp, url_prefix='/api/websocket')
 
 @app.route("/")
 def live_trade():

@@ -1,0 +1,170 @@
+from fyers_apiv3 import fyersModel
+from fyers_apiv3.FyersWebsocket import data_ws
+from flask import Flask, request, jsonify
+import logging
+from datetime import datetime
+import pytz
+import json
+import threading
+
+def get_simple_option_chain(symbol, strike_count=10, expiry_timestamp=""):
+    """
+    Enhanced option chain with dynamic symbol, expiry, ATM calculation, spot price, and WebSocket support
+    """
+    try:
+        # Get access token from database
+        from APP_Extensions.db import db
+        from models import BrokerSettings
+        
+        broker_row = BrokerSettings.query.filter_by(brokername='fyers').first()
+        if not broker_row or not broker_row.access_token:
+            return {"error": "No FYERS access token found"}
+            
+        access_token = broker_row.access_token
+        client_id = broker_row.clientid
+        
+        print(f"OPTION CHAIN: symbol={symbol}, strikes={strike_count}, expiry={expiry_timestamp}")
+        
+        # Initialize FYERS model
+        fyers = fyersModel.FyersModel(client_id=client_id, token=access_token, is_async=False, log_path="")
+        
+        # Get spot price
+        spot_data = fyers.quotes({"symbols": symbol})
+        spot_price = 0
+        if spot_data.get('s') == 'ok' and spot_data.get('d'):
+            spot_price = spot_data['d'][0]['v'].get('lp', 0)
+        
+        # Get expiry data if no expiry provided
+        if not expiry_timestamp:
+            data = {"symbol": symbol, "strikecount": 1, "timestamp": ""}
+            response = fyers.optionchain(data=data)
+            
+            if response.get('s') == 'ok':
+                expiry_data = response.get('data', {}).get('expiryData', [])
+                return {
+                    "success": True,
+                    "expiry_data": [{"date": exp["date"], "expiry": exp["expiry"]} for exp in expiry_data],
+                    "strikes": [],
+                    "spot_price": spot_price,
+                    "message": "Select expiry to load option chain"
+                }
+            else:
+                return {"error": f"Failed to get expiry data: {response.get('message', 'Unknown error')}"}
+        
+        # Get option chain with expiry
+        data = {
+            "symbol": symbol,
+            "strikecount": strike_count,
+            "timestamp": expiry_timestamp
+        }
+        
+        response = fyers.optionchain(data=data)
+        
+        if response.get('s') != 'ok':
+            return {"error": f"FYERS API Error: {response.get('message', 'Unknown error')}"}
+            
+        option_data = response.get('data', {})
+        options_list = option_data.get('optionsChain', [])
+        
+        if not options_list:
+            return {"error": "No option data found"}
+            
+        # Calculate ATM strike
+        atm_strike = min(options_list, key=lambda x: abs(x['strike_price'] - spot_price))['strike_price']
+        
+        # Group by strike price
+        strikes = {}
+        symbols_to_subscribe = []
+        for option in options_list:
+            strike = option.get('strike_price', 0)
+            if strike <= 0:
+                continue
+                
+            if strike not in strikes:
+                strikes[strike] = {
+                    'strike': strike,
+                    'ce_ltp': 0,
+                    'pe_ltp': 0,
+                    'ce_symbol': '',
+                    'pe_symbol': '',
+                    'ce_oi': 0,
+                    'pe_oi': 0,
+                    'is_atm': strike == atm_strike
+                }
+                
+            if option.get('option_type') == 'CE':
+                strikes[strike]['ce_ltp'] = option.get('ltp', 0)
+                strikes[strike]['ce_symbol'] = option.get('symbol', '')
+                strikes[strike]['ce_oi'] = option.get('oi', 0)
+                symbols_to_subscribe.append(option.get('symbol'))
+            elif option.get('option_type') == 'PE':
+                strikes[strike]['pe_ltp'] = option.get('ltp', 0)
+                strikes[strike]['pe_symbol'] = option.get('symbol', '')
+                strikes[strike]['pe_oi'] = option.get('oi', 0)
+                symbols_to_subscribe.append(option.get('symbol'))
+        
+        strike_list = sorted(strikes.values(), key=lambda x: x['strike'])
+        
+        # WebSocket subscription
+        def on_message(message):
+            """Handle WebSocket messages"""
+            try:
+                data = json.loads(message)
+                for strike in strike_list:
+                    if data.get('symbol') == strike['ce_symbol']:
+                        strike['ce_ltp'] = data.get('ltp', strike['ce_ltp'])
+                        strike['ce_oi'] = data.get('oi', strike['ce_oi'])
+                    elif data.get('symbol') == strike['pe_symbol']:
+                        strike['pe_ltp'] = data.get('ltp', strike['pe_ltp'])
+                        strike['pe_oi'] = data.get('oi', strike['pe_oi'])
+            except Exception as e:
+                print(f"WebSocket message error: {str(e)}")
+
+        def on_error(error):
+            print(f"WebSocket error: {str(error)}")
+
+        def on_close():
+            print("WebSocket connection closed")
+
+        def on_open():
+            print("WebSocket connection opened")
+            fyers_ws.subscribe(symbols=symbols_to_subscribe)
+            fyers_ws.keep_alive()
+
+        # Initialize WebSocket
+        fyers_ws = data_ws.FyersDataSocket(
+            access_token=f"{client_id}:{access_token}",
+            on_message=on_message,
+            on_error=on_error,
+            on_close=on_close,
+            on_open=on_open
+        )
+
+        # Start WebSocket in a separate thread
+        ws_thread = threading.Thread(target=fyers_ws.connect)
+        ws_thread.daemon = True
+        ws_thread.start()
+
+        return {
+            "success": True,
+            "strikes": strike_list,
+            "total_strikes": len(strike_list),
+            "spot_price": spot_price,
+            "atm_strike": atm_strike,
+            "ws_subscribed": symbols_to_subscribe
+        }
+
+    except Exception as e:
+        print(f"OPTION CHAIN ERROR: {str(e)}")
+        return {"error": str(e)}
+
+# Function to unsubscribe WebSocket (call when closing connection)
+def unsubscribe_option_chain():
+    try:
+        global fyers_ws
+        if fyers_ws:
+            fyers_ws.unsubscribe()
+            fyers_ws.close_connection()
+            print("WebSocket unsubscribed and closed")
+    except Exception as e:
+        print(f"Unsubscribe error: {str(e)}")
