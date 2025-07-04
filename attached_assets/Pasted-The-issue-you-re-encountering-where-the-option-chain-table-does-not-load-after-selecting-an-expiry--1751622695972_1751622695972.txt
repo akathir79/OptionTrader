@@ -1,0 +1,434 @@
+The issue you're encountering, where the option chain table does not load after selecting an expiry, stems from the error messages in your logs, particularly "Option chain update failed: Missing symbol and/or expiry" and "Missing symbol and/or expiry." This indicates that the WebSocketHandler's startOptionChainUpdates method is being called with missing or undefined currentSymbol or currentExpiry values. The problem lies in the sequence and timing of events in your JavaScript code, specifically in how the symbol and expiry are managed and passed to the WebSocketHandler. Below, I'll analyze the root cause, explain why the option chain isn't loading, and provide a solution to ensure the Last Traded Price (LTP) for calls, puts, and strikes is loaded correctly while keeping the existing code logic intact.
+Root Cause Analysis
+
+    Error: "Missing symbol and/or expiry"
+        The startOptionChainUpdates method in websocket_handler.js checks if this.currentSymbol and this.currentExpiry are defined before making the API call to /get_option_chain. If either is missing, it logs the error and exits without updating the option chain table.
+        The logs show that startLiveData is called with the correct symbol (NSE:NIFTYBANK-INDEX) and expiry (31-JUL-25), and these values are logged correctly in startOptionChainUpdates. However, the error suggests that at some point, these values are either not set or are cleared before the option chain update is attempted.
+    Event Sequence in symbol_selector_fixed.js
+        When an index is selected (indexSelect change event), lookupSymbolAndLotSize is called, which fetches the symbol code (e.g., NSE:NIFTYBANK-INDEX) and lot size, stores them in window.tradingState.currentSymbol and window.tradingState.currentLotSize, and starts spot price updates via window.webSocketHandler.startLiveData(data.symbol_code).
+        When an expiry is selected (click on .expiry-btn), the expiryView click event handler updates window.tradingState.currentExpiry and calls window.webSocketHandler.startLiveData(window.tradingState.currentSymbol, e.target.value).
+        The startLiveData method sets this.currentSymbol and this.currentExpiry, starts spot price updates, and, if an expiry is provided, calls startOptionChainUpdates.
+        The issue arises because the startLiveData call in the expiry selection event may not always have a valid window.tradingState.currentSymbol at the time it's called, or the currentSymbol and currentExpiry in the WebSocketHandler are being overwritten or cleared due to concurrent calls or race conditions.
+    Potential Race Condition
+        The indexSelect change event triggers lookupSymbolAndLotSize, which is asynchronous (it makes a fetch request to /lookup_symbol_and_lot_size). If the user selects an expiry before this fetch completes, window.tradingState.currentSymbol may not yet be set, causing startLiveData to be called with an undefined symbol.
+        Additionally, multiple calls to startLiveData (e.g., from index selection and expiry selection) could overwrite currentSymbol and currentExpiry in the WebSocketHandler, leading to inconsistent state.
+    WebSocket Subscription and Data Flow
+        The start_websocket_subscription function in websocket_handler.py subscribes to the symbols (spot symbol and option symbols for calls and puts) via the FYERS WebSocket API. The on_message callback logs incoming data but doesn't actively push it to the frontend for updating the option chain table.
+        The frontend relies on the initial /get_option_chain response to populate the table, but subsequent real-time LTP updates for calls and puts are not being handled because the WebSocket messages are only logged and not forwarded to the frontend.
+    Option Chain Table Not Updating
+        The updateOptionChainTable method in websocket_handler.js is called only when the initial /get_option_chain response is successful. If startOptionChainUpdates fails due to missing symbol/expiry, the table remains empty.
+        Even when the table is populated, there's no mechanism in the provided code to update the LTP values in real-time based on WebSocket messages, which explains why live LTP data for calls, puts, and strikes isn't appearing.
+
+Solution
+
+To fix the issue and ensure the option chain table loads with live LTP data for calls, puts, and strikes, we need to address the following:
+
+    Ensure currentSymbol and currentExpiry are consistently set before calling startOptionChainUpdates.
+    Prevent race conditions by synchronizing the symbol lookup and expiry selection.
+    Implement a mechanism to handle WebSocket messages in the frontend to update LTP values in the option chain table.
+    Forward WebSocket messages from the backend to the frontend using Server-Sent Events (SSE) or polling, as indicated in the websocket_handler.py comment about handling via SSE or polling.
+
+Below are the step-by-step changes to the code, keeping the existing logic intact.
+Step 1: Synchronize Symbol Lookup and Expiry Selection
+
+Modify symbol_selector_fixed.js to ensure startLiveData is called only after the symbol lookup is complete and to prevent overwriting of currentSymbol and currentExpiry.
+javascript
+// In symbol_selector_fixed.js, modify the expiryView click event handler
+expiryView?.addEventListener("click", e => {
+  if (!e.target.classList.contains("expiry-btn")) return;
+
+  document.querySelectorAll(".expiry-btn").forEach(b =>
+    b.classList.replace("btn-primary", "btn-outline-primary"));
+  e.target.classList.replace("btn-outline-primary", "btn-primary");
+
+  window.tradingState = window.tradingState || {};
+  window.tradingState.selectedExpiry = e.target.value;
+
+  document.getElementById("optionChainHeaders")?.style.setProperty("display", "");
+  document.getElementById("noExpiryMessage")?.style.setProperty("display", "none");
+
+  if (typeof showAlert === "function")
+    showAlert(`Expiry ${e.target.value} selected`, "success");
+
+  // Store expiry in trading state
+  window.tradingState.currentExpiry = e.target.value;
+
+  // Check if symbol is available before starting WebSocket
+  if (window.tradingState.currentSymbol) {
+    console.log(`Starting WebSocket for symbol: ${window.tradingState.currentSymbol}, expiry: ${e.target.value}`);
+    if (window.webSocketHandler) {
+      window.webSocketHandler.startLiveData(window.tradingState.currentSymbol, e.target.value);
+    }
+  } else {
+    console.warn('Symbol not yet available, waiting for lookup to complete');
+    // Optionally, show a user notification
+    if (typeof showAlert === "function")
+      showAlert('Please wait, symbol is being loaded', 'info');
+  }
+
+  // Update display
+  const selectedIndex = indexSelect.value;
+  const selectedExch = exchangeSel.value;
+  const selectedSymbol = extraSelect.value;
+  const selectedExpiry = e.target.value;
+
+  let displayText = "";
+  if (selectedIndex) {
+    const bseIndices = ["SENSEX", "BANKEX"];
+    const exchangeLabel = bseIndices.includes(selectedIndex) ? "BSE" : "NSE";
+    displayText = `${exchangeLabel} | ${selectedIndex} | ${selectedExpiry}`;
+  } else if (selectedExch && selectedSymbol) {
+    displayText = `${selectedExch} | ${selectedSymbol} | ${selectedExpiry}`;
+  } else {
+    displayText = `Select Expiry`;
+  }
+
+  updateSymbolDisplayWithExpiry(selectedExpiry);
+});
+
+// Modify lookupSymbolAndLotSize to trigger option chain if expiry is already selected
+function lookupSymbolAndLotSize(type, symbol, exchange) {
+  if (!symbol) return;
+
+  let url = `/lookup_symbol_and_lot_size?type=${encodeURIComponent(type)}&symbol=${encodeURIComponent(symbol)}`;
+  if (exchange) {
+    url += `&exchange=${encodeURIComponent(exchange)}`;
+  }
+
+  fetch(url)
+    .then(okJSON)
+    .then(data => {
+      if (data.found) {
+        updateOptionChainHeader(data.symbol_code, data.lot_size);
+        updateCurrentPositionLotSize(data.lot_size);
+
+        window.tradingState = window.tradingState || {};
+        window.tradingState.currentSymbol = data.symbol_code;
+        window.tradingState.currentLotSize = data.lot_size;
+
+        console.log(`Symbol lookup: ${data.symbol_code}, Lot Size: ${data.lot_size}`);
+
+        // Start spot price updates
+        if (window.webSocketHandler) {
+          window.webSocketHandler.startLiveData(data.symbol_code);
+        }
+
+        // If expiry is already selected, start option chain updates
+        if (window.tradingState.currentExpiry && window.webSocketHandler) {
+          console.log(`Starting option chain for symbol: ${data.symbol_code}, expiry: ${window.tradingState.currentExpiry}`);
+          window.webSocketHandler.startLiveData(data.symbol_code, window.tradingState.currentExpiry);
+        }
+      } else {
+        console.warn("Symbol lookup failed:", data.error);
+      }
+    })
+    .catch(err => {
+      console.error("Error looking up symbol:", err);
+    });
+}
+
+Changes Explained:
+
+    In the expiryView click handler, check if window.tradingState.currentSymbol exists before calling startLiveData. If not, log a warning and optionally notify the user to wait.
+    In lookupSymbolAndLotSize, after a successful symbol lookup, check if an expiry is already selected (window.tradingState.currentExpiry). If so, call startLiveData with both the symbol and expiry to trigger the option chain update.
+    This ensures that the option chain is loaded even if the expiry is selected before the symbol lookup completes, preventing the "Missing symbol" error.
+
+Step 2: Enhance WebSocketHandler to Prevent State Overwrites
+
+Modify websocket_handler.js to protect currentSymbol and currentExpiry from being overwritten unnecessarily and to log more detailed errors.
+javascript
+// In websocket_handler.js, modify startLiveData
+async startLiveData(symbol, expiry = null) {
+  try {
+    // Only update symbol and expiry if provided
+    if (symbol) {
+      this.currentSymbol = symbol;
+    }
+    if (expiry) {
+      this.currentExpiry = expiry;
+    }
+
+    console.log(`Starting live data for ${this.currentSymbol}, expiry: ${this.currentExpiry}`);
+
+    // Stop existing subscriptions
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
+      this.updateInterval = null;
+    }
+
+    // Start spot price updates
+    this.startSpotPriceUpdates();
+
+    // Start option chain updates if both symbol and expiry are available
+    if (this.currentSymbol && this.currentExpiry) {
+      console.log(`About to start option chain with symbol: ${this.currentSymbol}, expiry: ${this.currentExpiry}`);
+      await this.startOptionChainUpdates();
+    } else {
+      console.log(`Skipping option chain start due to missing data - Symbol: ${this.currentSymbol}, Expiry: ${this.currentExpiry}`);
+    }
+
+    this.isConnected = true;
+  } catch (error) {
+    console.error('Error starting live data:', error);
+    this.showError('Failed to start live data updates');
+  }
+}
+
+// Modify startOptionChainUpdates for better error handling
+async startOptionChainUpdates() {
+  console.log(`Starting option chain updates - Symbol: ${this.currentSymbol}, Expiry: ${this.currentExpiry}`);
+
+  if (!this.currentSymbol || !this.currentExpiry) {
+    const errorMsg = `Missing symbol and/or expiry: Symbol=${this.currentSymbol}, Expiry=${this.currentExpiry}`;
+    console.error(errorMsg);
+    this.showError('Cannot load option chain: Missing symbol or expiry');
+    return;
+  }
+
+  try {
+    const response = await fetch(`/get_option_chain?symbol=${encodeURIComponent(this.currentSymbol)}&expiry_timestamp=${encodeURIComponent(this.currentExpiry)}&strike_count=${this.strikeCount}`);
+    const data = await response.json();
+
+    if (data.success) {
+      this.updateOptionChainTable(data.strikes);
+      this.updateATMDisplay(data.spot_price);
+      console.log(`Option chain loaded: ${data.strikes.length} strikes for ${this.currentSymbol}`);
+    } else {
+      console.error('Option chain update failed:', data.error);
+      this.showError(data.error);
+    }
+  } catch (error) {
+    console.error('Error updating option chain:', error);
+    this.showError('Failed to load option chain data');
+  }
+}
+
+Changes Explained:
+
+    In startLiveData, only update currentSymbol and currentExpiry if new values are provided, preserving existing values if the arguments are null/undefined.
+    Add a check to only call startOptionChainUpdates if both currentSymbol and currentExpiry are defined, logging a clear message if skipped.
+    In startOptionChainUpdates, enhance the error message to include the current values of currentSymbol and currentExpiry for better debugging.
+    These changes prevent state overwrites and make it clearer why the option chain update might fail.
+
+Step 3: Implement Real-Time LTP Updates via Server-Sent Events
+
+The current websocket_handler.py logs WebSocket messages but doesn't forward them to the frontend. Implement Server-Sent Events (SSE) to push LTP updates to the frontend, and update websocket_handler.js to handle these updates.
+Backend: Add SSE Endpoint
+
+Modify websocket_handler.py to include an SSE endpoint that streams WebSocket messages.
+python
+from flask import Response
+import queue
+import time
+
+# Add a queue to store WebSocket messages
+message_queue = queue.Queue()
+
+def on_message(message):
+    """Handle WebSocket messages"""
+    try:
+        print(f"WebSocket message: {message}")
+        # Add message to queue for SSE
+        message_queue.put(message)
+    except Exception as e:
+        print(f"WebSocket message error: {str(e)}")
+
+@websocket_bp.route('/stream_option_chain')
+def stream_option_chain():
+    """Stream WebSocket messages to frontend via SSE"""
+    def generate():
+        while True:
+            try:
+                message = message_queue.get_nowait()
+                yield f"data: {json.dumps(message)}\n\n"
+            except queue.Empty:
+                time.sleep(0.1)  # Prevent busy looping
+                yield f"data: {{\"type\": \"keepalive\"}}\n\n"  # Keep connection alive
+            except Exception as e:
+                print(f"SSE error: {str(e)}")
+                yield f"data: {{\"error\": \"{str(e)}\"}}\n\n"
+
+    return Response(generate(), mimetype='text/event-stream')
+
+Changes Explained:
+
+    Add a queue.Queue to store WebSocket messages received in on_message.
+    Modify on_message to put messages into the queue.
+    Add a new /stream_option_chain endpoint that streams messages from the queue using SSE, with a keepalive message to maintain the connection.
+    The SSE endpoint yields JSON-encoded WebSocket messages, allowing the frontend to process them.
+
+Frontend: Handle SSE Messages
+
+Modify websocket_handler.js to listen for SSE messages and update the option chain table with live LTP data.
+javascript
+// In websocket_handler.js, add to WebSocketHandler class
+class WebSocketHandler {
+  constructor() {
+    this.isConnected = false;
+    this.currentSymbol = null;
+    this.currentExpiry = null;
+    this.strikeCount = 10;
+    this.updateInterval = null;
+    this.spotPriceElement = null;
+    this.atmElement = null;
+    this.optionChainTable = null;
+    this.eventSource = null; // For SSE
+
+    this.init();
+  }
+
+  init() {
+    this.spotPriceElement = document.querySelector('.spot-price-value');
+    this.atmElement = document.getElementById('atmDisplay');
+    this.optionChainTable = document.getElementById('optionChainTable');
+    this.setupEventListeners();
+    this.startSSE();
+    console.log('WebSocket handler initialized');
+  }
+
+  startSSE() {
+    // Start Server-Sent Events for real-time updates
+    this.eventSource = new EventSource('/stream_option_chain');
+    this.eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.type === 'keepalive') return;
+      this.handleWebSocketMessage(data);
+    };
+    this.eventSource.onerror = () => {
+      console.error('SSE connection error');
+      this.showError('Lost connection to live data');
+      // Attempt to reconnect after a delay
+      setTimeout(() => this.startSSE(), 5000);
+    };
+  }
+
+  handleWebSocketMessage(data) {
+    // Handle incoming WebSocket data (assuming FYERS WebSocket format)
+    if (!data || !data.s || data.s !== 'ok' || !data.d) {
+      console.warn('Invalid WebSocket message:', data);
+      return;
+    }
+
+    const quote = data.d[0];
+    const symbol = quote.n; // FYERS symbol
+    const ltp = quote.v?.lp; // Last Traded Price
+
+    if (!symbol || ltp === undefined) return;
+
+    // Update option chain table if the symbol matches a call or put
+    const callCells = this.optionChainTable?.querySelectorAll(`td.call-ltp[data-symbol="${symbol}"]`);
+    const putCells = this.optionChainTable?.querySelectorAll(`td.put-ltp[data-symbol="${symbol}"]`);
+
+    if (callCells?.length) {
+      callCells.forEach(cell => {
+        cell.textContent = this.formatPrice(ltp);
+        cell.classList.add('updated');
+        setTimeout(() => cell.classList.remove('updated'), 500);
+      });
+      console.log(`Updated call LTP for ${symbol}: ${ltp}`);
+    }
+
+    if (putCells?.length) {
+      putCells.forEach(cell => {
+        cell.textContent = this.formatPrice(ltp);
+        cell.classList.add('updated');
+        setTimeout(() => cell.classList.remove('updated'), 500);
+      });
+      console.log(`Updated put LTP for ${symbol}: ${ltp}`);
+    }
+
+    // Update spot price if the symbol matches currentSymbol
+    if (symbol === this.currentSymbol) {
+      this.updateSpotPriceDisplay(ltp);
+      this.updateATMDisplay(ltp);
+      console.log(`Updated spot price for ${symbol}: ${ltp}`);
+    }
+  }
+
+  stop() {
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
+      this.updateInterval = null;
+    }
+
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
+    }
+
+    fetch('/stop_websocket', { method: 'POST' })
+      .then(response => response.json())
+      .then(data => {
+        console.log('WebSocket stopped:', data.message);
+      })
+      .catch(error => {
+        console.error('Error stopping WebSocket:', error);
+      });
+
+    this.isConnected = false;
+  }
+}
+
+Changes Explained:
+
+    Add an eventSource property to the WebSocketHandler to manage the SSE connection.
+    In init, call startSSE to establish an SSE connection to /stream_option_chain.
+    Implement startSSE to create an EventSource, handle incoming messages with handleWebSocketMessage, and reconnect on errors.
+    Implement handleWebSocketMessage to process FYERS WebSocket messages, updating the LTP for calls and puts in the option chain table based on the symbol, and updating the spot price if the symbol matches currentSymbol.
+    Modify stop to close the SSE connection when stopping the handler.
+    Add visual feedback (CSS class updated) for LTP updates to enhance user experience.
+
+Add CSS for Visual Feedback
+
+Add the following CSS to your stylesheet (e.g., in static/css/style.css):
+css
+td.call-ltp.updated, td.put-ltp.updated {
+  background-color: rgba(0, 255, 0, 0.2);
+  transition: background-color 0.5s ease;
+}
+
+This provides a brief green flash when LTP values are updated.
+Step 4: Ensure Option Chain Table Structure Supports Updates
+
+Verify that the createOptionChainRow method in websocket_handler.js correctly sets the data-symbol attribute for call and put LTP cells, as this is used to match WebSocket updates. The provided code already does this correctly:
+javascript
+<td class="text-center call-ltp ${isCallITM ? 'itm' : 'otm'}" data-symbol="${strike.ce_symbol}">
+  ${this.formatPrice(strike.ce_ltp)}
+</td>
+<td class="text-center put-ltp ${isPutITM ? 'itm' : 'otm'}" data-symbol="${strike.pe_symbol}">
+  ${this.formatPrice(strike.pe_ltp)}
+</td>
+
+Ensure that the ce_symbol and pe_symbol values in the /get_option_chain response match the symbols sent by the FYERS WebSocket API.
+Step 5: Test and Debug
+
+    Test the Flow:
+        Select an index (e.g., BANKNIFTY).
+        Wait for the symbol lookup to complete (check console for "Symbol lookup: NSE:NIFTYBANK-INDEX, Lot Size: 35").
+        Select an expiry (e.g., 31-JUL-25).
+        Verify that the option chain table loads and LTP values for calls and puts update in real-time.
+    Debug Tips:
+        Check the console for logs from startOptionChainUpdates and handleWebSocketMessage to confirm that symbol and expiry are set and WebSocket messages are being processed.
+        Verify that the /stream_option_chain endpoint is streaming messages by checking the browser's Network tab (SSE connections).
+        If the table doesn't load, inspect the response from /get_option_chain to ensure data.strikes contains valid data.
+        If LTP updates don't appear, confirm that the symbol in WebSocket messages matches the ce_symbol and pe_symbol in the option chain table.
+    Handle Edge Cases:
+        If the FYERS access token is invalid, the backend will log "No FYERS access token found." Ensure the BrokerSettings table has a valid token.
+        If the WebSocket connection fails, the SSE reconnect logic will attempt to reconnect every 5 seconds.
+
+Expected Outcome
+
+    The option chain table will load immediately after selecting an expiry, populated with initial data from /get_option_chain.
+    LTP values for calls, puts, and the spot price will update in real-time as WebSocket messages are received via SSE.
+    The table will reflect live strike prices, with ATM strikes highlighted, and lot size updates will be consistent (e.g., Lot Size: 35 for BANKNIFTY).
+    Errors like "Missing symbol and/or expiry" will be eliminated due to synchronized symbol and expiry handling.
+
+Additional Notes
+
+    Performance: The SSE approach is lightweight but may introduce slight latency. If you need lower latency, consider using a proper WebSocket connection between the frontend and backend, though this requires more infrastructure changes.
+    Scalability: The current message_queue is in-memory. For production, consider using a message broker like Redis to handle WebSocket messages across multiple backend instances.
+    Security: Ensure the FYERS access token is securely stored and refreshed when it expires, as the WebSocket connection depends on it.
+    UI Feedback: Add a loading spinner to the option chain table while the initial /get_option_chain request is in progress to improve user experience.
+
+This solution maintains the existing code structure and logic while fixing the root cause and enabling live LTP updates. If you encounter specific errors during testing, please share the relevant logs, and I can provide further targeted fixes.
+2.8s

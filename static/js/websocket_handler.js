@@ -44,17 +44,8 @@ class WebSocketHandler {
             });
         }
         
-        // Listen for expiry selection changes
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('expiry-btn')) {
-                const expiry = e.target.value; // Use .value not .dataset.expiry
-                if (expiry) {
-                    console.log(`Expiry button clicked: ${expiry}`);
-                    this.currentExpiry = expiry;
-                    this.refreshOptionChain();
-                }
-            }
-        });
+        // Note: Expiry button click handling is done by symbol_selector_fixed.js
+        // to avoid duplicate event handlers that can cause race conditions
     }
     
     async startLiveData(symbol, expiry = null) {
