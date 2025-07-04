@@ -242,6 +242,9 @@ document.addEventListener("DOMContentLoaded", () => {
       displayText = `Select Expiry`;
     }
 
+    // Update the symbol display with the selected expiry
+    updateSymbolDisplayWithExpiry(selectedExpiry);
+
     // Commented out to remove the details display in option chain header
     // const displayDiv = document.getElementById("selectedDetailsDisplay");
     // if (displayDiv) displayDiv.innerText = displayText;
@@ -282,11 +285,16 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
   
-  function updateOptionChainHeader(symbolCode, lotSize) {
+  function updateOptionChainHeader(symbolCode, lotSize, expiry = null) {
     // Update the existing fyersSymbolText element
     const fyersSymbolText = document.getElementById('fyersSymbolText');
     if (fyersSymbolText) {
-      fyersSymbolText.textContent = `${symbolCode} | Lot: ${lotSize}`;
+      // Include expiry in the display format if available
+      if (expiry) {
+        fyersSymbolText.textContent = `${symbolCode} | ${expiry} | Lot: ${lotSize}`;
+      } else {
+        fyersSymbolText.textContent = `${symbolCode} | Lot: ${lotSize}`;
+      }
       console.log('Updated fyersSymbolText:', fyersSymbolText.textContent);
     } else {
       console.warn('fyersSymbolText element not found');
@@ -407,5 +415,25 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   function clearExpiry(){ expiryView.innerHTML = ""; }
   function abort(c){ try{c?.abort();}catch{} }
+
+  // Function to update the symbol display with expiry when expiry is selected
+  function updateSymbolDisplayWithExpiry(selectedExpiry) {
+    const fyersSymbolText = document.getElementById('fyersSymbolText');
+    if (fyersSymbolText && fyersSymbolText.textContent) {
+      const currentText = fyersSymbolText.textContent;
+      
+      // Extract the symbol code and lot size from current display
+      const parts = currentText.split(' | ');
+      if (parts.length >= 2) {
+        const symbolCode = parts[0];
+        const lotPart = parts[parts.length - 1]; // Should be "Lot: XX"
+        
+        // Create new display format with expiry
+        const newText = `${symbolCode} | ${selectedExpiry} | ${lotPart}`;
+        fyersSymbolText.textContent = newText;
+        console.log('Updated symbol display with expiry:', newText);
+      }
+    }
+  }
 
 });
