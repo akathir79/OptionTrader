@@ -31,6 +31,10 @@ document.addEventListener("DOMContentLoaded", () => {
     fetchExpiryForIndex(indexSelect.value);
     // Lookup symbol and lot size for index
     lookupSymbolAndLotSize('index', indexSelect.value, '');
+    // Start WebSocket for spot price updates
+    if (window.webSocketHandler) {
+      window.webSocketHandler.startLiveData(indexSelect.value);
+    }
   });
 
   exchangeSel?.addEventListener("change", () => {
@@ -58,9 +62,11 @@ document.addEventListener("DOMContentLoaded", () => {
   strikeCountSelect?.addEventListener("change", () => {
     const selectedCount = strikeCountSelect.value;
     console.log("Strike count changed to:", selectedCount);
-    // TODO: Implement option chain filtering based on strike count
-    // This will filter the option chain table to show only the selected number of ITM strikes
-    // or ALL strikes if "ALL" is selected
+    // Update WebSocket handler strike count
+    if (window.webSocketHandler) {
+      window.webSocketHandler.strikeCount = selectedCount;
+      window.webSocketHandler.refreshOptionChain();
+    }
   });
 
   /* =================================================================
@@ -232,6 +238,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (typeof showAlert === "function")
       showAlert(`Expiry ${e.target.value} selected`, "success");
+
+    // Start WebSocket for option chain updates
+    if (window.webSocketHandler) {
+      const currentSymbol = indexSelect.value || (exchangeSel.value && extraSelect.value ? `${exchangeSel.value}:${extraSelect.value}` : null);
+      if (currentSymbol) {
+        window.webSocketHandler.startLiveData(currentSymbol, e.target.value);
+      }
+    }
 
     // === ✅ Update display dynamically ===
     const selectedIndex   = indexSelect.value;

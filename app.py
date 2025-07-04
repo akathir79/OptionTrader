@@ -20,6 +20,10 @@ import models                                       # registers BrokerSettings
 app.register_blueprint(symbol_selector_bp)
 app.register_blueprint(bp)                          # ← same symbol as above
 
+# Import and register WebSocket blueprint
+from APP_Routes.websocket_handler import websocket_bp
+app.register_blueprint(websocket_bp)
+
 @app.route("/")
 def live_trade():
     return render_template("live_trade.html")

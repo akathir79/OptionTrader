@@ -1191,8 +1191,61 @@
 <!-- Include Resizable Layout CSS -->
 <link href="{{ url_for('static', filename='css/resizable.css') }}" rel="stylesheet">
 
+<!-- Option Chain Styling for WebSocket -->
+<style>
+  /* ATM Strike Highlighting */
+  .atm-strike {
+    background-color: #ffc107 !important;
+    font-weight: bold;
+  }
+  
+  .atm-strike td {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+  }
+  
+  /* ITM/OTM Styling */
+  .call-ltp.itm {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+  }
+  
+  .call-ltp.otm {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+  }
+  
+  .put-ltp.itm {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+  }
+  
+  .put-ltp.otm {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+  }
+  
+  /* Strike Price Column */
+  .strike-price {
+    background-color: #495057 !important;
+    color: #fff !important;
+    font-weight: bold;
+  }
+  
+  /* Spot Price Animation */
+  .spot-price-updated {
+    animation: priceFlash 0.5s ease-in-out;
+  }
+  
+  @keyframes priceFlash {
+    0% { background-color: #28a745; }
+    100% { background-color: transparent; }
+  }
+</style>
+
 <!-- *** NEW: symbol / expiry logic *** -->
 <script src="{{ url_for('static', filename='js/symbol_selector_fixed.js') }}"></script>
+<script src="{{ url_for('static', filename='js/websocket_handler.js') }}"></script>
 
 <!-- Highcharts (Pay-off chart) -->
 <script src="https://code.highcharts.com/highcharts.js"></script>

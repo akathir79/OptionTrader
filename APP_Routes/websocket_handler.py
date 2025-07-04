@@ -1,0 +1,273 @@
+"""
+WebSocket handler for live option chain data
+"""
+from fyers_apiv3 import fyersModel
+from fyers_apiv3.FyersWebsocket import data_ws
+from flask import Blueprint, request, jsonify
+import logging
+import json
+import threading
+from datetime import datetime
+import pytz
+from APP_Extensions.db import db
+from models import BrokerSettings
+
+websocket_bp = Blueprint('websocket', __name__)
+
+# Global WebSocket instance
+fyers_ws = None
+current_subscriptions = []
+
+def get_fyers_client():
+    """Get FYERS client with access token"""
+    try:
+        broker_row = BrokerSettings.query.filter_by(brokername='fyers').first()
+        if not broker_row or not broker_row.access_token:
+            return None, "No FYERS access token found"
+            
+        access_token = broker_row.access_token
+        client_id = broker_row.clientid
+        
+        fyers = fyersModel.FyersModel(
+            client_id=client_id, 
+            token=access_token, 
+            is_async=False, 
+            log_path=""
+        )
+        
+        return fyers, None
+    except Exception as e:
+        return None, str(e)
+
+@websocket_bp.route('/get_spot_price', methods=['GET'])
+def get_spot_price():
+    """Get current spot price for a symbol"""
+    try:
+        symbol = request.args.get('symbol', '')
+        if not symbol:
+            return jsonify({"error": "Symbol parameter required"}), 400
+            
+        fyers, error = get_fyers_client()
+        if error:
+            return jsonify({"error": error}), 500
+            
+        # Get spot price
+        spot_data = fyers.quotes({"symbols": symbol})
+        
+        if spot_data.get('s') == 'ok' and spot_data.get('d'):
+            spot_price = spot_data['d'][0]['v'].get('lp', 0)
+            return jsonify({
+                "success": True,
+                "symbol": symbol,
+                "spot_price": spot_price,
+                "timestamp": datetime.now(pytz.timezone('Asia/Kolkata')).isoformat()
+            })
+        else:
+            return jsonify({"error": "Failed to get spot price"}), 500
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@websocket_bp.route('/get_option_chain', methods=['GET'])
+def get_option_chain():
+    """Get option chain data with WebSocket subscription"""
+    try:
+        symbol = request.args.get('symbol', '')
+        strike_count = int(request.args.get('strike_count', 10))
+        expiry_timestamp = request.args.get('expiry_timestamp', '')
+        
+        if not symbol:
+            return jsonify({"error": "Symbol parameter required"}), 400
+            
+        fyers, error = get_fyers_client()
+        if error:
+            return jsonify({"error": error}), 500
+            
+        # Get spot price first
+        spot_data = fyers.quotes({"symbols": symbol})
+        spot_price = 0
+        if spot_data.get('s') == 'ok' and spot_data.get('d'):
+            spot_price = spot_data['d'][0]['v'].get('lp', 0)
+            
+        # Get expiry data if no expiry provided
+        if not expiry_timestamp:
+            data = {"symbol": symbol, "strikecount": 1, "timestamp": ""}
+            response = fyers.optionchain(data=data)
+            
+            if response.get('s') == 'ok':
+                expiry_data = response.get('data', {}).get('expiryData', [])
+                return jsonify({
+                    "success": True,
+                    "expiry_data": [{"date": exp["date"], "expiry": exp["expiry"]} for exp in expiry_data],
+                    "strikes": [],
+                    "spot_price": spot_price,
+                    "message": "Select expiry to load option chain"
+                })
+            else:
+                return jsonify({"error": f"Failed to get expiry data: {response.get('message', 'Unknown error')}"}), 500
+        
+        # Get option chain with expiry
+        data = {
+            "symbol": symbol,
+            "strikecount": strike_count,
+            "timestamp": expiry_timestamp
+        }
+        
+        response = fyers.optionchain(data=data)
+        
+        if response.get('s') != 'ok':
+            return jsonify({"error": f"FYERS API Error: {response.get('message', 'Unknown error')}"}), 500
+            
+        option_data = response.get('data', {})
+        options_list = option_data.get('optionsChain', [])
+        
+        if not options_list:
+            return jsonify({"error": "No option data found"}), 500
+            
+        # Calculate ATM strike
+        atm_strike = min(options_list, key=lambda x: abs(x['strike_price'] - spot_price))['strike_price']
+        
+        # Group by strike price
+        strikes = {}
+        symbols_to_subscribe = [symbol]  # Include spot symbol
+        
+        for option in options_list:
+            strike = option.get('strike_price', 0)
+            if strike <= 0:
+                continue
+                
+            if strike not in strikes:
+                strikes[strike] = {
+                    'strike': strike,
+                    'ce_ltp': 0,
+                    'pe_ltp': 0,
+                    'ce_symbol': '',
+                    'pe_symbol': '',
+                    'ce_oi': 0,
+                    'pe_oi': 0,
+                    'is_atm': strike == atm_strike
+                }
+                
+            if option.get('option_type') == 'CE':
+                strikes[strike]['ce_ltp'] = option.get('ltp', 0)
+                strikes[strike]['ce_symbol'] = option.get('symbol', '')
+                strikes[strike]['ce_oi'] = option.get('oi', 0)
+                if option.get('symbol'):
+                    symbols_to_subscribe.append(option.get('symbol'))
+            elif option.get('option_type') == 'PE':
+                strikes[strike]['pe_ltp'] = option.get('ltp', 0)
+                strikes[strike]['pe_symbol'] = option.get('symbol', '')
+                strikes[strike]['pe_oi'] = option.get('oi', 0)
+                if option.get('symbol'):
+                    symbols_to_subscribe.append(option.get('symbol'))
+        
+        strike_list = sorted(strikes.values(), key=lambda x: x['strike'])
+        
+        # Start WebSocket subscription
+        start_websocket_subscription(symbols_to_subscribe)
+        
+        return jsonify({
+            "success": True,
+            "strikes": strike_list,
+            "total_strikes": len(strike_list),
+            "spot_price": spot_price,
+            "atm_strike": atm_strike,
+            "ws_subscribed": symbols_to_subscribe,
+            "timestamp": datetime.now(pytz.timezone('Asia/Kolkata')).isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+def start_websocket_subscription(symbols):
+    """Start WebSocket subscription for given symbols"""
+    global fyers_ws, current_subscriptions
+    
+    try:
+        # Close existing connection if any
+        if fyers_ws:
+            try:
+                fyers_ws.close_connection()
+            except:
+                pass
+        
+        broker_row = BrokerSettings.query.filter_by(brokername='fyers').first()
+        if not broker_row or not broker_row.access_token:
+            print("No FYERS access token found for WebSocket")
+            return
+            
+        access_token = broker_row.access_token
+        client_id = broker_row.clientid
+        
+        def on_message(message):
+            """Handle WebSocket messages"""
+            try:
+                # Process incoming tick data
+                # This will be handled by the frontend via Server-Sent Events or polling
+                print(f"WebSocket message: {message}")
+            except Exception as e:
+                print(f"WebSocket message error: {str(e)}")
+
+        def on_error(error):
+            print(f"WebSocket error: {str(error)}")
+
+        def on_close():
+            print("WebSocket connection closed")
+
+        def on_open():
+            print("WebSocket connection opened")
+            try:
+                fyers_ws.subscribe(symbols=symbols)
+                fyers_ws.keep_alive()
+                print(f"Subscribed to {len(symbols)} symbols")
+            except Exception as e:
+                print(f"Subscription error: {str(e)}")
+
+        # Initialize WebSocket
+        fyers_ws = data_ws.FyersDataSocket(
+            access_token=f"{client_id}:{access_token}",
+            on_message=on_message,
+            on_error=on_error,
+            on_close=on_close,
+            on_open=on_open
+        )
+
+        # Start WebSocket in a separate thread
+        ws_thread = threading.Thread(target=fyers_ws.connect)
+        ws_thread.daemon = True
+        ws_thread.start()
+        
+        current_subscriptions = symbols
+        print(f"WebSocket started for {len(symbols)} symbols")
+        
+    except Exception as e:
+        print(f"WebSocket start error: {str(e)}")
+
+@websocket_bp.route('/stop_websocket', methods=['POST'])
+def stop_websocket():
+    """Stop WebSocket subscription"""
+    global fyers_ws, current_subscriptions
+    
+    try:
+        if fyers_ws:
+            fyers_ws.unsubscribe()
+            fyers_ws.close_connection()
+            fyers_ws = None
+            current_subscriptions = []
+            return jsonify({"success": True, "message": "WebSocket stopped"})
+        else:
+            return jsonify({"success": True, "message": "No active WebSocket connection"})
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@websocket_bp.route('/websocket_status', methods=['GET'])
+def websocket_status():
+    """Get WebSocket connection status"""
+    global fyers_ws, current_subscriptions
+    
+    return jsonify({
+        "connected": fyers_ws is not None,
+        "subscriptions": len(current_subscriptions),
+        "symbols": current_subscriptions
+    })
