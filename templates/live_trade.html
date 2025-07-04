@@ -886,25 +886,7 @@
           </div>
           <!-- Single Option Chain Table -->
           <div id="optionChainContainer" style="max-height: 60vh; overflow-y: auto;">
-            <!-- Column Visibility Controls - positioned above table -->
-            <div class="d-flex justify-content-end align-items-center mb-1" style="padding: 5px 0;">
-              <div class="dropdown">
-                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="columnVisibilityDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                  <i class="fas fa-columns"></i> Columns
-                </button>
-                <div class="dropdown-menu dropdown-menu-end p-3" aria-labelledby="columnVisibilityDropdown" style="width: 300px; max-height: 400px; overflow-y: auto;">
-                  <div class="d-flex justify-content-between mb-2">
-                    <button class="btn btn-sm btn-outline-primary" id="selectAllColumns">Select All</button>
-                    <button class="btn btn-sm btn-outline-secondary" id="deselectAllColumns">Deselect All</button>
-                    <button class="btn btn-sm btn-outline-info" id="resetDefaultColumns">Reset</button>
-                  </div>
-                  <hr class="my-2">
-                  <div id="columnCheckboxes">
-                    <!-- Checkboxes will be populated by JavaScript -->
-                  </div>
-                </div>
-              </div>
-            </div>
+
             <div class="table-container">
               <table class="table table-sm mb-0" id="optionChainTable">
                 <thead>
@@ -948,6 +930,24 @@
                     <th>Volga</th>
                     <th>Veta</th>
                     <th>PE B/S</th>
+                    <th style="width: 80px; position: relative;">
+                      <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="columnVisibilityDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 9px; padding: 2px 6px;">
+                          <i class="fas fa-columns"></i> Columns
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end p-3" aria-labelledby="columnVisibilityDropdown" style="width: 300px; max-height: 400px; overflow-y: auto;">
+                          <div class="d-flex justify-content-between mb-2">
+                            <button class="btn btn-sm btn-outline-primary" id="selectAllColumns">Select All</button>
+                            <button class="btn btn-sm btn-outline-secondary" id="deselectAllColumns">Deselect All</button>
+                            <button class="btn btn-sm btn-outline-info" id="resetDefaultColumns">Reset</button>
+                          </div>
+                          <hr class="my-2">
+                          <div id="columnCheckboxes">
+                            <!-- Checkboxes will be populated by JavaScript -->
+                          </div>
+                        </div>
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

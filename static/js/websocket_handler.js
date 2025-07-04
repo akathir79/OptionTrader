@@ -329,7 +329,9 @@ class WebSocketHandler {
             `<td class="text-center pe-volga">0</td>`,
             `<td class="text-center pe-veta">0</td>`,
             // PE B/S
-            `<td class="text-center buy_sell_cell pe-buy-sell-cell"><span class="option_button buy_button">B</span><span class="option_button sell_button">S</span></td>`
+            `<td class="text-center buy_sell_cell pe-buy-sell-cell"><span class="option_button buy_button">B</span><span class="option_button sell_button">S</span></td>`,
+            // Empty cell for Columns dropdown header
+            `<td></td>`
         ];
         
         row.innerHTML = cells.join('');

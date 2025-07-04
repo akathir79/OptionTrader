@@ -9,7 +9,7 @@ class ColumnVisibilityController {
             'CE B/S', 'Veta', 'Volga', 'Charm', 'Vanna', 'Vega', 'Theta', 'Gamma', 'Chng', 'Bid Qty',
             'Bid', 'Ask', 'Ask Qty', 'Chng in OI', 'OI', 'Vol', 'Chart', 'LTP', 'Δ', 'Strike',
             'Δ', 'LTP', 'Chart', 'Vol', 'OI', 'Chng in OI', 'Ask Qty', 'Ask', 'Bid', 'Bid Qty',
-            'Chng', 'Gamma', 'Theta', 'Vega', 'Vanna', 'Charm', 'Volga', 'Veta', 'PE B/S'
+            'Chng', 'Gamma', 'Theta', 'Vega', 'Vanna', 'Charm', 'Volga', 'Veta', 'PE B/S', 'Columns'
         ];
         this.columnStates = this.getDefaultColumnStates();
         this.init();
@@ -26,12 +26,15 @@ class ColumnVisibilityController {
         // Default visible columns for essential trading data
         const defaults = {};
         // Make essential columns visible by default
-        // Updated for 39-column structure: Vol(15), Chart(16), LTP(17), Strike(19), LTP(20), Chart(21), Vol(22), OI(23), PE B/S(38)
+        // Updated for 40-column structure: Vol(15), Chart(16), LTP(17), Strike(19), LTP(20), Chart(21), Vol(22), OI(23), PE B/S(38), Columns(39) hidden
         const essentialColumns = [0, 8, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 28, 38];
         
-        for (let i = 0; i < 39; i++) {
+        for (let i = 0; i < 40; i++) {
             defaults[i] = essentialColumns.includes(i);
         }
+        
+        // Hide the Columns dropdown column (index 39) by always making it invisible
+        defaults[39] = false;
         
         return defaults;
     }
@@ -43,6 +46,9 @@ class ColumnVisibilityController {
         container.innerHTML = '';
         
         this.columnNames.forEach((name, index) => {
+            // Skip the Columns dropdown column (index 39) from checkbox creation
+            if (index === 39) return;
+            
             const isChecked = this.columnStates[index] ? 'checked' : '';
             const checkboxHtml = `
                 <div class="form-check mb-1">
@@ -103,8 +109,9 @@ class ColumnVisibilityController {
 
 
     selectAllColumns() {
-        for (let i = 0; i < 39; i++) {
-            this.columnStates[i] = true;
+        for (let i = 0; i < 40; i++) {
+            // Don't show the Columns dropdown column (index 39)
+            this.columnStates[i] = (i !== 39);
         }
         this.updateCheckboxes();
         this.applyColumnVisibility();
@@ -113,7 +120,7 @@ class ColumnVisibilityController {
     }
 
     deselectAllColumns() {
-        for (let i = 0; i < 39; i++) {
+        for (let i = 0; i < 40; i++) {
             this.columnStates[i] = false;
         }
         this.updateCheckboxes();
