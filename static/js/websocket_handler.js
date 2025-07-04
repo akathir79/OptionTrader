@@ -71,6 +71,7 @@ class WebSocketHandler {
             
             // Start option chain updates if expiry is provided
             if (expiry) {
+                console.log(`About to start option chain with symbol: ${this.currentSymbol}, expiry: ${this.currentExpiry}`);
                 await this.startOptionChainUpdates();
             }
             
@@ -355,8 +356,7 @@ class WebSocketHandler {
             });
         
         this.isConnected = false;
-        this.currentSymbol = null;
-        this.currentExpiry = null;
+        // Don't clear currentSymbol and currentExpiry here as they're needed for the next request
     }
     
     getStatus() {

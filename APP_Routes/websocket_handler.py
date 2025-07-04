@@ -76,7 +76,10 @@ def get_option_chain():
         strike_count = int(request.args.get('strike_count', 10))
         expiry_timestamp = request.args.get('expiry_timestamp', '')
         
+        print(f"OPTION CHAIN REQUEST: symbol='{symbol}', strike_count={strike_count}, expiry='{expiry_timestamp}'")
+        
         if not symbol:
+            print("ERROR: No symbol provided")
             return jsonify({"error": "Symbol parameter required"}), 400
             
         fyers, error = get_fyers_client()
