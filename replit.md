@@ -101,3 +101,4 @@ Preferred communication style: Simple, everyday language.
 
 Changelog:
 - July 04, 2025. Initial setup
+- July 04, 2025. Simplified option chain table - removed complex column visibility, created clean 7-column layout (CE B/S, LTP, Δ, Strike, Δ, LTP, PE B/S)

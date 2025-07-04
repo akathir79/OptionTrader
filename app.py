@@ -30,7 +30,7 @@ app.register_blueprint(historical_bp)
 
 @app.route("/")
 def live_trade():
-    return render_template("live_trade.html")
+    return render_template("live_trade_simple.html")
 
 
 @app.route('/get_access_token', methods=['GET'])
