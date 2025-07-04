@@ -290,6 +290,7 @@ class WebSocketHandler {
             `<td class="text-center ce-veta">0</td>`,
             `<td class="text-center ce-volga">0</td>`,
             `<td class="text-center ce-charm">0</td>`,
+            `<td class="text-center ce-vanna">0</td>`,
             `<td class="text-center ce-vega">0</td>`,
             `<td class="text-center ce-theta">0</td>`,
             `<td class="text-center ce-gamma">0</td>`,
