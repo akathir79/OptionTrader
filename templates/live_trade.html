@@ -705,7 +705,7 @@
                       <small class="text-muted me-1">Change %:</small><strong class="text-success">+0.08%</strong>
                     </div>
                     <div class="text-center">
-                      <small class="text-muted me-1">LTP:</small><strong class="text-secondary">23,608</strong>
+                      <small class="text-muted me-1">LTP:</small><strong id="spot-price" class="text-secondary">-</strong>
                     </div>
                   </div>
                 </div>
@@ -1198,6 +1198,9 @@
 
 <!-- Broker settings -->
 <script src="{{ url_for('static', filename='js/broker_settings.js') }}"></script>
+
+<!-- Spot price loader -->
+<script src="{{ url_for('static', filename='js/spot_price_loader.js') }}"></script>
 
 
 
