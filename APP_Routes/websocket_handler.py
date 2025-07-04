@@ -68,7 +68,7 @@ def get_spot_price():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@websocket_bp.route('/get_option_chain', methods=['GET'])
+@websocket_bp.route('/ws_get_option_chain', methods=['GET'])
 def get_option_chain():
     """Get option chain data with WebSocket subscription"""
     try:

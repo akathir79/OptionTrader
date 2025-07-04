@@ -216,7 +216,7 @@ class WebSocketHandler {
         }
         
         try {
-            const url = `/get_option_chain?symbol=${encodeURIComponent(this.currentSymbol)}&expiry_timestamp=${encodeURIComponent(this.currentExpiry)}&strike_count=${this.strikeCount}`;
+            const url = `/ws_get_option_chain?symbol=${encodeURIComponent(this.currentSymbol)}&expiry_timestamp=${encodeURIComponent(this.currentExpiry)}&strike_count=${this.strikeCount}`;
             console.log(`Making API call to: ${url}`);
             console.log(`Just before fetch - Symbol: "${this.currentSymbol}", Expiry: "${this.currentExpiry}"`);
             
