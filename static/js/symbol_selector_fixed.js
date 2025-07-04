@@ -275,11 +275,6 @@ document.addEventListener("DOMContentLoaded", () => {
           window.tradingState.currentSymbol = data.symbol_code;
           window.tradingState.currentLotSize = data.lot_size;
           
-          // Load spot price for the selected symbol
-          if (typeof loadSpotPriceForSymbol === 'function') {
-            loadSpotPriceForSymbol(data.symbol_code);
-          }
-          
           console.log(`Symbol lookup: ${data.symbol_code}, Lot Size: ${data.lot_size}`);
         } else {
           console.warn("Symbol lookup failed:", data.error);
