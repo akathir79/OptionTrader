@@ -153,6 +153,8 @@ class WebSocketHandler {
         const spotPriceElement = document.getElementById('spotPrice');
         if (spotPriceElement) {
             spotPriceElement.textContent = this.formatPrice(spotPrice);
+            spotPriceElement.classList.remove('text-muted');
+            spotPriceElement.classList.add('text-primary');
             spotPriceElement.classList.add('spot-price-updated');
             setTimeout(() => {
                 spotPriceElement.classList.remove('spot-price-updated');
@@ -182,9 +184,11 @@ class WebSocketHandler {
             atmStrike = Math.round(spotPrice / 5) * 5;
         }
         
-        // Update ATM display
-        if (this.atmElement) {
-            this.atmElement.textContent = atmStrike;
+        // Update ATM display and make it visible
+        const atmElement = document.getElementById('atmDisplay');
+        if (atmElement) {
+            atmElement.textContent = atmStrike;
+            atmElement.style.display = 'inline-block';
         }
         
         // Update ATM highlighting in option chain table
