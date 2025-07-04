@@ -266,21 +266,21 @@ class WebSocketHandler {
         const isPutITM = strike.strike >= strike.strike; // Simplified for now
         
         row.innerHTML = `
+            <td class="text-center buy_sell_cell"><span class="option_button buy_button">B</span><span class="option_button sell_button">S</span></td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
             <td class="text-center">${strike.ce_oi || 0}</td>
-            <td class="text-center">${strike.ce_oi || 0}</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
             <td class="text-center">0</td>
             <td class="text-center call-ltp ${isCallITM ? 'itm' : 'otm'}" data-symbol="${strike.ce_symbol}">
                 ${this.formatPrice(strike.ce_ltp)}
@@ -292,20 +292,21 @@ class WebSocketHandler {
                 ${this.formatPrice(strike.pe_ltp)}
             </td>
             <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
             <td class="text-center">${strike.pe_oi || 0}</td>
-            <td class="text-center">${strike.pe_oi || 0}</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center">0</td>
+            <td class="text-center buy_sell_cell"><span class="option_button buy_button">B</span><span class="option_button sell_button">S</span></td>
         `;
         
         return row;
