@@ -292,9 +292,11 @@ class WebSocketHandler {
             <td class="text-center ce-ltp call-ltp ${isCallITM ? 'itm' : 'otm'}" data-symbol="${strike.ce_symbol}">
                 ${this.formatPrice(strike.ce_ltp)}
             </td>
+            <td class="microchart-cell" id="ce-chart-${strike.strike}"></td>
             <td class="text-center ce-delta">0</td>
             <td class="text-center strike-price font-weight-bold">${strike.strike}</td>
             <td class="text-center pe-delta">0</td>
+            <td class="microchart-cell" id="pe-chart-${strike.strike}"></td>
             <td class="text-center pe-ltp put-ltp ${isPutITM ? 'itm' : 'otm'}" data-symbol="${strike.pe_symbol}">
                 ${this.formatPrice(strike.pe_ltp)}
             </td>
@@ -327,42 +329,18 @@ class WebSocketHandler {
             this.microchartManager.clearAllCharts();
         }
         
-        // Add chart containers to LTP cells
+        // Load charts for each strike using dedicated chart columns
         strikes.forEach(strike => {
-            // Add Call chart to CE LTP cell
+            // Load Call chart in dedicated CE chart column
             if (strike.ce_symbol) {
-                const ceLtpCell = document.querySelector(`td.ce-ltp[data-symbol="${strike.ce_symbol}"]`);
-                if (ceLtpCell) {
-                    // Create container for microchart
-                    const chartContainer = document.createElement('div');
-                    chartContainer.className = 'microchart-container';
-                    chartContainer.id = `ce-chart-${strike.strike}`;
-                    chartContainer.style.cssText = 'width: 60px; height: 30px; position: absolute; right: 5px; top: 50%; transform: translateY(-50%);';
-                    
-                    // Make cell position relative for absolute positioning
-                    ceLtpCell.style.position = 'relative';
-                    ceLtpCell.appendChild(chartContainer);
-                    
-                    this.microchartManager.addChart(strike.ce_symbol, chartContainer.id);
-                }
+                const ceContainerId = `ce-chart-${strike.strike}`;
+                this.microchartManager.addChart(strike.ce_symbol, ceContainerId);
             }
             
-            // Add Put chart to PE LTP cell
+            // Load Put chart in dedicated PE chart column
             if (strike.pe_symbol) {
-                const peLtpCell = document.querySelector(`td.pe-ltp[data-symbol="${strike.pe_symbol}"]`);
-                if (peLtpCell) {
-                    // Create container for microchart
-                    const chartContainer = document.createElement('div');
-                    chartContainer.className = 'microchart-container';
-                    chartContainer.id = `pe-chart-${strike.strike}`;
-                    chartContainer.style.cssText = 'width: 60px; height: 30px; position: absolute; right: 5px; top: 50%; transform: translateY(-50%);';
-                    
-                    // Make cell position relative for absolute positioning
-                    peLtpCell.style.position = 'relative';
-                    peLtpCell.appendChild(chartContainer);
-                    
-                    this.microchartManager.addChart(strike.pe_symbol, chartContainer.id);
-                }
+                const peContainerId = `pe-chart-${strike.strike}`;
+                this.microchartManager.addChart(strike.pe_symbol, peContainerId);
             }
         });
         
