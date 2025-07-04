@@ -53,6 +53,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Strike Count Dropdown Event Listener
+  const strikeCountSelect = document.getElementById("strikeCountSelect");
+  strikeCountSelect?.addEventListener("change", () => {
+    const selectedCount = strikeCountSelect.value;
+    console.log("Strike count changed to:", selectedCount);
+    // TODO: Implement option chain filtering based on strike count
+    // This will filter the option chain table to show only the selected number of ITM strikes
+    // or ALL strikes if "ALL" is selected
+  });
+
   /* =================================================================
      FETCH: expiry for index / symbol
      ================================================================= */
