@@ -13,6 +13,7 @@ class WebSocketHandler {
         this.spotPriceElement = null;
         this.atmElement = null;
         this.optionChainTable = null;
+        this.microchartManager = null;
         
         this.init();
     }
@@ -25,6 +26,9 @@ class WebSocketHandler {
         
         // Listen for symbol/expiry changes
         this.setupEventListeners();
+        
+        // Initialize microchart manager
+        this.microchartManager = new MicroChartManager();
         
         console.log('WebSocket handler initialized');
     }
@@ -250,6 +254,9 @@ class WebSocketHandler {
             const row = this.createOptionChainRow(strike);
             tableBody.appendChild(row);
         });
+        
+        // Load microcharts for all option symbols
+        this.loadMicroCharts(strikes);
     }
     
     createOptionChainRow(strike) {
@@ -285,9 +292,11 @@ class WebSocketHandler {
             <td class="text-center call-ltp ${isCallITM ? 'itm' : 'otm'}" data-symbol="${strike.ce_symbol}">
                 ${this.formatPrice(strike.ce_ltp)}
             </td>
+            <td class="microchart-cell" id="ce-chart-${strike.strike}"></td>
             <td class="text-center">0</td>
             <td class="text-center strike-price font-weight-bold">${strike.strike}</td>
             <td class="text-center">0</td>
+            <td class="microchart-cell" id="pe-chart-${strike.strike}"></td>
             <td class="text-center put-ltp ${isPutITM ? 'itm' : 'otm'}" data-symbol="${strike.pe_symbol}">
                 ${this.formatPrice(strike.pe_ltp)}
             </td>
@@ -310,6 +319,33 @@ class WebSocketHandler {
         `;
         
         return row;
+    }
+    
+    async loadMicroCharts(strikes) {
+        console.log('Loading microcharts for strikes:', strikes);
+        
+        // Clear existing charts
+        if (this.microchartManager) {
+            this.microchartManager.clearAllCharts();
+        }
+        
+        // Load charts for each strike
+        strikes.forEach(strike => {
+            // Load Call chart
+            if (strike.ce_symbol) {
+                const ceContainerId = `ce-chart-${strike.strike}`;
+                this.microchartManager.addChart(strike.ce_symbol, ceContainerId);
+            }
+            
+            // Load Put chart
+            if (strike.pe_symbol) {
+                const peContainerId = `pe-chart-${strike.strike}`;
+                this.microchartManager.addChart(strike.pe_symbol, peContainerId);
+            }
+        });
+        
+        // Load all charts
+        await this.microchartManager.loadAllCharts();
     }
     
     async refreshOptionChain() {

@@ -24,6 +24,10 @@ app.register_blueprint(bp)                          # ← same symbol as above
 from APP_Routes.websocket_handler import websocket_bp
 app.register_blueprint(websocket_bp)
 
+# Import and register Historical Data blueprint
+from APP_Routes.historical_data import historical_bp
+app.register_blueprint(historical_bp)
+
 @app.route("/")
 def live_trade():
     return render_template("live_trade.html")
