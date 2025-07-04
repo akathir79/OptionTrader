@@ -95,15 +95,14 @@ class WebSocketHandler {
         if (!this.currentSymbol) return;
         
         try {
-            // Convert symbol to proper FYERS format
-            const fyersSymbol = this.convertToFyersSymbol(this.currentSymbol);
-            
-            const response = await fetch(`/get_spot_price?symbol=${encodeURIComponent(fyersSymbol)}`);
+            // Use symbol as-is since it should already be in correct format from symbol lookup
+            const response = await fetch(`/get_spot_price?symbol=${encodeURIComponent(this.currentSymbol)}`);
             const data = await response.json();
             
             if (data.success) {
                 this.updateSpotPriceDisplay(data.spot_price);
                 this.updateATMDisplay(data.spot_price);
+                console.log(`Spot price updated: ${data.spot_price} for ${this.currentSymbol}`);
             } else {
                 console.error('Spot price update failed:', data.error);
             }
@@ -204,19 +203,20 @@ class WebSocketHandler {
     }
     
     async startOptionChainUpdates() {
-        if (!this.currentSymbol || !this.currentExpiry) return;
+        if (!this.currentSymbol || !this.currentExpiry) {
+            console.error('Missing symbol and/or expiry:', this.currentSymbol, this.currentExpiry);
+            return;
+        }
         
         try {
-            // Convert symbol to proper FYERS format
-            const fyersSymbol = this.convertToFyersSymbol(this.currentSymbol);
-            
-            const response = await fetch(`/get_option_chain?symbol=${encodeURIComponent(fyersSymbol)}&expiry_timestamp=${encodeURIComponent(this.currentExpiry)}&strike_count=${this.strikeCount}`);
+            // Use symbol as-is since it should already be in correct format from symbol lookup
+            const response = await fetch(`/get_option_chain?symbol=${encodeURIComponent(this.currentSymbol)}&expiry_timestamp=${encodeURIComponent(this.currentExpiry)}&strike_count=${this.strikeCount}`);
             const data = await response.json();
             
             if (data.success) {
                 this.updateOptionChainTable(data.strikes);
                 this.updateATMDisplay(data.spot_price);
-                console.log(`Option chain loaded: ${data.strikes.length} strikes`);
+                console.log(`Option chain loaded: ${data.strikes.length} strikes for ${this.currentSymbol}`);
             } else {
                 console.error('Option chain update failed:', data.error);
                 this.showError(data.error);

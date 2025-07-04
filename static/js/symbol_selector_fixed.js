@@ -33,7 +33,12 @@ document.addEventListener("DOMContentLoaded", () => {
     lookupSymbolAndLotSize('index', indexSelect.value, '');
     // Start WebSocket for spot price updates
     if (window.webSocketHandler) {
-      window.webSocketHandler.startLiveData(indexSelect.value);
+      // Use the proper symbol from trading state after lookup
+      setTimeout(() => {
+        const currentSymbol = window.tradingState?.currentSymbol || indexSelect.value;
+        console.log(`Starting WebSocket for index symbol: ${currentSymbol}`);
+        window.webSocketHandler.startLiveData(currentSymbol);
+      }, 100); // Small delay to allow symbol lookup to complete
     }
   });
 
@@ -241,8 +246,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Start WebSocket for option chain updates
     if (window.webSocketHandler) {
-      const currentSymbol = indexSelect.value || (exchangeSel.value && extraSelect.value ? `${exchangeSel.value}:${extraSelect.value}` : null);
+      // Use the proper symbol from trading state or lookup
+      const currentSymbol = window.tradingState?.currentSymbol || 
+                           indexSelect.value || 
+                           (exchangeSel.value && extraSelect.value ? `${exchangeSel.value}:${extraSelect.value}` : null);
       if (currentSymbol) {
+        console.log(`Starting WebSocket for symbol: ${currentSymbol}, expiry: ${e.target.value}`);
         window.webSocketHandler.startLiveData(currentSymbol, e.target.value);
       }
     }
