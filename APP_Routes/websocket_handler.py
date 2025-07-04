@@ -273,17 +273,20 @@ def start_websocket_subscription(symbols):
             access_token=f"{client_id}:{access_token}",
             on_message=on_message,
             on_error=on_error,
-            on_close=on_close,
-            on_open=on_open
+            on_close=on_close
         )
 
-        # Start WebSocket in a separate thread
-        ws_thread = threading.Thread(target=fyers_ws.connect)
-        ws_thread.daemon = True
-        ws_thread.start()
+        # Connect WebSocket and subscribe
+        fyers_ws.connect()
         
-        current_subscriptions = symbols
-        print(f"WebSocket started for {len(symbols)} symbols")
+        # Subscribe to symbols after connection
+        try:
+            fyers_ws.subscribe(symbols=symbols)
+            fyers_ws.keep_running()
+            print(f"WebSocket connected and subscribed to {len(symbols)} symbols")
+            current_subscriptions = symbols
+        except Exception as e:
+            print(f"Subscription error: {str(e)}")
         
     except Exception as e:
         print(f"WebSocket start error: {str(e)}")
