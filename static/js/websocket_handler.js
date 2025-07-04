@@ -289,17 +289,17 @@ class WebSocketHandler {
             <td class="text-center ce-oi-change ${strike.ce_oich >= 0 ? 'text-success' : 'text-danger'}">${strike.ce_oich || 0}</td>
             <td class="text-center ce-oi">${strike.ce_oi || 0}</td>
             <td class="text-center ce-volume">${strike.ce_volume || 0}</td>
+            <td class="microchart-cell" id="ce-chart-${strike.strike}"></td>
             <td class="text-center ce-ltp call-ltp ${isCallITM ? 'itm' : 'otm'}" data-symbol="${strike.ce_symbol}">
                 ${this.formatPrice(strike.ce_ltp)}
             </td>
-            <td class="microchart-cell" id="ce-chart-${strike.strike}"></td>
             <td class="text-center ce-delta">0</td>
             <td class="text-center strike-price font-weight-bold">${strike.strike}</td>
             <td class="text-center pe-delta">0</td>
-            <td class="microchart-cell" id="pe-chart-${strike.strike}"></td>
             <td class="text-center pe-ltp put-ltp ${isPutITM ? 'itm' : 'otm'}" data-symbol="${strike.pe_symbol}">
                 ${this.formatPrice(strike.pe_ltp)}
             </td>
+            <td class="microchart-cell" id="pe-chart-${strike.strike}"></td>
             <td class="text-center pe-volume">${strike.pe_volume || 0}</td>
             <td class="text-center pe-oi">${strike.pe_oi || 0}</td>
             <td class="text-center pe-oi-change ${strike.pe_oich >= 0 ? 'text-success' : 'text-danger'}">${strike.pe_oich || 0}</td>
