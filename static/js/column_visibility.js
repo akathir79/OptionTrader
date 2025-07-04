@@ -26,8 +26,12 @@ class ColumnVisibilityController {
         // Default visible columns for essential trading data
         const defaults = {};
         // Make essential columns visible by default
-        // Default visible columns: CE B/S(0), LTP(17), Δ(18), Strike(19), Δ(20), LTP(21), PE B/S(38)
-        const essentialColumns = [0, 17, 18, 19, 20, 21, 38];
+        // Default visible columns: Core Trading + Volume/OI + Order Book (as requested)
+        const essentialColumns = [
+            0, 17, 18, 19, 20, 21, 38, // Core Trading: CE B/S, LTP, Δ, Strike, Δ, LTP, PE B/S
+            8, 13, 14, 15, 22, 23, // Volume & OI: CE Chng in OI, CE OI, CE Vol, PE Vol, PE OI, PE Chng in OI
+            1, 2, 3, 4, 5, 24, 25, 26, 27, 28 // Order Book: CE Chng, CE Bid Qty, CE Bid, CE Ask, CE Ask Qty, PE Chng, PE Bid Qty, PE Bid, PE Ask, PE Ask Qty
+        ];
         
         for (let i = 0; i < 40; i++) {
             defaults[i] = essentialColumns.includes(i);
@@ -45,20 +49,54 @@ class ColumnVisibilityController {
         
         container.innerHTML = '';
         
-        this.columnNames.forEach((name, index) => {
-            // Skip the Columns dropdown column (index 39) from checkbox creation
-            if (index === 39) return;
+        // Define column groups
+        const columnGroups = [
+            {
+                title: 'Core Trading Columns',
+                columns: [0, 17, 18, 19, 20, 21, 38] // CE B/S, LTP, Δ, Strike, Δ, LTP, PE B/S
+            },
+            {
+                title: 'Volume & Open Interest',
+                columns: [1, 8, 13, 14, 15, 22, 23, 24] // CE Chng, CE Chng in OI, CE OI, CE Vol, PE Vol, PE OI, PE Chng in OI, PE Chng
+            },
+            {
+                title: 'Order Book',
+                columns: [2, 3, 4, 5, 25, 26, 27, 28] // CE Bid Qty, CE Bid, CE Ask, CE Ask Qty, PE Bid Qty, PE Bid, PE Ask, PE Ask Qty
+            },
+            {
+                title: 'Greeks',
+                columns: [6, 7, 9, 10, 11, 12, 29, 30, 31, 32, 33, 34, 35, 36] // CE Greeks and PE Greeks
+            },
+            {
+                title: 'Charts',
+                columns: [16, 37] // CE Chart, PE Chart
+            }
+        ];
+        
+        // Create grouped checkboxes
+        columnGroups.forEach(group => {
+            // Group header
+            const groupHeader = document.createElement('div');
+            groupHeader.className = 'fw-bold text-primary mb-2 mt-3';
+            groupHeader.style.fontSize = '11px';
+            groupHeader.textContent = group.title;
+            container.appendChild(groupHeader);
             
-            const isChecked = this.columnStates[index] ? 'checked' : '';
-            const checkboxHtml = `
-                <div class="form-check mb-1">
-                    <input class="form-check-input" type="checkbox" id="col_${index}" data-column="${index}" ${isChecked}>
-                    <label class="form-check-label" for="col_${index}">
-                        ${name}
-                    </label>
-                </div>
-            `;
-            container.innerHTML += checkboxHtml;
+            // Group checkboxes
+            group.columns.forEach(index => {
+                if (index < this.columnNames.length) {
+                    const isChecked = this.columnStates[index] ? 'checked' : '';
+                    const checkboxDiv = document.createElement('div');
+                    checkboxDiv.className = 'form-check mb-1';
+                    checkboxDiv.innerHTML = `
+                        <input class="form-check-input" type="checkbox" id="col_${index}" data-column="${index}" ${isChecked}>
+                        <label class="form-check-label" for="col_${index}" style="font-size: 11px;">
+                            ${this.columnNames[index]}
+                        </label>
+                    `;
+                    container.appendChild(checkboxDiv);
+                }
+            });
         });
     }
 
