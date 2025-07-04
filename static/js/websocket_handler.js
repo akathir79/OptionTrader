@@ -53,6 +53,9 @@ class WebSocketHandler {
     
     async startLiveData(symbol, expiry = null) {
         try {
+            // Stop existing subscriptions before starting new ones
+            this.stop();
+            
             this.currentSymbol = symbol;
             this.currentExpiry = expiry;
             
@@ -92,7 +95,10 @@ class WebSocketHandler {
         if (!this.currentSymbol) return;
         
         try {
-            const response = await fetch(`/get_spot_price?symbol=${encodeURIComponent(this.currentSymbol)}`);
+            // Convert symbol to proper FYERS format
+            const fyersSymbol = this.convertToFyersSymbol(this.currentSymbol);
+            
+            const response = await fetch(`/get_spot_price?symbol=${encodeURIComponent(fyersSymbol)}`);
             const data = await response.json();
             
             if (data.success) {
@@ -106,6 +112,31 @@ class WebSocketHandler {
         }
     }
     
+    convertToFyersSymbol(symbol) {
+        // Map common index symbols to FYERS format
+        const symbolMap = {
+            'NIFTY': 'NSE:NIFTY50-INDEX',
+            'NIFTY 50': 'NSE:NIFTY50-INDEX',
+            'BANK NIFTY': 'NSE:NIFTYBANK-INDEX',
+            'BANKNIFTY': 'NSE:NIFTYBANK-INDEX',
+            'SENSEX': 'BSE:SENSEX-INDEX',
+            'BANKEX': 'BSE:BANKEX-INDEX'
+        };
+        
+        // If symbol is already in proper format (contains :), return as is
+        if (symbol.includes(':')) {
+            return symbol;
+        }
+        
+        // Check if it's a mapped symbol
+        if (symbolMap[symbol.toUpperCase()]) {
+            return symbolMap[symbol.toUpperCase()];
+        }
+        
+        // Default to NSE format for individual stocks
+        return `NSE:${symbol}-EQ`;
+    }
+    
     updateSpotPriceDisplay(spotPrice) {
         // Update spot price in the market data carousel
         const spotPriceElements = document.querySelectorAll('.spot-price-value');
@@ -113,11 +144,28 @@ class WebSocketHandler {
             element.textContent = this.formatPrice(spotPrice);
         });
         
-        // Update hardcoded spot price label
-        const spotPriceLabel = document.querySelector('.spot-price-label');
-        if (spotPriceLabel) {
-            spotPriceLabel.textContent = `Spot Price: ${this.formatPrice(spotPrice)}`;
+        // Update the specific spot price element with ID "spotPrice"
+        const spotPriceElement = document.getElementById('spotPrice');
+        if (spotPriceElement) {
+            spotPriceElement.textContent = this.formatPrice(spotPrice);
+            spotPriceElement.classList.add('spot-price-updated');
+            setTimeout(() => {
+                spotPriceElement.classList.remove('spot-price-updated');
+            }, 500);
         }
+        
+        // Update any element containing "Spot Price:"
+        const allElements = document.querySelectorAll('*');
+        allElements.forEach(element => {
+            if (element.textContent && element.textContent.includes('Spot Price:')) {
+                const textNodes = this.getTextNodes(element);
+                textNodes.forEach(node => {
+                    if (node.textContent.includes('Spot Price:')) {
+                        node.textContent = node.textContent.replace(/Spot Price:\s*[\d,]+/, `Spot Price: ${this.formatPrice(spotPrice)}`);
+                    }
+                });
+            }
+        });
     }
     
     updateATMDisplay(spotPrice) {
@@ -159,7 +207,10 @@ class WebSocketHandler {
         if (!this.currentSymbol || !this.currentExpiry) return;
         
         try {
-            const response = await fetch(`/get_option_chain?symbol=${encodeURIComponent(this.currentSymbol)}&expiry_timestamp=${encodeURIComponent(this.currentExpiry)}&strike_count=${this.strikeCount}`);
+            // Convert symbol to proper FYERS format
+            const fyersSymbol = this.convertToFyersSymbol(this.currentSymbol);
+            
+            const response = await fetch(`/get_option_chain?symbol=${encodeURIComponent(fyersSymbol)}&expiry_timestamp=${encodeURIComponent(this.currentExpiry)}&strike_count=${this.strikeCount}`);
             const data = await response.json();
             
             if (data.success) {
@@ -255,7 +306,26 @@ class WebSocketHandler {
     }
     
     formatPrice(price) {
-        return parseFloat(price).toFixed(2);
+        const numPrice = parseFloat(price);
+        if (numPrice >= 1000) {
+            return numPrice.toLocaleString('en-IN');
+        }
+        return numPrice.toFixed(2);
+    }
+    
+    getTextNodes(element) {
+        const walker = document.createTreeWalker(
+            element,
+            NodeFilter.SHOW_TEXT,
+            null,
+            false
+        );
+        const textNodes = [];
+        let node;
+        while (node = walker.nextNode()) {
+            textNodes.push(node);
+        }
+        return textNodes;
     }
     
     showError(message) {
@@ -280,6 +350,8 @@ class WebSocketHandler {
             });
         
         this.isConnected = false;
+        this.currentSymbol = null;
+        this.currentExpiry = null;
     }
     
     getStatus() {
