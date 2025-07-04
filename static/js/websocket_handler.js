@@ -274,47 +274,45 @@ class WebSocketHandler {
         
         row.innerHTML = `
             <td class="text-center buy_sell_cell"><span class="option_button buy_button">B</span><span class="option_button sell_button">S</span></td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center ${strike.ce_ltpch >= 0 ? 'text-success' : 'text-danger'}">${strike.ce_ltpch || 0}</td>
-            <td class="text-center">${strike.ce_bid_qty || 0}</td>
-            <td class="text-center">${this.formatPrice(strike.ce_bid)}</td>
-            <td class="text-center">${this.formatPrice(strike.ce_ask)}</td>
-            <td class="text-center">${strike.ce_ask_qty || 0}</td>
-            <td class="text-center ${strike.ce_oich >= 0 ? 'text-success' : 'text-danger'}">${strike.ce_oich || 0}</td>
-            <td class="text-center">${strike.ce_oi || 0}</td>
-            <td class="text-center">${strike.ce_volume || 0}</td>
-            <td class="text-center call-ltp ${isCallITM ? 'itm' : 'otm'}" data-symbol="${strike.ce_symbol}">
+            <td class="text-center ce-veta">0</td>
+            <td class="text-center ce-volga">0</td>
+            <td class="text-center ce-charm">0</td>
+            <td class="text-center ce-vanna">0</td>
+            <td class="text-center ce-vega">0</td>
+            <td class="text-center ce-theta">0</td>
+            <td class="text-center ce-gamma">0</td>
+            <td class="text-center ce-change ${strike.ce_ltpch >= 0 ? 'text-success' : 'text-danger'}">${strike.ce_ltpch || 0}</td>
+            <td class="text-center ce-bid-qty">${strike.ce_bid_qty || 0}</td>
+            <td class="text-center ce-bid">${this.formatPrice(strike.ce_bid)}</td>
+            <td class="text-center ce-ask">${this.formatPrice(strike.ce_ask)}</td>
+            <td class="text-center ce-ask-qty">${strike.ce_ask_qty || 0}</td>
+            <td class="text-center ce-oi-change ${strike.ce_oich >= 0 ? 'text-success' : 'text-danger'}">${strike.ce_oich || 0}</td>
+            <td class="text-center ce-oi">${strike.ce_oi || 0}</td>
+            <td class="text-center ce-volume">${strike.ce_volume || 0}</td>
+            <td class="text-center ce-ltp call-ltp ${isCallITM ? 'itm' : 'otm'}" data-symbol="${strike.ce_symbol}">
                 ${this.formatPrice(strike.ce_ltp)}
             </td>
-            <td class="microchart-cell" id="ce-chart-${strike.strike}"></td>
-            <td class="text-center">0</td>
+            <td class="text-center ce-delta">0</td>
             <td class="text-center strike-price font-weight-bold">${strike.strike}</td>
-            <td class="text-center">0</td>
-            <td class="microchart-cell" id="pe-chart-${strike.strike}"></td>
-            <td class="text-center put-ltp ${isPutITM ? 'itm' : 'otm'}" data-symbol="${strike.pe_symbol}">
+            <td class="text-center pe-delta">0</td>
+            <td class="text-center pe-ltp put-ltp ${isPutITM ? 'itm' : 'otm'}" data-symbol="${strike.pe_symbol}">
                 ${this.formatPrice(strike.pe_ltp)}
             </td>
-            <td class="text-center">${strike.pe_volume || 0}</td>
-            <td class="text-center">${strike.pe_oi || 0}</td>
-            <td class="text-center ${strike.pe_oich >= 0 ? 'text-success' : 'text-danger'}">${strike.pe_oich || 0}</td>
-            <td class="text-center">${strike.pe_ask_qty || 0}</td>
-            <td class="text-center">${this.formatPrice(strike.pe_ask)}</td>
-            <td class="text-center">${this.formatPrice(strike.pe_bid)}</td>
-            <td class="text-center">${strike.pe_bid_qty || 0}</td>
-            <td class="text-center ${strike.pe_ltpch >= 0 ? 'text-success' : 'text-danger'}">${strike.pe_ltpch || 0}</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
-            <td class="text-center">0</td>
+            <td class="text-center pe-volume">${strike.pe_volume || 0}</td>
+            <td class="text-center pe-oi">${strike.pe_oi || 0}</td>
+            <td class="text-center pe-oi-change ${strike.pe_oich >= 0 ? 'text-success' : 'text-danger'}">${strike.pe_oich || 0}</td>
+            <td class="text-center pe-ask-qty">${strike.pe_ask_qty || 0}</td>
+            <td class="text-center pe-ask">${this.formatPrice(strike.pe_ask)}</td>
+            <td class="text-center pe-bid">${this.formatPrice(strike.pe_bid)}</td>
+            <td class="text-center pe-bid-qty">${strike.pe_bid_qty || 0}</td>
+            <td class="text-center pe-change ${strike.pe_ltpch >= 0 ? 'text-success' : 'text-danger'}">${strike.pe_ltpch || 0}</td>
+            <td class="text-center pe-gamma">0</td>
+            <td class="text-center pe-theta">0</td>
+            <td class="text-center pe-vega">0</td>
+            <td class="text-center pe-vanna">0</td>
+            <td class="text-center pe-charm">0</td>
+            <td class="text-center pe-volga">0</td>
+            <td class="text-center pe-veta">0</td>
             <td class="text-center buy_sell_cell"><span class="option_button buy_button">B</span><span class="option_button sell_button">S</span></td>
         `;
         
@@ -329,18 +327,42 @@ class WebSocketHandler {
             this.microchartManager.clearAllCharts();
         }
         
-        // Load charts for each strike
+        // Add chart containers to LTP cells
         strikes.forEach(strike => {
-            // Load Call chart
+            // Add Call chart to CE LTP cell
             if (strike.ce_symbol) {
-                const ceContainerId = `ce-chart-${strike.strike}`;
-                this.microchartManager.addChart(strike.ce_symbol, ceContainerId);
+                const ceLtpCell = document.querySelector(`td.ce-ltp[data-symbol="${strike.ce_symbol}"]`);
+                if (ceLtpCell) {
+                    // Create container for microchart
+                    const chartContainer = document.createElement('div');
+                    chartContainer.className = 'microchart-container';
+                    chartContainer.id = `ce-chart-${strike.strike}`;
+                    chartContainer.style.cssText = 'width: 60px; height: 30px; position: absolute; right: 5px; top: 50%; transform: translateY(-50%);';
+                    
+                    // Make cell position relative for absolute positioning
+                    ceLtpCell.style.position = 'relative';
+                    ceLtpCell.appendChild(chartContainer);
+                    
+                    this.microchartManager.addChart(strike.ce_symbol, chartContainer.id);
+                }
             }
             
-            // Load Put chart
+            // Add Put chart to PE LTP cell
             if (strike.pe_symbol) {
-                const peContainerId = `pe-chart-${strike.strike}`;
-                this.microchartManager.addChart(strike.pe_symbol, peContainerId);
+                const peLtpCell = document.querySelector(`td.pe-ltp[data-symbol="${strike.pe_symbol}"]`);
+                if (peLtpCell) {
+                    // Create container for microchart
+                    const chartContainer = document.createElement('div');
+                    chartContainer.className = 'microchart-container';
+                    chartContainer.id = `pe-chart-${strike.strike}`;
+                    chartContainer.style.cssText = 'width: 60px; height: 30px; position: absolute; right: 5px; top: 50%; transform: translateY(-50%);';
+                    
+                    // Make cell position relative for absolute positioning
+                    peLtpCell.style.position = 'relative';
+                    peLtpCell.appendChild(chartContainer);
+                    
+                    this.microchartManager.addChart(strike.pe_symbol, chartContainer.id);
+                }
             }
         });
         
