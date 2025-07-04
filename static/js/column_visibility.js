@@ -16,9 +16,9 @@ class ColumnVisibilityController {
     }
 
     init() {
+        this.loadSavedState();
         this.createColumnCheckboxes();
         this.setupEventListeners();
-        this.loadSavedState();
         this.applyColumnVisibility();
     }
 
@@ -45,13 +45,9 @@ class ColumnVisibilityController {
 
     createColumnCheckboxes() {
         const container = document.getElementById('columnCheckboxes');
-        if (!container) {
-            console.error('Column checkboxes container not found');
-            return;
-        }
+        if (!container) return;
         
         container.innerHTML = '';
-        console.log('Creating grouped column checkboxes...');
         
         // Define column groups
         const columnGroups = [
@@ -78,9 +74,7 @@ class ColumnVisibilityController {
         ];
         
         // Create grouped checkboxes
-        columnGroups.forEach((group, groupIndex) => {
-            console.log(`Creating group ${groupIndex + 1}: ${group.title}`);
-            
+        columnGroups.forEach(group => {
             // Group header
             const groupHeader = document.createElement('div');
             groupHeader.className = 'fw-bold text-primary mb-2 mt-3';
@@ -104,8 +98,6 @@ class ColumnVisibilityController {
                 }
             });
         });
-        
-        console.log('Finished creating grouped checkboxes');
     }
 
     setupEventListeners() {
