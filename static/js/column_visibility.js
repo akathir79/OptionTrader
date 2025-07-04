@@ -5,11 +5,18 @@
 
 class ColumnVisibilityController {
     constructor() {
+        this.columnNames = [
+            'CE B/S', 'Veta', 'Volga', 'Charm', 'Vanna', 'Vega', 'Theta', 'Gamma', 'Chng', 'Bid Qty',
+            'Bid', 'Ask', 'Ask Qty', 'Chng in OI', 'OI', 'Vol', 'Chart', 'LTP', 'Δ', 'Strike',
+            'Δ', 'LTP', 'Chart', 'Vol', 'OI', 'Chng in OI', 'Ask Qty', 'Ask', 'Bid', 'Bid Qty',
+            'Chng', 'Gamma', 'Theta', 'Vega', 'Vanna', 'Charm', 'Volga', 'Veta', 'PE B/S'
+        ];
         this.columnStates = this.getDefaultColumnStates();
         this.init();
     }
 
     init() {
+        this.createColumnCheckboxes();
         this.setupEventListeners();
         this.loadSavedState();
         this.applyColumnVisibility();
@@ -29,6 +36,26 @@ class ColumnVisibilityController {
         return defaults;
     }
 
+    createColumnCheckboxes() {
+        const container = document.getElementById('columnCheckboxes');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        this.columnNames.forEach((name, index) => {
+            const isChecked = this.columnStates[index] ? 'checked' : '';
+            const checkboxHtml = `
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="col_${index}" data-column="${index}" ${isChecked}>
+                    <label class="form-check-label" for="col_${index}">
+                        ${name}
+                    </label>
+                </div>
+            `;
+            container.innerHTML += checkboxHtml;
+        });
+    }
+
     setupEventListeners() {
         // Column checkbox change handlers
         document.addEventListener('change', (e) => {
@@ -37,6 +64,7 @@ class ColumnVisibilityController {
                 this.columnStates[columnIndex] = e.target.checked;
                 this.applyColumnVisibility();
                 this.saveState();
+                this.refreshTableData(); // Intelligent refresh when columns change
             }
         });
 
@@ -46,7 +74,7 @@ class ColumnVisibilityController {
                 this.selectAllColumns();
             } else if (e.target.id === 'deselectAllColumns') {
                 this.deselectAllColumns();
-            } else if (e.target.id === 'resetToDefaults') {
+            } else if (e.target.id === 'resetDefaultColumns') {
                 this.resetToDefaults();
             }
         });
@@ -73,21 +101,23 @@ class ColumnVisibilityController {
     }
 
     selectAllColumns() {
-        for (let i = 0; i < 37; i++) {
+        for (let i = 0; i < 39; i++) {
             this.columnStates[i] = true;
         }
         this.updateCheckboxes();
         this.applyColumnVisibility();
         this.saveState();
+        this.refreshTableData();
     }
 
     deselectAllColumns() {
-        for (let i = 0; i < 37; i++) {
+        for (let i = 0; i < 39; i++) {
             this.columnStates[i] = false;
         }
         this.updateCheckboxes();
         this.applyColumnVisibility();
         this.saveState();
+        this.refreshTableData();
     }
 
     resetToDefaults() {
@@ -95,6 +125,16 @@ class ColumnVisibilityController {
         this.updateCheckboxes();
         this.applyColumnVisibility();
         this.saveState();
+        this.refreshTableData();
+    }
+
+    refreshTableData() {
+        // Intelligent refresh when columns change to prevent data misalignment
+        // Check if WebSocket handler exists and has refresh method
+        if (window.webSocketHandler && typeof window.webSocketHandler.refreshOptionChain === 'function') {
+            console.log('Refreshing option chain data due to column visibility change');
+            window.webSocketHandler.refreshOptionChain();
+        }
     }
 
     updateCheckboxes() {

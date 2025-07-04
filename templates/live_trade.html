@@ -886,6 +886,26 @@
           </div>
           <!-- Single Option Chain Table -->
           <div id="optionChainContainer" style="max-height: 60vh; overflow-y: auto;">
+            <!-- Column Visibility Controls -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="mb-0">Option Chain</h6>
+              <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="columnVisibilityDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="fas fa-columns"></i> Columns
+                </button>
+                <div class="dropdown-menu dropdown-menu-end p-3" aria-labelledby="columnVisibilityDropdown" style="width: 300px; max-height: 400px; overflow-y: auto;">
+                  <div class="d-flex justify-content-between mb-2">
+                    <button class="btn btn-sm btn-outline-primary" id="selectAllColumns">Select All</button>
+                    <button class="btn btn-sm btn-outline-secondary" id="deselectAllColumns">Deselect All</button>
+                    <button class="btn btn-sm btn-outline-info" id="resetDefaultColumns">Reset</button>
+                  </div>
+                  <hr class="my-2">
+                  <div id="columnCheckboxes">
+                    <!-- Checkboxes will be populated by JavaScript -->
+                  </div>
+                </div>
+              </div>
+            </div>
             <div class="table-container">
               <table class="table table-sm mb-0" id="optionChainTable">
                 <thead>
@@ -1292,6 +1312,7 @@
 <script src="{{ url_for('static', filename='js/websocket_handler.js') }}"></script>
 <script src="{{ url_for('static', filename='js/option_microchart.js') }}"></script>
 <script src="{{ url_for('static', filename='js/chart_popup.js') }}"></script>
+<script src="{{ url_for('static', filename='js/column_visibility.js') }}"></script>
 
 <!-- Highcharts (Pay-off chart) -->
 <script src="https://code.highcharts.com/highcharts.js"></script>
@@ -1307,6 +1328,15 @@
 
 <!-- Broker settings -->
 <script src="{{ url_for('static', filename='js/broker_settings.js') }}"></script>
+
+<script>
+// Initialize components when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize column visibility controller
+    window.columnVisibilityController = new ColumnVisibilityController();
+    console.log('Column visibility controller initialized');
+});
+</script>
 
 
 
