@@ -31,15 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
     fetchExpiryForIndex(indexSelect.value);
     // Lookup symbol and lot size for index
     lookupSymbolAndLotSize('index', indexSelect.value, '');
-    // Start WebSocket for spot price updates
-    if (window.webSocketHandler) {
-      // Use the proper symbol from trading state after lookup
-      setTimeout(() => {
-        const currentSymbol = window.tradingState?.currentSymbol || indexSelect.value;
-        console.log(`Starting WebSocket for index symbol: ${currentSymbol}`);
-        window.webSocketHandler.startLiveData(currentSymbol);
-      }, 100); // Small delay to allow symbol lookup to complete
-    }
+    // Spot price updates will be started automatically after symbol lookup completes
   });
 
   exchangeSel?.addEventListener("change", () => {
@@ -244,15 +236,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (typeof showAlert === "function")
       showAlert(`Expiry ${e.target.value} selected`, "success");
 
-    // Start WebSocket for option chain updates
-    if (window.webSocketHandler) {
-      // Use the proper symbol from trading state or lookup
-      const currentSymbol = window.tradingState?.currentSymbol || 
-                           indexSelect.value || 
-                           (exchangeSel.value && extraSelect.value ? `${exchangeSel.value}:${extraSelect.value}` : null);
-      if (currentSymbol) {
-        console.log(`Starting WebSocket for symbol: ${currentSymbol}, expiry: ${e.target.value}`);
-        window.webSocketHandler.startLiveData(currentSymbol, e.target.value);
+    // Store expiry in trading state and start option chain updates
+    if (window.tradingState) {
+      window.tradingState.currentExpiry = e.target.value;
+      
+      // Start WebSocket for option chain updates if we have both symbol and expiry
+      if (window.webSocketHandler && window.tradingState.currentSymbol) {
+        console.log(`Starting WebSocket for symbol: ${window.tradingState.currentSymbol}, expiry: ${e.target.value}`);
+        window.webSocketHandler.startLiveData(window.tradingState.currentSymbol, e.target.value);
       }
     }
 
@@ -309,6 +300,11 @@ document.addEventListener("DOMContentLoaded", () => {
           window.tradingState.currentLotSize = data.lot_size;
           
           console.log(`Symbol lookup: ${data.symbol_code}, Lot Size: ${data.lot_size}`);
+          
+          // Start spot price updates immediately after symbol lookup
+          if (window.webSocketHandler) {
+            window.webSocketHandler.startLiveData(data.symbol_code);
+          }
         } else {
           console.warn("Symbol lookup failed:", data.error);
         }

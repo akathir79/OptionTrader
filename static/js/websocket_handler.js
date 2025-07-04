@@ -35,7 +35,12 @@ class WebSocketHandler {
         if (strikeCountSelect) {
             strikeCountSelect.addEventListener('change', (e) => {
                 this.strikeCount = e.target.value;
-                this.refreshOptionChain();
+                console.log(`Strike count changed to: ${this.strikeCount}`);
+                
+                // Refresh option chain with new strike count if we have symbol and expiry
+                if (this.currentSymbol && this.currentExpiry) {
+                    this.refreshOptionChain();
+                }
             });
         }
         
