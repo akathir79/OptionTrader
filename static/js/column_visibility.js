@@ -26,11 +26,9 @@ class ColumnVisibilityController {
         // Default visible columns for essential trading data
         const defaults = {};
         // Make essential columns visible by default
-        // Default visible columns: Core Trading + Volume/OI + Order Book (as requested)
+        // Default visible columns: Only Core Trading columns as requested
         const essentialColumns = [
-            0, 17, 18, 19, 20, 21, 38, // Core Trading: CE B/S, LTP, Δ, Strike, Δ, LTP, PE B/S
-            8, 13, 14, 15, 22, 23, // Volume & OI: CE Chng in OI, CE OI, CE Vol, PE Vol, PE OI, PE Chng in OI
-            1, 2, 3, 4, 5, 24, 25, 26, 27, 28 // Order Book: CE Chng, CE Bid Qty, CE Bid, CE Ask, CE Ask Qty, PE Chng, PE Bid Qty, PE Bid, PE Ask, PE Ask Qty
+            0, 17, 18, 19, 20, 21, 38 // Core Trading: CE B/S, LTP, Δ, Strike, Δ, LTP, PE B/S
         ];
         
         for (let i = 0; i < 40; i++) {

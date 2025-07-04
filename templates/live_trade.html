@@ -930,24 +930,7 @@
                     <th>Volga</th>
                     <th>Veta</th>
                     <th>PE B/S</th>
-                    <th style="width: 100px; text-align: center; background-color: #f8f9fa;">
-                      <div class="dropdown">
-                        <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="columnVisibilityDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="font-size: 10px; padding: 4px 8px; white-space: nowrap;">
-                          <i class="fas fa-columns"></i> Columns
-                        </button>
-                        <div class="dropdown-menu dropdown-menu-end p-3" aria-labelledby="columnVisibilityDropdown" style="width: 320px; max-height: 450px; overflow-y: auto;">
-                          <div class="d-flex justify-content-between mb-2">
-                            <button class="btn btn-sm btn-outline-primary" id="selectAllColumns">Select All</button>
-                            <button class="btn btn-sm btn-outline-secondary" id="deselectAllColumns">Deselect All</button>
-                            <button class="btn btn-sm btn-outline-info" id="resetDefaultColumns">Reset</button>
-                          </div>
-                          <hr class="my-2">
-                          <div id="columnCheckboxes">
-                            <!-- Checkboxes will be populated by JavaScript -->
-                          </div>
-                        </div>
-                      </div>
-                    </th>
+
                   </tr>
                 </thead>
                 <tbody>
@@ -1311,7 +1294,7 @@
 <script src="{{ url_for('static', filename='js/websocket_handler.js') }}"></script>
 <script src="{{ url_for('static', filename='js/option_microchart.js') }}"></script>
 <script src="{{ url_for('static', filename='js/chart_popup.js') }}"></script>
-<script src="{{ url_for('static', filename='js/column_visibility.js') }}?v=20250704"></script>
+<script src="{{ url_for('static', filename='js/column_visibility.js') }}?v=20250704b"></script>
 
 <!-- Highcharts (Pay-off chart) -->
 <script src="https://code.highcharts.com/highcharts.js"></script>
