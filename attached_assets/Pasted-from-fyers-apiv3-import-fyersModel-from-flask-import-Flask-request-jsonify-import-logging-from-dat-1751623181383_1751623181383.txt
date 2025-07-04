@@ -1,0 +1,97 @@
+from fyers_apiv3 import fyersModel
+from flask import Flask, request, jsonify
+import logging
+from datetime import datetime
+import pytz
+
+def get_simple_option_chain(symbol, strike_count=10, expiry_timestamp=""):
+    """
+    Simple option chain - pass symbol directly, use dropdown strike count, use selected expiry
+    """
+    try:
+        # Get access token from database
+        from APP_Extensions.db import db
+        from models import BrokerSettings
+        
+        broker_row = BrokerSettings.query.filter_by(brokername='fyers').first()
+        if not broker_row or not broker_row.access_token:
+            return {"error": "No FYERS access token found"}
+            
+        access_token = broker_row.access_token
+        client_id = broker_row.clientid
+        
+        print(f"SIMPLE OPTION CHAIN: symbol={symbol}, strikes={strike_count}, expiry={expiry_timestamp}")
+        
+        # Initialize FYERS model
+        fyers = fyersModel.FyersModel(client_id=client_id, token=access_token, is_async=False, log_path="")
+        
+        # Get expiry data first if no expiry provided
+        if not expiry_timestamp:
+            data = {"symbol": symbol, "strikecount": 1, "timestamp": ""}
+            response = fyers.optionchain(data=data)
+            
+            if response.get('s') == 'ok':
+                expiry_data = response.get('data', {}).get('expiryData', [])
+                return {
+                    "success": True,
+                    "expiry_data": [{"date": exp["date"], "expiry": exp["expiry"]} for exp in expiry_data],
+                    "strikes": [],
+                    "message": "Select expiry to load option chain"
+                }
+            else:
+                return {"error": f"Failed to get expiry data: {response.get('message', 'Unknown error')}"}
+        
+        # Get option chain with expiry
+        data = {
+            "symbol": symbol,              # Pass generated symbol directly
+            "strikecount": strike_count,   # Use dropdown value  
+            "timestamp": expiry_timestamp  # Use selected expiry timestamp
+        }
+        
+        response = fyers.optionchain(data=data)
+        print(f"API RESPONSE STATUS: {response.get('s')}")
+        print(f"API RESPONSE MESSAGE: {response.get('message', 'no message')}")
+        print(f"API RESPONSE CODE: {response.get('code', 'no code')}")
+        print(f"FULL API RESPONSE: {response}")
+        
+        if response.get('s') == 'ok':
+            option_data = response.get('data', {})
+            options_list = option_data.get('optionsChain', [])
+            
+            if not options_list:
+                return {"error": "No option data found"}
+            
+            print(f"FOUND {len(options_list)} OPTIONS")
+            
+            # Group by strike price - filter out invalid strikes
+            strikes = {}
+            for option in options_list:
+                strike = option.get('strike_price', 0)
+                # Skip invalid strikes (-1, 0, or negative values)
+                if strike <= 0:
+                    continue
+                
+                if strike not in strikes:
+                    strikes[strike] = {'strike': strike, 'ce_ltp': 0, 'pe_ltp': 0, 'ce_symbol': '', 'pe_symbol': ''}
+                
+                if option.get('option_type') == 'CE':
+                    strikes[strike]['ce_ltp'] = option.get('ltp', 0)
+                    strikes[strike]['ce_symbol'] = option.get('symbol', '')
+                elif option.get('option_type') == 'PE':
+                    strikes[strike]['pe_ltp'] = option.get('ltp', 0)
+                    strikes[strike]['pe_symbol'] = option.get('symbol', '')
+            
+            # Sort by strike price
+            strike_list = sorted(strikes.values(), key=lambda x: x['strike'])
+            
+            return {
+                "success": True,
+                "strikes": strike_list,
+                "total_strikes": len(strike_list)
+            }
+        else:
+            return {"error": f"FYERS API Error: {response.get('message', 'Unknown error')}"}
+            
+    except Exception as e:
+        print(f"OPTION CHAIN ERROR: {str(e)}")
+        return {"error": str(e)}

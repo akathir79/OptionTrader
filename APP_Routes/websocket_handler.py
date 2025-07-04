@@ -99,6 +99,7 @@ def get_option_chain():
             
             if response.get('s') == 'ok':
                 expiry_data = response.get('data', {}).get('expiryData', [])
+                print(f"EXPIRY DATA RECEIVED: {expiry_data}")
                 return jsonify({
                     "success": True,
                     "expiry_data": [{"date": exp["date"], "expiry": exp["expiry"]} for exp in expiry_data],
@@ -109,11 +110,52 @@ def get_option_chain():
             else:
                 return jsonify({"error": f"Failed to get expiry data: {response.get('message', 'Unknown error')}"}), 500
         
+        # Convert date format to timestamp if needed
+        # Frontend sends "28-AUG-25" but FYERS expects timestamp like "1756375200"
+        converted_timestamp = expiry_timestamp
+        
+        # If expiry_timestamp looks like a date (contains letters), convert it
+        if expiry_timestamp and any(c.isalpha() for c in expiry_timestamp):
+            print(f"CONVERTING DATE FORMAT: {expiry_timestamp}")
+            
+            # First get all expiry data to find the matching timestamp
+            data_for_expiry = {"symbol": symbol, "strikecount": 1, "timestamp": ""}
+            expiry_response = fyers.optionchain(data=data_for_expiry)
+            
+            if expiry_response.get('s') == 'ok':
+                expiry_data = expiry_response.get('data', {}).get('expiryData', [])
+                
+                # Convert "28-AUG-25" to "28-08-2025" format to match
+                try:
+                    from datetime import datetime
+                    # Parse "28-AUG-25" format
+                    date_obj = datetime.strptime(expiry_timestamp, "%d-%b-%y")
+                    # Format as "28-08-2025"
+                    formatted_date = date_obj.strftime("%d-%m-%Y")
+                    
+                    # Find matching timestamp
+                    for exp in expiry_data:
+                        if exp['date'] == formatted_date:
+                            converted_timestamp = exp['expiry']
+                            print(f"FOUND MATCHING TIMESTAMP: {formatted_date} -> {converted_timestamp}")
+                            break
+                    else:
+                        print(f"NO MATCHING TIMESTAMP FOUND FOR: {formatted_date}")
+                        return jsonify({"error": f"Invalid expiry date: {expiry_timestamp}"}), 400
+                        
+                except ValueError as e:
+                    print(f"DATE PARSING ERROR: {e}")
+                    return jsonify({"error": f"Invalid date format: {expiry_timestamp}"}), 400
+            else:
+                return jsonify({"error": "Failed to get expiry data for conversion"}), 500
+        
+        print(f"USING TIMESTAMP: {converted_timestamp}")
+        
         # Get option chain with expiry
         data = {
             "symbol": symbol,
             "strikecount": strike_count,
-            "timestamp": expiry_timestamp
+            "timestamp": converted_timestamp
         }
         
         response = fyers.optionchain(data=data)
