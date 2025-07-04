@@ -223,6 +223,9 @@ class WebSocketHandler {
             return;
         }
         
+        // Show loading indicator
+        this.showOptionChainLoading();
+        
         try {
             const url = `/ws_get_option_chain?symbol=${encodeURIComponent(this.currentSymbol)}&expiry_timestamp=${encodeURIComponent(this.currentExpiry)}&strike_count=${this.strikeCount}`;
             console.log(`Making API call to: ${url}`);
@@ -236,13 +239,16 @@ class WebSocketHandler {
             if (data.success) {
                 this.updateOptionChainTable(data.strikes);
                 this.updateATMDisplay(data.spot_price);
+                this.hideOptionChainLoading();
                 console.log(`Option chain loaded: ${data.strikes.length} strikes for ${this.currentSymbol}`);
             } else {
                 console.error('Option chain update failed:', data.error);
+                this.hideOptionChainLoading();
                 this.showError(data.error);
             }
         } catch (error) {
             console.error('Error updating option chain:', error);
+            this.hideOptionChainLoading();
             this.showError('Failed to load option chain data');
         }
     }
@@ -384,6 +390,30 @@ class WebSocketHandler {
     showError(message) {
         console.error(message);
         // Could implement toast notification here
+    }
+    
+    showOptionChainLoading() {
+        const loadingElement = document.getElementById('optionChainLoading');
+        const containerElement = document.getElementById('optionChainContainer');
+        
+        if (loadingElement) {
+            loadingElement.style.display = 'block';
+        }
+        if (containerElement) {
+            containerElement.style.display = 'none';
+        }
+    }
+    
+    hideOptionChainLoading() {
+        const loadingElement = document.getElementById('optionChainLoading');
+        const containerElement = document.getElementById('optionChainContainer');
+        
+        if (loadingElement) {
+            loadingElement.style.display = 'none';
+        }
+        if (containerElement) {
+            containerElement.style.display = 'block';
+        }
     }
     
     stop() {

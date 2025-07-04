@@ -875,8 +875,17 @@
         </div>
 
         <div class="card-body p-0">
+          <!-- Loading Indicator -->
+          <div id="optionChainLoading" class="text-center py-5" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <div class="mt-2">
+              <small class="text-muted">Loading option chain data...</small>
+            </div>
+          </div>
           <!-- Single Option Chain Table -->
-          <div style="max-height: 60vh; overflow-y: auto;">
+          <div id="optionChainContainer" style="max-height: 60vh; overflow-y: auto;">
             <div class="table-container">
               <table class="table table-sm mb-0" id="optionChainTable">
                 <thead>
