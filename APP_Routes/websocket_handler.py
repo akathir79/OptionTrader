@@ -73,8 +73,17 @@ def get_option_chain():
     """Get option chain data with WebSocket subscription"""
     try:
         symbol = request.args.get('symbol', '')
-        strike_count = int(request.args.get('strike_count', 15))
+        strike_count_param = request.args.get('strike_count', '15')
         expiry_timestamp = request.args.get('expiry_timestamp', '')
+        
+        # Handle "ALL" option - FYERS API supports up to 100 strikes
+        if strike_count_param.upper() == 'ALL':
+            strike_count = 100
+        else:
+            try:
+                strike_count = int(strike_count_param)
+            except ValueError:
+                strike_count = 15
         
         print(f"OPTION CHAIN REQUEST: symbol='{symbol}', strike_count={strike_count}, expiry='{expiry_timestamp}'")
         

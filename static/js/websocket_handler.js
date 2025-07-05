@@ -263,7 +263,11 @@ class WebSocketHandler {
         this.showOptionChainLoading();
         
         try {
-            const url = `/ws_get_option_chain?symbol=${encodeURIComponent(this.currentSymbol)}&expiry_timestamp=${encodeURIComponent(this.currentExpiry)}&strike_count=${this.strikeCount}`;
+            // Get strike count from dropdown or default to 15
+            const strikeCountSelect = document.getElementById('strikeCountSelect');
+            const strikeCount = strikeCountSelect ? strikeCountSelect.value : '15';
+            
+            const url = `/ws_get_option_chain?symbol=${encodeURIComponent(this.currentSymbol)}&expiry_timestamp=${encodeURIComponent(this.currentExpiry)}&strike_count=${strikeCount}`;
             console.log(`Making API call to: ${url}`);
             console.log(`Just before fetch - Symbol: "${this.currentSymbol}", Expiry: "${this.currentExpiry}"`);
             
