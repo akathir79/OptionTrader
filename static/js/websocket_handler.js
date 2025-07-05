@@ -143,6 +143,11 @@ class WebSocketHandler {
     }
     
     updateSpotPriceDisplay(spotPrice) {
+        console.log(`Spot price updated: ${spotPrice} for ${this.currentSymbol}`);
+        
+        // Store current spot price for ITM/OTM calculations
+        this.currentSpotPrice = spotPrice;
+        
         // Update spot price in the market data carousel
         const spotPriceElements = document.querySelectorAll('.spot-price-value');
         spotPriceElements.forEach(element => {
@@ -273,14 +278,28 @@ class WebSocketHandler {
         const row = document.createElement('tr');
         row.dataset.strike = strike.strike;
         
-        // Add ATM class if this is the ATM strike
-        if (strike.is_atm) {
-            row.classList.add('atm-strike');
-        }
+        // Get current spot price for ITM/OTM determination
+        const spotPrice = this.currentSpotPrice || 25500; // Use current spot price or fallback
         
-        // Determine ITM/OTM classes
-        const isCallITM = strike.strike <= strike.strike; // Simplified for now
-        const isPutITM = strike.strike >= strike.strike; // Simplified for now
+        // Determine ITM/OTM status
+        const isCallITM = strike.strike < spotPrice; // Calls are ITM when strike < spot
+        const isPutITM = strike.strike > spotPrice;  // Puts are ITM when strike > spot
+        const isATM = strike.is_atm;
+        
+        // Apply appropriate CSS classes for coloring
+        if (isATM) {
+            row.classList.add('option-row-atm');
+        } else if (isCallITM && isPutITM) {
+            // This shouldn't happen, but handle edge case
+            row.classList.add('option-row-atm');
+        } else if (isCallITM) {
+            row.classList.add('option-row-itm-call');
+        } else if (isPutITM) {
+            row.classList.add('option-row-itm-put');
+        } else {
+            // OTM for both calls and puts
+            row.classList.add('option-row-otm-call');
+        }
         
         // Create cells using column-specific approach
         const cells = [
