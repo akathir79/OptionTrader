@@ -20,12 +20,19 @@ class PositionManager {
     }
 
     setupEventListeners() {
-        // Listen for option chain B/S button clicks
+        // Listen for option chain B/S button clicks using event delegation
         document.addEventListener('click', (e) => {
-            console.log('Click detected:', e.target.classList);
-            if (e.target.classList.contains('option_button')) {
-                console.log('Option button clicked:', e.target);
-                this.handleOptionButtonClick(e);
+            console.log('Click detected on:', e.target.tagName, e.target.classList.toString());
+            
+            // Check if clicked element or its parent has option_button class
+            if (e.target.classList.contains('option_button') || 
+                e.target.closest('.option_button')) {
+                
+                const button = e.target.classList.contains('option_button') ? 
+                              e.target : e.target.closest('.option_button');
+                              
+                console.log('Option button clicked:', button);
+                this.handleOptionButtonClick({...e, target: button});
             }
         });
 
