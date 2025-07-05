@@ -1497,17 +1497,9 @@ async function addPosition(action, optionType, strike, ltp) {
             showAlert(`${action} ${optionType} position added successfully`, 'success');
             console.log('Position added:', newPosition);
             
-            // Update using existing position manager system
-            if (window.positionManager || positionManager) {
-                const pm = window.positionManager || positionManager;
-                await pm.loadPositions();
-                await pm.updatePayoffChart();
-                pm.updatePositionsCard();
-            } else {
-                // Fallback: use our direct update functions
-                await updatePayoffChart();
-                await updatePositionsTable();
-            }
+            // Update both the payoff chart and positions table directly
+            await updatePayoffChart();
+            await updatePositionsTable();
         } else {
             const error = await response.json();
             throw new Error(error.error || 'Failed to add position');
@@ -1546,35 +1538,25 @@ async function updatePayoffChart() {
         const data = await response.json();
         
         if (data.payoff_data && data.payoff_data.length > 0) {
-            // Create payoff chart with Chart.js
-            const ctx = document.getElementById('payoffChart');
-            if (ctx) {
-                // Clear existing chart
-                if (window.payoffChartInstance) {
-                    window.payoffChartInstance.destroy();
+            // Use Highcharts with existing chartContainer
+            const chartContainer = document.getElementById('chartContainer');
+            if (chartContainer && typeof Highcharts !== 'undefined') {
+                // Create or update Highcharts chart
+                if (!window.payoffChart) {
+                    window.payoffChart = Highcharts.chart('chartContainer', {
+                        chart: { type: 'line', height: 350 },
+                        title: { text: 'Option Strategy Payoff' },
+                        xAxis: { title: { text: 'Underlying Price' } },
+                        yAxis: { 
+                            title: { text: 'P&L (₹)' },
+                            plotLines: [{ value: 0, color: 'black', dashStyle: 'solid', width: 1 }]
+                        },
+                        series: [{ name: 'Payoff', data: [] }],
+                        legend: { enabled: false }
+                    });
                 }
-                
-                // Create new chart
-                window.payoffChartInstance = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: data.payoff_data.map(point => point[0].toFixed(0)),
-                        datasets: [{
-                            label: 'P&L',
-                            data: data.payoff_data.map(point => point[1]),
-                            borderColor: 'rgb(75, 192, 192)',
-                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
-                            fill: true
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            x: { title: { display: true, text: 'Stock Price' } },
-                            y: { title: { display: true, text: 'P&L (₹)' } }
-                        }
-                    }
-                });
+                // Update chart data
+                window.payoffChart.series[0].setData(data.payoff_data);
             }
         }
     } catch (error) {
