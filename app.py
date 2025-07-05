@@ -28,6 +28,10 @@ app.register_blueprint(websocket_bp)
 from APP_Routes.historical_data import historical_bp
 app.register_blueprint(historical_bp)
 
+# Import and register Position Management blueprint
+from APP_Routes.position_manager import position_bp
+app.register_blueprint(position_bp)
+
 @app.route("/")
 def live_trade():
     return render_template("live_trade.html")
