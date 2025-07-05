@@ -82,50 +82,20 @@
         </div>
       </div>
 
-      <!-- Position Management Card -->
-      <div class="card mb-3">
+      <!-- Current Position Card -->
+      <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
           <h5 class="card-title mb-0">
-            <i class="fas fa-table me-2"></i>Position Management
+            <i class="fas fa-list me-2"></i>Current Position
           </h5>
           <div class="btn-group btn-group-sm" role="group">
-            <button id="addNewBtn" class="btn btn-outline-primary" title="Add New Position">
-              <i class="fas fa-plus"></i>
-            </button>
-            <button id="saveBtn" class="btn btn-outline-success" title="Save Current Positions">
+            <button id="saveBtn" class="btn btn-outline-success" title="Save Current Position">
               <i class="fas fa-save"></i>
             </button>
-            <button id="clearBtn" class="btn btn-outline-danger" title="Clear All Positions">
+            <button id="clearBtn" class="btn btn-outline-danger" title="Clear All Position">
               <i class="fas fa-trash"></i>
             </button>
           </div>
-        </div>
-        <div class="card-body">
-          <div class="row mb-3">
-            <div class="col-md-6">
-              <label for="savedTablesSelect" class="form-label">Saved Positions:</label>
-              <select id="savedTablesSelect" class="form-select form-select-sm">
-                <option value="">-- Select Saved Positions --</option>
-              </select>
-            </div>
-            <div class="col-md-6 d-flex align-items-end">
-              <button id="loadBtn" class="btn btn-outline-info btn-sm me-2">
-                <i class="fas fa-download me-1"></i>Load
-              </button>
-              <button id="deleteBtn" class="btn btn-outline-danger btn-sm">
-                <i class="fas fa-trash me-1"></i>Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Current Positions Table Card -->
-      <div class="card">
-        <div class="card-header">
-          <h5 class="card-title mb-0">
-            <i class="fas fa-list me-2"></i>Current Positions
-          </h5>
         </div>
         <div class="card-body p-0">
           <div style="max-height: 300px; overflow-y: auto;">
@@ -135,18 +105,16 @@
                   <th>Action</th>
                   <th>Strike</th>
                   <th>Expiry</th>
-                  <th>Entry</th>
-                  <th>LTP</th>
-                  <th>P&L</th>
+                  <th>Entry Price</th>
                   <th>Lot Size</th>
                   <th>Lots</th>
                   <th>Qty</th>
                   <th>Count</th>
-                  <th>Actions</th>
+                  <th>Remove</th>
                 </tr>
               </thead>
               <tbody id="countsTableBody">
-                <!-- Dynamic positions will be inserted here -->
+                <!-- User B/S selections will be recorded here -->
               </tbody>
             </table>
           </div>
@@ -362,11 +330,8 @@ document.addEventListener('DOMContentLoaded', function() {
 function setupEventListeners() {
   document.getElementById('symbolSelect').addEventListener('change', handleSymbolChange);
   document.getElementById('expirySelect').addEventListener('change', handleExpiryChange);
-  document.getElementById('addNewBtn').addEventListener('click', addNewPosition);
   document.getElementById('saveBtn').addEventListener('click', saveCurrentPositions);
   document.getElementById('clearBtn').addEventListener('click', clearAllPositions);
-  document.getElementById('loadBtn').addEventListener('click', loadSelectedPositions);
-  document.getElementById('deleteBtn').addEventListener('click', deleteSelectedPositions);
   
   // Close dropdowns when clicking outside
   document.addEventListener('click', closeAllDropdowns);
@@ -550,8 +515,6 @@ function logAction(rowIndex, key, isAdd) {
         <td class="text-center">${rowObj.strike}</td>
         <td class="text-center">${rowObj.expiry}</td>
         <td class="text-center">${numericEntry.toFixed(2)}</td>
-        <td class="text-center">-</td>
-        <td class="text-center">-</td>
         <td class="text-center">${defaultLotSize}</td>
         <td class="text-center">${defaultLot}</td>
         <td class="text-center">${countVal * defaultLotSize * defaultLot}</td>
@@ -569,7 +532,7 @@ function logAction(rowIndex, key, isAdd) {
       const countCell = document.getElementById(`countCell_${rowIndex}_${key}`);
       if (countCell) countCell.textContent = countVal;
 
-      const qtyCell = existingRow.children[8];
+      const qtyCell = existingRow.children[6];
       if (qtyCell) qtyCell.textContent = countVal * defaultLotSize * defaultLot;
     }
   } else {

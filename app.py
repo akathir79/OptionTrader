@@ -33,6 +33,10 @@ def live_trade():
     return render_template("live_trade.html")
 
 
+@app.route("/payoff-chart")
+def payoff_chart():
+    return render_template("payoff_chart.html")
+
 @app.route('/get_access_token', methods=['GET'])
 def get_access_token():
     brokername = request.args.get('brokername')
