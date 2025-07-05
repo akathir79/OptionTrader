@@ -248,6 +248,8 @@ class WebSocketHandler {
             console.log(`API response data:`, data);
             
             if (data.success) {
+                console.log(`SUCCESS: Received ${data.strikes ? data.strikes.length : 0} strikes`);
+                console.log(`First strike sample:`, data.strikes ? data.strikes[0] : 'No strikes');
                 this.updateOptionChainTable(data.strikes);
                 this.updateATMDisplay(data.spot_price);
                 this.hideOptionChainLoading();
