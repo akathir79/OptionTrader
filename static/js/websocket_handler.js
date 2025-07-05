@@ -195,13 +195,22 @@ class WebSocketHandler {
                 const strike = parseFloat(strikeCell.textContent);
                 if (!isNaN(strike)) {
                     // Remove existing ITM classes
-                    row.classList.remove('itm-call', 'otm-call', 'itm-put', 'otm-put');
+                    row.classList.remove('call-itm', 'call-otm', 'put-itm', 'put-otm');
                     
                     // Add ITM classes based on current spot price
                     if (this.currentSpotPrice > strike) {
-                        row.classList.add('itm-call'); // Call ITM when spot > strike
+                        row.classList.add('call-itm'); // Call ITM when spot > strike
                     } else if (this.currentSpotPrice < strike) {
-                        row.classList.add('itm-put'); // Put ITM when spot < strike
+                        row.classList.add('put-itm'); // Put ITM when spot < strike
+                    } else if (this.currentSpotPrice === strike) {
+                        // ATM row - no special highlighting as requested
+                    } else {
+                        // Add OTM classes for completeness
+                        if (this.currentSpotPrice < strike) {
+                            row.classList.add('call-otm');
+                        } else {
+                            row.classList.add('put-otm');
+                        }
                     }
                 }
             }
