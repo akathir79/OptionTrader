@@ -591,6 +591,24 @@
   border-right: 2px solid #f39c12;
 }
 
+/* ITM styling with slight yellow color for calls and puts */
+.itm-call {
+  background-color: rgba(255, 235, 59, 0.15) !important; /* Light yellow for ITM calls */
+}
+
+.itm-put {
+  background-color: rgba(255, 235, 59, 0.15) !important; /* Light yellow for ITM puts */
+}
+
+/* Maintain hover effects for ITM rows */
+.itm-call:hover {
+  background-color: rgba(255, 235, 59, 0.25) !important;
+}
+
+.itm-put:hover {
+  background-color: rgba(255, 235, 59, 0.25) !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .card-body {

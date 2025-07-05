@@ -173,6 +173,39 @@ class WebSocketHandler {
                 });
             }
         });
+        
+        // Store current spot price for ITM calculations
+        this.currentSpotPrice = spotPrice;
+        
+        // Update ITM highlighting in existing option chain
+        this.updateITMHighlighting();
+    }
+
+    getCurrentSpotPrice() {
+        return this.currentSpotPrice || 0;
+    }
+
+    updateITMHighlighting() {
+        if (!this.optionChainTable || !this.currentSpotPrice) return;
+        
+        const rows = this.optionChainTable.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            const strikeCell = row.querySelector('td:nth-child(20)'); // Strike column
+            if (strikeCell) {
+                const strike = parseFloat(strikeCell.textContent);
+                if (!isNaN(strike)) {
+                    // Remove existing ITM classes
+                    row.classList.remove('itm-call', 'otm-call', 'itm-put', 'otm-put');
+                    
+                    // Add ITM classes based on current spot price
+                    if (this.currentSpotPrice > strike) {
+                        row.classList.add('itm-call'); // Call ITM
+                    } else if (this.currentSpotPrice < strike) {
+                        row.classList.add('itm-put'); // Put ITM
+                    }
+                }
+            }
+        });
     }
     
     updateATMDisplay(spotPrice) {
@@ -281,9 +314,20 @@ class WebSocketHandler {
         //     row.classList.add('atm-strike');
         // }
         
-        // Determine ITM/OTM classes
-        const isCallITM = strike.strike <= strike.strike; // Simplified for now
-        const isPutITM = strike.strike >= strike.strike; // Simplified for now
+        // Determine ITM/OTM classes based on current spot price
+        const currentSpot = this.getCurrentSpotPrice();
+        const isCallITM = currentSpot > strike.strike; // Call is ITM when spot > strike
+        const isPutITM = currentSpot < strike.strike;   // Put is ITM when spot < strike
+        
+        // Apply ITM highlighting to the row
+        if (isCallITM && isPutITM) {
+            // Both calls and puts are ITM - shouldn't happen, but handle gracefully
+            row.classList.add('itm-call');
+        } else if (isCallITM) {
+            row.classList.add('itm-call');
+        } else if (isPutITM) {
+            row.classList.add('itm-put');
+        }
         
         // Create cells using column-specific approach
         const cells = [
