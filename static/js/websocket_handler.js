@@ -8,6 +8,7 @@ class WebSocketHandler {
         this.isConnected = false;
         this.currentSymbol = null;
         this.currentExpiry = null;
+        this.currentSpotPrice = null;
         this.strikeCount = 10;
         this.updateInterval = null;
         this.spotPriceElement = null;
@@ -106,6 +107,7 @@ class WebSocketHandler {
             const data = await response.json();
             
             if (data.success) {
+                this.currentSpotPrice = data.spot_price; // Store current spot price
                 this.updateSpotPriceDisplay(data.spot_price);
                 this.updateATMDisplay(data.spot_price);
                 console.log(`Spot price updated: ${data.spot_price} for ${this.currentSymbol}`);
@@ -198,16 +200,25 @@ class WebSocketHandler {
     highlightATMStrike(atmStrike) {
         if (!this.optionChainTable) return;
         
-        // Remove existing ATM highlights
-        const existingATM = this.optionChainTable.querySelectorAll('.atm-strike');
-        existingATM.forEach(el => el.classList.remove('atm-strike'));
+        // Remove existing ITM/OTM classes
+        const allRows = this.optionChainTable.querySelectorAll('tr[data-strike]');
+        allRows.forEach(row => {
+            row.classList.remove('atm-strike', 'itm-call', 'itm-put', 'otm-call', 'otm-put');
+        });
         
-        // Add ATM highlight to current strike
-        const strikeRows = this.optionChainTable.querySelectorAll('tr[data-strike]');
-        strikeRows.forEach(row => {
+        // Apply dynamic coloring based on ATM strike
+        allRows.forEach(row => {
             const strike = parseFloat(row.dataset.strike);
+            
             if (strike === atmStrike) {
+                // ATM - no coloring
                 row.classList.add('atm-strike');
+            } else if (strike < atmStrike) {
+                // For calls: ITM when strike < spot, for puts: OTM when strike < spot
+                row.classList.add('itm-call');
+            } else {
+                // For calls: OTM when strike > spot, for puts: ITM when strike > spot  
+                row.classList.add('itm-put');
             }
         });
     }
@@ -265,6 +276,17 @@ class WebSocketHandler {
             tableBody.appendChild(row);
         });
         
+        // Apply dynamic ITM/OTM coloring based on current spot price
+        if (this.currentSpotPrice) {
+            let atmStrike;
+            if (this.currentSymbol && (this.currentSymbol.includes('NIFTY') || this.currentSymbol.includes('SENSEX') || this.currentSymbol.includes('BANKNIFTY'))) {
+                atmStrike = Math.round(this.currentSpotPrice / 50) * 50;
+            } else {
+                atmStrike = Math.round(this.currentSpotPrice / 5) * 5;
+            }
+            this.highlightATMStrike(atmStrike);
+        }
+        
         // Load microcharts for all option symbols
         this.loadMicroCharts(strikes);
     }
@@ -273,14 +295,7 @@ class WebSocketHandler {
         const row = document.createElement('tr');
         row.dataset.strike = strike.strike;
         
-        // Add ATM class if this is the ATM strike
-        if (strike.is_atm) {
-            row.classList.add('atm-strike');
-        }
-        
-        // Determine ITM/OTM classes
-        const isCallITM = strike.strike <= strike.strike; // Simplified for now
-        const isPutITM = strike.strike >= strike.strike; // Simplified for now
+        // Note: ATM and ITM/OTM coloring is handled dynamically in highlightATMStrike()
         
         // Create cells using column-specific approach
         const cells = [
