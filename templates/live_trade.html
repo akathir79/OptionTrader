@@ -1583,65 +1583,58 @@ function initPayoffChart() {
     }
 }
 
+// Recompute the payoff series and update the chart (exact logic from reference)
 async function updatePayoffChart() {
     if (!window.payoffChart) {
         initPayoffChart();
+        return;
     }
     
     try {
         const response = await fetch('/api/positions');
         const positions = await response.json();
         
-        if (positions.length === 0) {
+        // Convert positions to legs format exactly like reference code
+        let legs = [];
+        positions.forEach(pos => {
+            if (pos.quantity > 0) {
+                // Convert our database format to reference format
+                let action = pos.option_type + " " + pos.action; // "CE Buy", "PE Sell", etc.
+                legs.push({
+                    action: action,
+                    strike: parseFloat(pos.strike),
+                    premium: parseFloat(pos.entry_price),
+                    count: Math.floor(pos.quantity / 75) // Convert quantity to lot count
+                });
+            }
+        });
+        
+        // If no legs, clear the chart (exact logic from reference)
+        if (legs.length === 0) {
             window.payoffChart.series[0].setData([], true);
             window.payoffChart.series[0].update({ zones: [] }, true);
             return;
         }
         
-        // Convert positions to legs format
-        let legs = [];
-        positions.forEach(pos => {
-            let action = pos.option_type + " " + pos.action; // e.g., "CE Buy", "PE Sell"
-            legs.push({
-                action: action,
-                strike: pos.strike,
-                premium: pos.entry_price,
-                count: Math.floor(pos.quantity / 75) // Convert quantity to lots
-            });
-        });
-        
-        // Get strike range from option chain
-        const strikeElements = document.querySelectorAll('.strike-price');
-        let allStrikes = [];
-        strikeElements.forEach(el => {
-            const strike = parseFloat(el.textContent);
-            if (strike) allStrikes.push(strike);
-        });
-        
-        // If no strikes in option chain, use position strikes
-        if (allStrikes.length === 0) {
-            allStrikes = legs.map(leg => leg.strike);
-        }
-        
-        let minStrike = Math.min(...allStrikes) - 500;
-        let maxStrike = Math.max(...allStrikes) + 500;
+        // Build payoffData across a range (exact logic from reference)
+        let allStrikes = legs.map((leg) => leg.strike);
+        let minStrike = Math.min(...allStrikes) - 1000;
+        let maxStrike = Math.max(...allStrikes) + 1000;
         let step = Math.max(1, Math.floor((maxStrike - minStrike) / 100));
         
-        // Build payoff data
         let payoffData = [];
         for (let S = minStrike; S <= maxStrike; S += step) {
             let total = 0;
-            legs.forEach(leg => {
+            legs.forEach((leg) => {
                 total += singleOptionPayoff(leg.action, leg.strike, leg.premium, leg.count, S);
             });
             payoffData.push([S, total]);
         }
         payoffData.sort((a, b) => a[0] - b[0]);
         
-        // Update chart series
         window.payoffChart.series[0].setData(payoffData, true);
         
-        // Calculate break-even points
+        // Compute break-even points (exact logic from reference)
         let breakevenPoints = [];
         for (let i = 1; i < payoffData.length; i++) {
             let [x1, y1] = payoffData[i - 1];
@@ -1655,18 +1648,16 @@ async function updatePayoffChart() {
         }
         breakevenPoints.sort((a, b) => a - b);
         
-        // Apply color zones (red/green)
+        // Dynamic Red-Green zone coloring (exact logic from reference)
         let zones = [];
-        if (payoffData.length > 0) {
-            const firstPayoff = payoffData[0][1];
-            let currentColor = firstPayoff >= 0 ? "#28A745" : "#FF4C4C";
-            
-            breakevenPoints.forEach(be => {
-                zones.push({ value: be, color: currentColor });
-                currentColor = currentColor === "#FF4C4C" ? "#28A745" : "#FF4C4C";
-            });
-            zones.push({ value: maxStrike, color: currentColor });
-        }
+        const firstPayoff = payoffData[0][1];
+        let currentColor = firstPayoff >= 0 ? "#28A745" : "#FF4C4C";
+        
+        breakevenPoints.forEach((be) => {
+            zones.push({ value: be, color: currentColor });
+            currentColor = currentColor === "#FF4C4C" ? "#28A745" : "#FF4C4C";
+        });
+        zones.push({ value: maxStrike, color: currentColor });
         
         window.payoffChart.series[0].update({ zones: zones }, true);
         
