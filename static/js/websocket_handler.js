@@ -173,11 +173,6 @@ class WebSocketHandler {
                 });
             }
         });
-        
-        // Update position manager with new spot price
-        if (window.positionManager) {
-            window.positionManager.updateSpotPrice(spotPrice);
-        }
     }
     
     updateATMDisplay(spotPrice) {
@@ -265,8 +260,8 @@ class WebSocketHandler {
         // Clear existing rows
         tableBody.innerHTML = '';
         
-        strikes.forEach((strike, index) => {
-            const row = this.createOptionChainRow(strike, index);
+        strikes.forEach(strike => {
+            const row = this.createOptionChainRow(strike);
             tableBody.appendChild(row);
         });
         
@@ -274,10 +269,9 @@ class WebSocketHandler {
         this.loadMicroCharts(strikes);
     }
     
-    createOptionChainRow(strike, rowIndex) {
+    createOptionChainRow(strike) {
         const row = document.createElement('tr');
         row.dataset.strike = strike.strike;
-        row.dataset.rowIndex = rowIndex;
         
         // Add ATM class if this is the ATM strike
         if (strike.is_atm) {
@@ -288,29 +282,10 @@ class WebSocketHandler {
         const isCallITM = strike.strike <= strike.strike; // Simplified for now
         const isPutITM = strike.strike >= strike.strike; // Simplified for now
         
-        // Create CE B/S cell with position manager buttons
-        const ceBSCell = document.createElement('td');
-        ceBSCell.className = 'text-center buy_sell_cell';
-        
-        // Initialize position manager for this row
-        if (window.positionManager) {
-            window.positionManager.initializeRowCounters(rowIndex);
-            
-            // Create interactive buttons using position manager
-            const ceBuyBtn = window.positionManager.createButton(rowIndex, 'ceBuy', 'B', 'buy_button');
-            const ceSellBtn = window.positionManager.createButton(rowIndex, 'ceSell', 'S', 'sell_button');
-            
-            ceBSCell.appendChild(ceBuyBtn);
-            ceBSCell.appendChild(ceSellBtn);
-        } else {
-            // Fallback to simple buttons if position manager not available
-            ceBSCell.innerHTML = `<span class="option_button buy_button">B</span><span class="option_button sell_button">S</span>`;
-        }
-        
         // Create cells using column-specific approach
         const cells = [
-            // CE B/S (will be replaced)
-            ceBSCell.outerHTML,
+            // CE B/S
+            `<td class="text-center buy_sell_cell"><span class="option_button buy_button">B</span><span class="option_button sell_button">S</span></td>`,
             // CE Greeks
             `<td class="text-center ce-veta">0</td>`,
             `<td class="text-center ce-volga">0</td>`,
@@ -352,41 +327,12 @@ class WebSocketHandler {
             `<td class="text-center pe-vanna">0</td>`,
             `<td class="text-center pe-charm">0</td>`,
             `<td class="text-center pe-volga">0</td>`,
-            `<td class="text-center pe-veta">0</td>`
+            `<td class="text-center pe-veta">0</td>`,
+            // PE B/S
+            `<td class="text-center buy_sell_cell pe-buy-sell-cell"><span class="option_button buy_button">B</span><span class="option_button sell_button">S</span></td>`
         ];
         
-        // Set the basic cells
         row.innerHTML = cells.join('');
-        
-        // Now add the interactive B/S buttons to both CE and PE cells
-        if (window.positionManager) {
-            // Replace CE B/S cell with interactive buttons
-            const ceBSCell = row.cells[0]; // First cell is CE B/S
-            ceBSCell.innerHTML = '';
-            ceBSCell.className = 'text-center buy_sell_cell';
-            
-            const ceBuyBtn = window.positionManager.createButton(rowIndex, 'ceBuy', 'B', 'buy_button');
-            const ceSellBtn = window.positionManager.createButton(rowIndex, 'ceSell', 'S', 'sell_button');
-            ceBSCell.appendChild(ceBuyBtn);
-            ceBSCell.appendChild(ceSellBtn);
-            
-            // Add PE B/S cell with interactive buttons at the end
-            const peBSCell = document.createElement('td');
-            peBSCell.className = 'text-center buy_sell_cell pe-buy-sell-cell';
-            
-            const peBuyBtn = window.positionManager.createButton(rowIndex, 'peBuy', 'B', 'buy_button');
-            const peSellBtn = window.positionManager.createButton(rowIndex, 'peSell', 'S', 'sell_button');
-            peBSCell.appendChild(peBuyBtn);
-            peBSCell.appendChild(peSellBtn);
-            row.appendChild(peBSCell);
-        } else {
-            // Fallback: Add simple PE B/S cell
-            const peBSCell = document.createElement('td');
-            peBSCell.className = 'text-center buy_sell_cell pe-buy-sell-cell';
-            peBSCell.innerHTML = '<span class="option_button buy_button">B</span><span class="option_button sell_button">S</span>';
-            row.appendChild(peBSCell);
-        }
-        
         return row;
     }
 

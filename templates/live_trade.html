@@ -338,8 +338,8 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  padding: 0 10px;
-  height: 28px;
+  padding: 1px 6px;
+  height: 20px;
   font-size: 10px;
   border: 1px solid;
   border-radius: 3px;
@@ -1092,12 +1092,12 @@
 
         <!-- Payoff Chart - No Header -->
         <div class="mb-3">
-          <div id="payoffChartContainer" style="width: 100%; height: 350px; border: 1px solid #dee2e6; border-radius: 0.375rem; background-color: #fff;"></div>
+          <div id="chartContainer" style="width: 100%; height: 350px; border: 1px solid #dee2e6; border-radius: 0.375rem; background-color: #fff;"></div>
         </div>
       </div>
 
       <!-- Current Positions Card -->
-      <div class="card shadow-sm mb-3" id="currentPositionCard">
+      <div class="card shadow-sm mb-3">
         <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
           <div class="d-flex align-items-center">
             <h6 class="mb-0 me-3">
@@ -1314,9 +1314,6 @@
 
 <!-- Broker settings -->
 <script src="{{ url_for('static', filename='js/broker_settings.js') }}"></script>
-
-<!-- Position Manager for Interactive Trading -->
-<script src="{{ url_for('static', filename='js/position_manager.js') }}"></script>
 
 <script>
 // Initialize components when DOM is ready
