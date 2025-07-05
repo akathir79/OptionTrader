@@ -100,7 +100,7 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
-- July 05, 2025. Enhanced World Market Clock with individual market notification and sound controls, allowing per-market toggle switches for open/close notifications and sound alerts, plus bulk control buttons for managing all markets at once
+- July 05, 2025. Implemented hierarchical notification control system where global switches act as master controls - when global notifications/sound are off, all individual market controls are disabled; when global settings are on, each market can be controlled individually with visual feedback
 - July 05, 2025. Added notification and sound muting controls to World Market Clock system with global toggle switches, visual status indicators on Markets button, and persistent user preferences stored in localStorage
 - July 05, 2025. Added comprehensive World Market Clock feature with popup interface, CRUD operations for market times, real-time status monitoring, notification system with sound alerts, and database-driven market management supporting 10 major global exchanges including BSE and MCX
 - July 05, 2025. Updated ITM highlighting to use subtle yellow background (#fff3cd) matching reference design, while keeping existing logic intact
