@@ -1396,7 +1396,34 @@
 <script>
 // Initialize components when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-
+    // Add World Clock button to payoff settings area
+    setTimeout(() => {
+        const payoffContainer = document.querySelector('.ms-auto.d-flex.align-items-center.gap-2');
+        if (payoffContainer && !document.getElementById('worldClockBtn')) {
+            const clockBtn = document.createElement('button');
+            clockBtn.id = 'worldClockBtn';
+            clockBtn.className = 'btn btn-warning btn-sm';
+            clockBtn.title = 'World Market Times';
+            clockBtn.innerHTML = '<i class="fas fa-clock me-1"></i>Markets';
+            clockBtn.onclick = function() {
+                if (window.marketClock) {
+                    window.marketClock.showPopup();
+                } else {
+                    alert('Market clock not loaded. Please refresh the page.');
+                }
+            };
+            
+            // Insert before the first child (payoff settings)
+            payoffContainer.insertBefore(clockBtn, payoffContainer.firstChild);
+        }
+        
+        // Load market clock script if not already loaded
+        if (!window.marketClock) {
+            const script = document.createElement('script');
+            script.src = '/static/js/market_clock.js';
+            document.head.appendChild(script);
+        }
+    }, 1000);
 });
 </script>
 
