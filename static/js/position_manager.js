@@ -22,7 +22,9 @@ class PositionManager {
     setupEventListeners() {
         // Listen for option chain B/S button clicks
         document.addEventListener('click', (e) => {
+            console.log('Click detected:', e.target.classList);
             if (e.target.classList.contains('option_button')) {
+                console.log('Option button clicked:', e.target);
                 this.handleOptionButtonClick(e);
             }
         });
@@ -53,13 +55,25 @@ class PositionManager {
     }
 
     handleOptionButtonClick(event) {
+        console.log('handleOptionButtonClick called');
         const button = event.target;
         const row = button.closest('tr');
         const strike = this.getStrikeFromRow(row);
         const isBuy = button.classList.contains('buy_button');
         const optionType = this.getOptionTypeFromButton(button);
         
-        if (!strike || !optionType) return;
+        console.log('Position details:', {
+            strike: strike,
+            optionType: optionType,
+            isBuy: isBuy,
+            rowExists: !!row,
+            buttonClasses: button.classList.toString()
+        });
+        
+        if (!strike || !optionType) {
+            console.log('Missing strike or option type, returning');
+            return;
+        }
 
         // Get current price for this option
         const currentPrice = this.getCurrentPriceFromRow(row, optionType);
