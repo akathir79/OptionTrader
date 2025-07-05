@@ -100,5 +100,6 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- July 05, 2025. Updated ITM highlighting to use subtle yellow background (#fff3cd) matching reference design, while keeping existing logic intact
 - July 05, 2025. Enhanced option chain table with professional styling, removed column visibility controls, disabled ATM row highlighting, and added dynamic yellow highlighting for ITM calls and puts based on real-time ATM calculations
 - July 04, 2025. Initial setup
