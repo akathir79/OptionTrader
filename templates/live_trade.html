@@ -1397,6 +1397,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Attach click handlers to buy/sell buttons
     attachBuySellHandlers();
+    
+    // Initialize payoff chart
+    initPayoffChart();
 });
 
 function attachBuySellHandlers() {
@@ -1533,62 +1536,140 @@ function showAlert(message, type = 'info') {
 
 // Removed popup functions - using direct table/chart updates instead
 
+// Single option payoff calculation (from reference HTML)
+function singleOptionPayoff(action, K, premium, count, S) {
+    let payoff = 0;
+    const defaultLotSize = 75;
+    const defaultLot = 1;
+    
+    switch (action) {
+        case "CE Buy":
+            payoff = Math.max(S - K, 0) - premium;
+            break;
+        case "CE Sell":
+            payoff = premium - Math.max(S - K, 0);
+            break;
+        case "PE Buy":
+            payoff = Math.max(K - S, 0) - premium;
+            break;
+        case "PE Sell":
+            payoff = premium - Math.max(K - S, 0);
+            break;
+    }
+    return payoff * count * defaultLotSize * defaultLot;
+}
+
+// Initialize payoff chart (from reference HTML)
+function initPayoffChart() {
+    if (typeof Highcharts !== 'undefined') {
+        window.payoffChart = Highcharts.chart("chartContainer", {
+            chart: { type: "area", height: 350 },
+            title: { text: "Multi-Leg Payoff" },
+            xAxis: { title: { text: "Underlying Price (₹)" }, crosshair: true },
+            yAxis: { title: { text: "Net P&L (₹)" } },
+            tooltip: { valuePrefix: "₹" },
+            plotOptions: {
+                area: {
+                    marker: { enabled: false },
+                    zoneAxis: "x",
+                    zones: []
+                }
+            },
+            series: [{
+                name: "Payoff",
+                data: []
+            }]
+        });
+    }
+}
+
 async function updatePayoffChart() {
+    if (!window.payoffChart) {
+        initPayoffChart();
+    }
+    
     try {
-        const response = await fetch('/api/positions/payoff');
-        const data = await response.json();
+        const response = await fetch('/api/positions');
+        const positions = await response.json();
         
-        if (data.payoff_data && data.payoff_data.length > 0) {
-            // Use Highcharts with existing chartContainer
-            const chartContainer = document.getElementById('chartContainer');
-            if (chartContainer && typeof Highcharts !== 'undefined') {
-                // Get current strike prices from option chain for X-axis range
-                const strikeElements = document.querySelectorAll('.strike-price');
-                let minStrike = Infinity, maxStrike = -Infinity;
-                strikeElements.forEach(el => {
-                    const strike = parseFloat(el.textContent);
-                    if (strike) {
-                        minStrike = Math.min(minStrike, strike);
-                        maxStrike = Math.max(maxStrike, strike);
-                    }
-                });
-                
-                // If no strikes found, use data range
-                if (minStrike === Infinity) {
-                    minStrike = Math.min(...data.payoff_data.map(point => point[0]));
-                    maxStrike = Math.max(...data.payoff_data.map(point => point[0]));
-                }
-                
-                // Create or update Highcharts chart
-                if (!window.payoffChart) {
-                    window.payoffChart = Highcharts.chart('chartContainer', {
-                        chart: { type: 'line', height: 350 },
-                        title: { text: 'Option Strategy Payoff' },
-                        xAxis: { 
-                            title: { text: 'Underlying Price (₹)' },
-                            min: minStrike * 0.9,
-                            max: maxStrike * 1.1
-                        },
-                        yAxis: { 
-                            title: { text: 'P&L (₹)' },
-                            plotLines: [{ value: 0, color: 'black', dashStyle: 'solid', width: 1 }]
-                        },
-                        series: [{ name: 'Payoff', data: [], color: '#007bff' }],
-                        legend: { enabled: false },
-                        tooltip: {
-                            formatter: function() {
-                                return `<b>Price: ₹${this.x.toFixed(0)}</b><br/>P&L: ₹${this.y.toFixed(2)}`;
-                            }
-                        }
-                    });
-                } else {
-                    // Update X-axis range
-                    window.payoffChart.xAxis[0].setExtremes(minStrike * 0.9, maxStrike * 1.1);
-                }
-                // Update chart data
-                window.payoffChart.series[0].setData(data.payoff_data);
+        if (positions.length === 0) {
+            window.payoffChart.series[0].setData([], true);
+            window.payoffChart.series[0].update({ zones: [] }, true);
+            return;
+        }
+        
+        // Convert positions to legs format
+        let legs = [];
+        positions.forEach(pos => {
+            let action = pos.option_type + " " + pos.action; // e.g., "CE Buy", "PE Sell"
+            legs.push({
+                action: action,
+                strike: pos.strike,
+                premium: pos.entry_price,
+                count: Math.floor(pos.quantity / 75) // Convert quantity to lots
+            });
+        });
+        
+        // Get strike range from option chain
+        const strikeElements = document.querySelectorAll('.strike-price');
+        let allStrikes = [];
+        strikeElements.forEach(el => {
+            const strike = parseFloat(el.textContent);
+            if (strike) allStrikes.push(strike);
+        });
+        
+        // If no strikes in option chain, use position strikes
+        if (allStrikes.length === 0) {
+            allStrikes = legs.map(leg => leg.strike);
+        }
+        
+        let minStrike = Math.min(...allStrikes) - 500;
+        let maxStrike = Math.max(...allStrikes) + 500;
+        let step = Math.max(1, Math.floor((maxStrike - minStrike) / 100));
+        
+        // Build payoff data
+        let payoffData = [];
+        for (let S = minStrike; S <= maxStrike; S += step) {
+            let total = 0;
+            legs.forEach(leg => {
+                total += singleOptionPayoff(leg.action, leg.strike, leg.premium, leg.count, S);
+            });
+            payoffData.push([S, total]);
+        }
+        payoffData.sort((a, b) => a[0] - b[0]);
+        
+        // Update chart series
+        window.payoffChart.series[0].setData(payoffData, true);
+        
+        // Calculate break-even points
+        let breakevenPoints = [];
+        for (let i = 1; i < payoffData.length; i++) {
+            let [x1, y1] = payoffData[i - 1];
+            let [x2, y2] = payoffData[i];
+            if ((y1 < 0 && y2 >= 0) || (y1 > 0 && y2 <= 0)) {
+                const slope = (y2 - y1) / (x2 - x1);
+                const intercept = y1 - slope * x1;
+                const be = -intercept / slope;
+                breakevenPoints.push(be);
             }
         }
+        breakevenPoints.sort((a, b) => a - b);
+        
+        // Apply color zones (red/green)
+        let zones = [];
+        if (payoffData.length > 0) {
+            const firstPayoff = payoffData[0][1];
+            let currentColor = firstPayoff >= 0 ? "#28A745" : "#FF4C4C";
+            
+            breakevenPoints.forEach(be => {
+                zones.push({ value: be, color: currentColor });
+                currentColor = currentColor === "#FF4C4C" ? "#28A745" : "#FF4C4C";
+            });
+            zones.push({ value: maxStrike, color: currentColor });
+        }
+        
+        window.payoffChart.series[0].update({ zones: zones }, true);
+        
     } catch (error) {
         console.error('Error updating payoff chart:', error);
     }
