@@ -24,17 +24,10 @@ class PositionManager {
     setupEventListeners() {
         // Listen for option chain B/S button clicks using event delegation
         document.addEventListener('click', (e) => {
-            console.log('Click detected on:', e.target.tagName, e.target.classList.toString());
-            
-            // Check if clicked element or its parent has option_button class
-            if (e.target.classList.contains('option_button') || 
-                e.target.closest('.option_button')) {
-                
-                const button = e.target.classList.contains('option_button') ? 
-                              e.target : e.target.closest('.option_button');
-                              
-                console.log('Option button clicked:', button);
-                this.handleOptionButtonClick({...e, target: button});
+            if (e.target.classList.contains('option_button')) {
+                e.preventDefault();
+                console.log('Option button clicked:', e.target);
+                this.handleOptionButtonClick(e);
             }
         });
 
@@ -64,46 +57,54 @@ class PositionManager {
     }
 
     handleOptionButtonClick(event) {
-        console.log('handleOptionButtonClick called');
         const button = event.target;
         const row = button.closest('tr');
-        const strike = this.getStrikeFromRow(row);
-        const isBuy = button.classList.contains('buy_button');
-        const optionType = this.getOptionTypeFromButton(button);
         
-        console.log('Position details:', {
-            strike: strike,
-            optionType: optionType,
-            isBuy: isBuy,
-            rowExists: !!row,
-            buttonClasses: button.classList.toString()
-        });
+        // Simple strike extraction - look for the highlighted ATM cell or middle cell
+        const cells = row.querySelectorAll('td');
+        let strike = null;
         
-        if (!strike || !optionType) {
-            console.log('Missing strike or option type, returning');
+        // Find the strike cell (usually orange/highlighted or in the middle)
+        for (let cell of cells) {
+            const text = cell.textContent.trim();
+            if (text.match(/^\d+$/) && parseInt(text) > 20000) {
+                strike = parseInt(text);
+                break;
+            }
+        }
+        
+        if (!strike) {
+            console.log('Could not find strike price');
             return;
         }
-
-        // Create unique key for this button
-        const buttonKey = `${strike}_${optionType}_${isBuy ? 'buy' : 'sell'}`;
         
-        // Initialize counters if needed
-        if (!this.counters[buttonKey]) {
-            this.counters[buttonKey] = 0;
-            this.firstClickFlags[buttonKey] = true;
-        }
-
-        // Handle first click or subsequent clicks
-        if (this.firstClickFlags[buttonKey]) {
-            // First click: immediately add position
-            this.counters[buttonKey] = 1;
-            this.firstClickFlags[buttonKey] = false;
-            console.log('First click - adding position immediately');
-        } else {
-            // Subsequent clicks: increment counter
-            this.counters[buttonKey]++;
-            console.log(`Subsequent click - counter now: ${this.counters[buttonKey]}`);
-        }
+        const isBuy = button.classList.contains('buy_button');
+        const buttonText = button.textContent;
+        
+        // Determine if this is CE or PE based on button position
+        const buttonIndex = Array.from(row.querySelectorAll('.option_button')).indexOf(button);
+        const optionType = buttonIndex < 2 ? 'CE' : 'PE';
+        
+        // Create position
+        const position = {
+            strike: strike,
+            optionType: optionType,
+            action: isBuy ? 'BUY' : 'SELL',
+            lots: 1,
+            entryPrice: 100, // Default price for now
+            currentPrice: 100,
+            symbol: `NSE:NIFTY${strike}${optionType}`,
+            expiry: this.currentExpiry || '10-Jul-25',
+            timestamp: new Date().toISOString()
+        };
+        
+        console.log('Creating position:', position);
+        
+        // Add position and update UI
+        this.updatePosition(position);
+        this.updateButtonBadge(button, position);
+        this.updateCurrentPositionCard();
+        this.syncWithPayoffChart();
 
         // Get current price for this option
         const currentPrice = this.getCurrentPriceFromRow(row, optionType);
@@ -227,9 +228,13 @@ class PositionManager {
     }
 
     updateButtonBadge(button, position) {
+        // Count positions for this strike/type/action
         const isBuy = button.classList.contains('buy_button');
-        const buttonKey = `${position.strike}_${position.optionType}_${isBuy ? 'buy' : 'sell'}`;
-        const count = this.counters[buttonKey] || 0;
+        const count = this.positions.filter(p => 
+            p.strike === position.strike && 
+            p.optionType === position.optionType &&
+            p.action === (isBuy ? 'BUY' : 'SELL')
+        ).reduce((sum, p) => sum + p.lots, 0);
         
         let badge = button.querySelector('.count_badge');
         if (!badge) {
