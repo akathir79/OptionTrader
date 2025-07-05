@@ -416,11 +416,6 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       console.warn('Current position card not found');
     }
-    
-    // Update position manager with new lot size
-    if (window.positionManager) {
-      window.positionManager.setLotSize(lotSize);
-    }
   }
   
   function getTextNodes(element) {

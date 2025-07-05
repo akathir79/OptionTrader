@@ -1131,8 +1131,6 @@
             <button id="clearAllBtn" class="btn btn-outline-light btn-sm">
               <i class="fas fa-trash me-1"></i>Clear All
             </button>
-            <span class="small text-white-75">Lot Size:</span>
-            <span id="lotSizeDisplay" class="badge bg-warning text-dark fw-bold">75</span>
             <span id="positionCount" class="badge bg-light text-dark">0 Positions</span>
           </div>
         </div>
@@ -1163,7 +1161,7 @@
               <tbody id="positionTableBody">
                 <tr>
                   <td colspan="15" class="text-center text-muted py-3">
-                    <i class="fas fa-plus-circle me-2"></i>No positions yet. Start trading by clicking B/S buttons in option chain!
+                    <i class="fas fa-plus-circle me-2"></i>No positions yet. Start trading!
                   </td>
                 </tr>
               </tbody>
@@ -1179,7 +1177,7 @@
                 <option value="2">2</option>
                 <option value="3">3</option>
               </select>
-              <span>Lot Size: <span id="footerLotSize">75</span></span>
+              <span>Lot Size: 75</span>
               <button class="btn btn-outline-primary btn-sm" style="padding: 2px 8px; font-size: 10px;">Add Alert</button>
               <button class="btn btn-outline-success btn-sm" style="padding: 2px 8px; font-size: 10px;">Save</button>
               <button class="btn btn-outline-info btn-sm" style="padding: 2px 8px; font-size: 10px;">Share</button>
@@ -1335,35 +1333,12 @@
 <!-- Broker settings -->
 <script src="{{ url_for('static', filename='js/broker_settings.js') }}"></script>
 
-<!-- Position Manager - Working Implementation -->
-<script src="{{ url_for('static', filename='js/position_manager_working.js') }}"></script>
-
-<!-- Payoff Chart Integration -->
-<script src="{{ url_for('static', filename='js/payoff_chart_integration.js') }}"></script>
-
 <script>
 // Initialize components when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize column visibility controller
     window.columnVisibilityController = new ColumnVisibilityController();
     console.log('Column visibility controller initialized');
-    
-    // Initialize working position manager
-    window.positionManager = new PositionManagerWorking();
-    console.log('Position manager working initialized');
-    
-    // Initialize payoff chart integration
-    window.payoffChartIntegration = new PayoffChartIntegration();
-    console.log('Payoff chart integration initialized');
-    
-    // Connect clear all button to position manager
-    const clearAllBtn = document.getElementById('clearAllBtn');
-    if (clearAllBtn) {
-        clearAllBtn.addEventListener('click', function() {
-            window.positionManager.clearAllPositions();
-            console.log('All positions cleared');
-        });
-    }
 });
 </script>
 
