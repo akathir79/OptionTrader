@@ -25,9 +25,39 @@ class MarketClock {
         this.setupEventListeners();
         this.loadMarkets();
         this.startNotificationLoop();
+        this.initializeToggleStates();
         this.initialized = true;
         
         console.log('Market Clock initialized');
+    }
+
+    initializeToggleStates() {
+        // Initialize notification toggle
+        const notificationToggle = document.getElementById('globalNotifications');
+        if (notificationToggle) {
+            const notificationsEnabled = this.isGlobalNotificationsEnabled();
+            notificationToggle.checked = notificationsEnabled;
+            
+            const notificationIcon = document.querySelector('#globalNotifications + label i');
+            if (notificationIcon) {
+                notificationIcon.className = notificationsEnabled ? 'fas fa-bell me-1' : 'fas fa-bell-slash me-1';
+            }
+        }
+        
+        // Initialize sound toggle
+        const soundToggle = document.getElementById('globalSound');
+        if (soundToggle) {
+            const soundEnabled = this.isGlobalSoundEnabled();
+            soundToggle.checked = soundEnabled;
+            
+            const soundIcon = document.querySelector('#globalSound + label i');
+            if (soundIcon) {
+                soundIcon.className = soundEnabled ? 'fas fa-volume-up me-1' : 'fas fa-volume-mute me-1';
+            }
+        }
+        
+        // Update Markets button status
+        this.updateMarketsButtonStatus();
     }
 
     createModalHTML() {
@@ -49,7 +79,21 @@ class MarketClock {
             <div class="card">
               <div class="card-header d-flex justify-content-between align-items-center">
                 <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Current Market Status</h6>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 align-items-center">
+                  <!-- Global Notification Controls -->
+                  <div class="form-check form-switch me-3">
+                    <input class="form-check-input" type="checkbox" id="globalNotifications" checked>
+                    <label class="form-check-label" for="globalNotifications">
+                      <i class="fas fa-bell me-1"></i>Notifications
+                    </label>
+                  </div>
+                  <div class="form-check form-switch me-3">
+                    <input class="form-check-input" type="checkbox" id="globalSound" checked>
+                    <label class="form-check-label" for="globalSound">
+                      <i class="fas fa-volume-up me-1"></i>Sound
+                    </label>
+                  </div>
+                  <div class="vr me-2"></div>
                   <button id="refreshMarketStatus" class="btn btn-outline-primary btn-sm">
                     <i class="fas fa-sync-alt me-1"></i>Refresh
                   </button>
@@ -236,6 +280,15 @@ class MarketClock {
     }
 
     setupEventListeners() {
+        // Global notification controls
+        document.getElementById('globalNotifications')?.addEventListener('change', (e) => {
+            this.toggleGlobalNotifications(e.target.checked);
+        });
+
+        document.getElementById('globalSound')?.addEventListener('change', (e) => {
+            this.toggleGlobalSound(e.target.checked);
+        });
+
         // Refresh button
         document.getElementById('refreshMarketStatus')?.addEventListener('click', () => {
             this.refreshStatus();
@@ -266,8 +319,93 @@ class MarketClock {
         }
     }
 
+    toggleGlobalNotifications(enabled) {
+        localStorage.setItem('marketClock_globalNotifications', enabled);
+        console.log(`Global notifications ${enabled ? 'enabled' : 'disabled'}`);
+        
+        // Update the visual state
+        const icon = document.querySelector('#globalNotifications + label i');
+        if (icon) {
+            icon.className = enabled ? 'fas fa-bell me-1' : 'fas fa-bell-slash me-1';
+        }
+        
+        // Update the Markets button indicator
+        this.updateMarketsButtonStatus();
+        
+        // Show status message
+        this.showNotification(
+            `Market notifications ${enabled ? 'enabled' : 'disabled'}`,
+            enabled ? 'success' : 'warning'
+        );
+    }
+
+    toggleGlobalSound(enabled) {
+        localStorage.setItem('marketClock_globalSound', enabled);
+        console.log(`Global sound ${enabled ? 'enabled' : 'disabled'}`);
+        
+        // Update the visual state
+        const icon = document.querySelector('#globalSound + label i');
+        if (icon) {
+            icon.className = enabled ? 'fas fa-volume-up me-1' : 'fas fa-volume-mute me-1';
+        }
+        
+        // Update the Markets button indicator
+        this.updateMarketsButtonStatus();
+        
+        // Show status message
+        this.showNotification(
+            `Market sound alerts ${enabled ? 'enabled' : 'disabled'}`,
+            enabled ? 'success' : 'warning'
+        );
+        
+        // Play a test sound if enabling
+        if (enabled) {
+            setTimeout(() => this.playNotificationSound(), 500);
+        }
+    }
+
+    updateMarketsButtonStatus() {
+        const marketsButton = document.querySelector('.btn-warning[onclick="window.marketClock.showPopup()"]');
+        if (!marketsButton) return;
+        
+        const notificationsEnabled = this.isGlobalNotificationsEnabled();
+        const soundEnabled = this.isGlobalSoundEnabled();
+        
+        let statusText = 'Markets';
+        let statusIcon = 'fas fa-globe';
+        
+        if (!notificationsEnabled && !soundEnabled) {
+            statusText = 'Markets (Silent)';
+            statusIcon = 'fas fa-globe text-muted';
+        } else if (!notificationsEnabled) {
+            statusText = 'Markets (No Alerts)';
+            statusIcon = 'fas fa-globe';
+        } else if (!soundEnabled) {
+            statusText = 'Markets (Muted)';
+            statusIcon = 'fas fa-globe';
+        }
+        
+        // Update button text and icon
+        marketsButton.innerHTML = `<i class="${statusIcon} me-1"></i>${statusText}`;
+        
+        // Update button color based on status
+        if (!notificationsEnabled && !soundEnabled) {
+            marketsButton.className = marketsButton.className.replace('btn-warning', 'btn-secondary');
+        } else {
+            marketsButton.className = marketsButton.className.replace('btn-secondary', 'btn-warning');
+        }
+    }
+
+    isGlobalNotificationsEnabled() {
+        return localStorage.getItem('marketClock_globalNotifications') !== 'false';
+    }
+
+    isGlobalSoundEnabled() {
+        return localStorage.getItem('marketClock_globalSound') !== 'false';
+    }
+
     playNotificationSound() {
-        if (!this.audioContext) return;
+        if (!this.audioContext || !this.isGlobalSoundEnabled()) return;
         
         try {
             const oscillator = this.audioContext.createOscillator();
@@ -557,6 +695,11 @@ class MarketClock {
     }
 
     async checkNotifications() {
+        // Skip if global notifications are disabled
+        if (!this.isGlobalNotificationsEnabled()) {
+            return;
+        }
+        
         try {
             const response = await fetch('/api/market-times/status');
             if (response.ok) {
@@ -666,6 +809,11 @@ window.marketClock = new MarketClock();
 document.addEventListener('DOMContentLoaded', function() {
     // Request notification permission
     window.marketClock.requestNotificationPermission();
+    
+    // Initialize button status after a short delay to ensure DOM is ready
+    setTimeout(() => {
+        window.marketClock.updateMarketsButtonStatus();
+    }, 100);
     
     console.log('Market Clock component loaded');
 });

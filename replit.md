@@ -100,6 +100,7 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- July 05, 2025. Added notification and sound muting controls to World Market Clock system with global toggle switches, visual status indicators on Markets button, and persistent user preferences stored in localStorage
 - July 05, 2025. Added comprehensive World Market Clock feature with popup interface, CRUD operations for market times, real-time status monitoring, notification system with sound alerts, and database-driven market management supporting 10 major global exchanges including BSE and MCX
 - July 05, 2025. Updated ITM highlighting to use subtle yellow background (#fff3cd) matching reference design, while keeping existing logic intact
 - July 05, 2025. Enhanced option chain table with professional styling, removed column visibility controls, disabled ATM row highlighting, and added dynamic yellow highlighting for ITM calls and puts based on real-time ATM calculations
