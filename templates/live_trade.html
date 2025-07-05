@@ -1330,31 +1330,23 @@
     color: #000 !important;
   }
   
-  /* ITM/OTM Styling - Entire row highlighting for ITM options */
-  tr.call-itm {
-    background-color: #fff3cd !important;
-  }
-  
-  tr.call-itm td {
+  /* ITM/OTM Styling - Subtle yellow for ITM like the reference image */
+  .call-ltp.itm {
     background-color: #fff3cd !important;
     color: #856404 !important;
   }
   
-  tr.put-itm {
-    background-color: #fff3cd !important;
-  }
-  
-  tr.put-itm td {
-    background-color: #fff3cd !important;
-    color: #856404 !important;
-  }
-  
-  /* OTM rows remain normal */
-  tr.call-otm, tr.put-otm {
+  .call-ltp.otm {
     background-color: transparent !important;
+    color: inherit !important;
   }
   
-  tr.call-otm td, tr.put-otm td {
+  .put-ltp.itm {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
+  }
+  
+  .put-ltp.otm {
     background-color: transparent !important;
     color: inherit !important;
   }
