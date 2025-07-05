@@ -118,8 +118,19 @@ class MarketClock {
         <div class="row">
           <div class="col-12">
             <div class="card">
-              <div class="card-header">
+              <div class="card-header d-flex justify-content-between align-items-center">
                 <h6 class="mb-0"><i class="fas fa-cog me-2"></i>Manage Market Times</h6>
+                <div class="btn-group btn-group-sm">
+                  <button id="selectAllNotifications" class="btn btn-outline-success btn-sm">
+                    <i class="fas fa-check-double me-1"></i>All Notifications
+                  </button>
+                  <button id="selectAllSounds" class="btn btn-outline-info btn-sm">
+                    <i class="fas fa-volume-up me-1"></i>All Sounds
+                  </button>
+                  <button id="deselectAll" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-times me-1"></i>Disable All
+                  </button>
+                </div>
               </div>
               <div class="card-body">
                 <div class="table-responsive">
@@ -130,7 +141,7 @@ class MarketClock {
                         <th>Country</th>
                         <th>Trading Hours</th>
                         <th>Status</th>
-                        <th>Notifications</th>
+                        <th style="min-width: 200px;">Individual Controls</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -309,6 +320,19 @@ class MarketClock {
             e.preventDefault();
             this.saveMarket();
         });
+
+        // Bulk control buttons
+        document.getElementById('selectAllNotifications')?.addEventListener('click', () => {
+            this.bulkToggleNotifications(true);
+        });
+
+        document.getElementById('selectAllSounds')?.addEventListener('click', () => {
+            this.bulkToggleSounds(true);
+        });
+
+        document.getElementById('deselectAll')?.addEventListener('click', () => {
+            this.bulkDisableAll();
+        });
     }
 
     initAudio() {
@@ -402,6 +426,200 @@ class MarketClock {
 
     isGlobalSoundEnabled() {
         return localStorage.getItem('marketClock_globalSound') !== 'false';
+    }
+
+    async toggleMarketNotification(marketId, type, enabled) {
+        try {
+            const market = this.markets.find(m => m.id === marketId);
+            if (!market) return;
+
+            const updateData = {};
+            if (type === 'open') {
+                updateData.notify_open = enabled;
+            } else if (type === 'close') {
+                updateData.notify_close = enabled;
+            }
+
+            const response = await fetch(`/api/market-times/${marketId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updateData)
+            });
+
+            if (response.ok) {
+                // Update local market data
+                if (type === 'open') {
+                    market.notify_open = enabled;
+                } else if (type === 'close') {
+                    market.notify_close = enabled;
+                }
+
+                this.showNotification(
+                    `${market.market_name} ${type} notifications ${enabled ? 'enabled' : 'disabled'}`,
+                    enabled ? 'success' : 'warning'
+                );
+                
+                console.log(`Market ${marketId} ${type} notifications ${enabled ? 'enabled' : 'disabled'}`);
+            } else {
+                const error = await response.json();
+                this.showNotification(error.error || 'Error updating notification setting', 'danger');
+                
+                // Revert the checkbox
+                const checkbox = document.getElementById(`notify${type.charAt(0).toUpperCase() + type.slice(1)}_${marketId}`);
+                if (checkbox) checkbox.checked = !enabled;
+            }
+        } catch (error) {
+            console.error('Error toggling market notification:', error);
+            this.showNotification('Error updating notification setting', 'danger');
+            
+            // Revert the checkbox
+            const checkbox = document.getElementById(`notify${type.charAt(0).toUpperCase() + type.slice(1)}_${marketId}`);
+            if (checkbox) checkbox.checked = !enabled;
+        }
+    }
+
+    async toggleMarketSound(marketId, enabled) {
+        try {
+            const market = this.markets.find(m => m.id === marketId);
+            if (!market) return;
+
+            const response = await fetch(`/api/market-times/${marketId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ sound_enabled: enabled })
+            });
+
+            if (response.ok) {
+                // Update local market data
+                market.sound_enabled = enabled;
+
+                this.showNotification(
+                    `${market.market_name} sound alerts ${enabled ? 'enabled' : 'disabled'}`,
+                    enabled ? 'success' : 'warning'
+                );
+                
+                // Play test sound if enabling
+                if (enabled && this.isGlobalSoundEnabled()) {
+                    setTimeout(() => this.playNotificationSound(), 300);
+                }
+                
+                console.log(`Market ${marketId} sound ${enabled ? 'enabled' : 'disabled'}`);
+            } else {
+                const error = await response.json();
+                this.showNotification(error.error || 'Error updating sound setting', 'danger');
+                
+                // Revert the checkbox
+                const checkbox = document.getElementById(`soundEnabled_${marketId}`);
+                if (checkbox) checkbox.checked = !enabled;
+            }
+        } catch (error) {
+            console.error('Error toggling market sound:', error);
+            this.showNotification('Error updating sound setting', 'danger');
+            
+            // Revert the checkbox
+            const checkbox = document.getElementById(`soundEnabled_${marketId}`);
+            if (checkbox) checkbox.checked = !enabled;
+        }
+    }
+
+    async bulkToggleNotifications(enabled) {
+        this.showNotification('Updating all notification settings...', 'info');
+        
+        for (const market of this.markets) {
+            try {
+                const response = await fetch(`/api/market-times/${market.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        notify_open: enabled,
+                        notify_close: enabled 
+                    })
+                });
+
+                if (response.ok) {
+                    market.notify_open = enabled;
+                    market.notify_close = enabled;
+                }
+            } catch (error) {
+                console.error(`Error updating notifications for ${market.market_name}:`, error);
+            }
+        }
+        
+        this.renderMarketTable();
+        this.showNotification(
+            `All market notifications ${enabled ? 'enabled' : 'disabled'}`,
+            enabled ? 'success' : 'warning'
+        );
+    }
+
+    async bulkToggleSounds(enabled) {
+        this.showNotification('Updating all sound settings...', 'info');
+        
+        for (const market of this.markets) {
+            try {
+                const response = await fetch(`/api/market-times/${market.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ sound_enabled: enabled })
+                });
+
+                if (response.ok) {
+                    market.sound_enabled = enabled;
+                }
+            } catch (error) {
+                console.error(`Error updating sound for ${market.market_name}:`, error);
+            }
+        }
+        
+        this.renderMarketTable();
+        this.showNotification(
+            `All market sounds ${enabled ? 'enabled' : 'disabled'}`,
+            enabled ? 'success' : 'warning'
+        );
+
+        // Play test sound if enabling
+        if (enabled && this.isGlobalSoundEnabled()) {
+            setTimeout(() => this.playNotificationSound(), 500);
+        }
+    }
+
+    async bulkDisableAll() {
+        this.showNotification('Disabling all notifications and sounds...', 'info');
+        
+        for (const market of this.markets) {
+            try {
+                const response = await fetch(`/api/market-times/${market.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        notify_open: false,
+                        notify_close: false,
+                        sound_enabled: false 
+                    })
+                });
+
+                if (response.ok) {
+                    market.notify_open = false;
+                    market.notify_close = false;
+                    market.sound_enabled = false;
+                }
+            } catch (error) {
+                console.error(`Error updating settings for ${market.market_name}:`, error);
+            }
+        }
+        
+        this.renderMarketTable();
+        this.showNotification('All market notifications and sounds disabled', 'warning');
     }
 
     playNotificationSound() {
@@ -647,10 +865,36 @@ class MarketClock {
                     </span>
                 </td>
                 <td>
-                    <div class="d-flex gap-1">
-                        ${market.notify_open ? '<i class="fas fa-bell text-success" title="Open notifications"></i>' : '<i class="fas fa-bell-slash text-muted"></i>'}
-                        ${market.notify_close ? '<i class="fas fa-bell text-warning" title="Close notifications"></i>' : '<i class="fas fa-bell-slash text-muted"></i>'}
-                        ${market.sound_enabled ? '<i class="fas fa-volume-up text-info" title="Sound enabled"></i>' : '<i class="fas fa-volume-mute text-muted"></i>'}
+                    <div class="d-flex flex-column gap-1">
+                        <!-- Individual Notification Controls -->
+                        <div class="d-flex gap-2 align-items-center">
+                            <div class="form-check form-switch form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="notifyOpen_${market.id}" 
+                                       ${market.notify_open ? 'checked' : ''} 
+                                       onchange="window.marketClock.toggleMarketNotification(${market.id}, 'open', this.checked)">
+                                <label class="form-check-label" for="notifyOpen_${market.id}">
+                                    <i class="fas fa-bell-o me-1"></i>Open
+                                </label>
+                            </div>
+                            <div class="form-check form-switch form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="notifyClose_${market.id}" 
+                                       ${market.notify_close ? 'checked' : ''} 
+                                       onchange="window.marketClock.toggleMarketNotification(${market.id}, 'close', this.checked)">
+                                <label class="form-check-label" for="notifyClose_${market.id}">
+                                    <i class="fas fa-bell me-1"></i>Close
+                                </label>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 align-items-center">
+                            <div class="form-check form-switch form-check-inline">
+                                <input class="form-check-input" type="checkbox" id="soundEnabled_${market.id}" 
+                                       ${market.sound_enabled ? 'checked' : ''} 
+                                       onchange="window.marketClock.toggleMarketSound(${market.id}, this.checked)">
+                                <label class="form-check-label" for="soundEnabled_${market.id}">
+                                    <i class="fas fa-volume-up me-1"></i>Sound
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </td>
                 <td>
