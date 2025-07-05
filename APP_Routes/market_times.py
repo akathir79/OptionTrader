@@ -301,6 +301,26 @@ def api_initialize_default_markets():
                 'local_close_time': '17:00',
                 'timezone': 'Asia/Singapore',
                 'trading_days': '1,2,3,4,5'
+            },
+            {
+                'market_name': 'Bombay Stock Exchange',
+                'country': 'India',
+                'exchange_code': 'BSE',
+                'local_open_time': '09:15',
+                'local_close_time': '15:30',
+                'timezone': 'Asia/Kolkata',
+                'trading_days': '1,2,3,4,5'
+            },
+            {
+                'market_name': 'Multi Commodity Exchange',
+                'country': 'India',
+                'exchange_code': 'MCX',
+                'local_open_time': '09:00',
+                'local_close_time': '23:30',
+                'timezone': 'Asia/Kolkata',
+                'trading_days': '1,2,3,4,5',
+                'lunch_start': '17:00',
+                'lunch_end': '17:00'
             }
         ]
         
