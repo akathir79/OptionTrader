@@ -199,9 +199,9 @@ class WebSocketHandler {
                     
                     // Add ITM classes based on current spot price
                     if (this.currentSpotPrice > strike) {
-                        row.classList.add('itm-call'); // Call ITM
+                        row.classList.add('itm-call'); // Call ITM when spot > strike
                     } else if (this.currentSpotPrice < strike) {
-                        row.classList.add('itm-put'); // Put ITM
+                        row.classList.add('itm-put'); // Put ITM when spot < strike
                     }
                 }
             }
@@ -320,14 +320,18 @@ class WebSocketHandler {
         const isPutITM = currentSpot < strike.strike;   // Put is ITM when spot < strike
         
         // Apply ITM highlighting to the row
-        if (isCallITM && isPutITM) {
-            // Both calls and puts are ITM - shouldn't happen, but handle gracefully
+        // For calls: ITM when current price > strike price
+        // For puts: ITM when current price < strike price
+        if (currentSpot > strike.strike) {
+            // Call options are ITM, Put options are OTM
             row.classList.add('itm-call');
-        } else if (isCallITM) {
-            row.classList.add('itm-call');
-        } else if (isPutITM) {
+            console.log(`Adding itm-call to strike ${strike.strike}, spot: ${currentSpot}`);
+        } else if (currentSpot < strike.strike) {
+            // Put options are ITM, Call options are OTM  
             row.classList.add('itm-put');
+            console.log(`Adding itm-put to strike ${strike.strike}, spot: ${currentSpot}`);
         }
+        // If currentSpot == strike.strike, no ITM highlighting (ATM)
         
         // Create cells using column-specific approach
         const cells = [
