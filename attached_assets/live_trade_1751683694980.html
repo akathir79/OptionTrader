@@ -42,6 +42,50 @@
   background-color: #ffffff !important; /* White for OTM puts */
 }
 
+/* WebSocket Connection Status Styles */
+.ws-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ws-status.success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.ws-status.warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.ws-status.error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Live tick data updates */
+.ltp-cell.updated {
+  background-color: #d4edda !important;
+  transition: background-color 0.5s ease;
+}
+
+.near-money {
+  background-color: rgba(255, 193, 7, 0.1) !important;
+}
+
+.at-money {
+  background-color: rgba(255, 193, 7, 0.3) !important;
+  border: 1px solid #ffc107 !important;
+}
+
 /* Strike distance indicator */
 .strike-distance {
   font-size: 8px;
@@ -187,7 +231,7 @@
 
 /* Clean B/S Button Styles - Match original design */
 .option_button {
-  display: inline-flex;
+  display: none;
   align-items: center;
   justify-content: center;
   position: relative;
@@ -322,6 +366,68 @@
   border-color: #117a8b;
 }
 
+/* Margin Info Styling (matches reference) */
+#marginInfo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+.metric {
+  margin: 0.5rem;
+  text-align: center;
+}
+.metric-label {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 4px;
+}
+.metric-value {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+/* Option Chain Font Size and ITM Styling */
+#optionChainTable {
+  font-size: 10px; /* Default smaller font size */
+  border: none !important;
+  border-collapse: collapse !important;
+}
+
+#optionChainTable thead th {
+  border: none !important;
+  border-bottom: 1px solid #dee2e6 !important;
+  padding: 2px 4px !important;
+  vertical-align: middle;
+}
+
+#optionChainTable tbody td {
+  font-size: inherit;
+  padding: 2px 4px !important;
+  vertical-align: middle;
+  border: none !important;
+  border-bottom: 1px solid #e9ecef !important;
+}
+
+#optionChainTable tbody tr:hover {
+  background-color: rgba(0,0,0,0.05) !important;
+}
+
+/* ITM (In-The-Money) highlighting */
+.itm-ce {
+  background-color: #fff3cd !important; /* Light yellow background for ITM calls */
+}
+
+.itm-pe {
+  background-color: #fff3cd !important; /* Light yellow background for ITM puts */
+}
+
+/* ATM (At-The-Money) strike highlighting */
+.atm-strike {
+  color: #dc3545 !important; /* Dark red font for ATM strike */
+  font-weight: bold !important;
+}
+
 /* Enhanced Live Trading Styling */
 .card {
   border: none;
@@ -363,11 +469,6 @@
   vertical-align: middle !important;
   padding: 0.25rem !important;
   width: 60px;
-  display: flex !important;
-  flex-direction: row !important;
-  justify-content: center !important;
-  align-items: center !important;
-  gap: 2px !important;
 }
 
 /* Four Tab Styles */
@@ -581,6 +682,122 @@
 }
 </style>
 
+<style>
+/* Sticky Header for Option Chain Table - Excel-like Freeze Panes */
+#optionChainTable thead {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 10 !important;
+  background-color: #212529 !important;
+}
+
+#optionChainTable thead th {
+  background-color: #212529 !important;
+  color: #ffffff !important;
+  border-top: none !important;
+  border-bottom: 2px solid #495057 !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  white-space: nowrap;
+  font-weight: 600 !important;
+  text-align: center !important;
+  padding: 8px 4px !important;
+}
+
+/* Buy/Sell Button Styles from payoff_chart.html */
+.option_button {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 0 8px;
+  height: 24px;
+  font-size: 11px;
+  border: 1px solid;
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  margin: 0 2px;
+  transition: 0.3s;
+}
+.option_button:hover {
+  box-shadow: 0 0 5px -1px rgba(0, 0, 0, 0.5);
+}
+.option_button.active {
+  display: inline-flex !important;
+}
+
+.buy_sell_cell {
+  position: relative;
+  vertical-align: middle !important;
+  padding: 0.25rem !important;
+  text-align: center;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+}
+.buy_sell_cell:hover .option_button {
+  display: inline-flex;
+}
+
+.buy_button {
+  color: #03b760;
+  border-color: #03b760;
+}
+.sell_button {
+  color: #ef6161;
+  border-color: #ef6161;
+}
+
+.count_badge {
+  display: none;
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+  line-height: 16px;
+  text-align: center;
+  font-size: 10px;
+  color: #fff;
+  border-radius: 50%;
+}
+.buy_button .count_badge {
+  background: #03b760;
+}
+.sell_button .count_badge {
+  background: #ef6161;
+}
+
+.dropdown_menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-width: 80px;
+  z-index: 9999;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+.dropdown_menu button {
+  display: block;
+  width: 100%;
+  padding: 4px 8px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 11px;
+  color: #333;
+}
+.dropdown_menu button:hover {
+  background: #f2f2f2;
+}
+</style>
+
 <!-- Live Trading Container with Enhanced Bootstrap Design -->
 <div class="container-fluid py-3">
   <!-- Resizable Layout Container -->
@@ -667,7 +884,7 @@
                 <div class="carousel-page">
                   <div class="d-flex justify-content-between align-items-center">
                     <div class="text-center">
-                      <small class="text-muted me-1">Spot Price:</small><strong id="spotPrice" class="text-muted">Select Symbol</strong>
+                      <small class="text-muted me-1">Spot Price:</small><strong id="spotPrice" class="text-primary" data-status="waiting">Connecting...</strong>
                     </div>
                     <div class="text-center">
                       <small class="text-muted me-1">Day Open:</small><strong class="text-secondary">23,649</strong>
@@ -710,7 +927,7 @@
                       <small class="text-muted me-1">Change %:</small><strong class="text-success">+0.08%</strong>
                     </div>
                     <div class="text-center">
-                      <small class="text-muted me-1">LTP:</small><strong class="text-muted">--</strong>
+                      <small class="text-muted me-1">LTP:</small><strong class="text-secondary">23,608</strong>
                     </div>
                   </div>
                 </div>
@@ -797,29 +1014,39 @@
           <div class="d-flex align-items-center gap-3">
             <!-- ATM Display Only - No checkbox -->
             <div class="d-flex align-items-center gap-2">
-              <span id="atmDisplay" class="badge bg-warning text-dark" style="font-size: 10px; min-width: 50px; display: none;">
+              <input type="checkbox" id="atmDistanceCheckbox" class="form-check-input" style="margin-right: 5px;" title="Show distance from ATM">
+              <span id="atmDisplay" class="badge bg-warning text-dark" style="font-size: 10px; min-width: 50px;">
                 ATM
               </span>
-            </div>
-            <!-- Strike Count Dropdown -->
-            <div class="d-flex align-items-center gap-2">
-              <label for="strikeCountSelect" class="form-label mb-0 text-light" style="font-size: 11px; font-weight: 500;">Strike Count:</label>
-              <select id="strikeCountSelect" class="form-select form-select-sm" style="width: 80px; font-size: 11px;">
+              <select id="strikeCountSelect" class="form-select form-select-sm" style="width: 70px; font-size: 11px;">
                 <option value="5">5</option>
                 <option value="7">7</option>
                 <option value="10" selected>10</option>
+                <option value="12">12</option>
                 <option value="15">15</option>
                 <option value="20">20</option>
                 <option value="25">25</option>
-                <option value="ALL">ALL</option>
+                <option value="50">ALL</option>
+              </select>
+              <select id="fontSizeSelect" class="form-select form-select-sm ms-2" style="width: 60px; font-size: 11px;" title="Font Size">
+                <option value="9">9px</option>
+                <option value="10" selected>10px</option>
+                <option value="11">11px</option>
+                <option value="12">12px</option>
+                <option value="13">13px</option>
+                <option value="14">14px</option>
               </select>
             </div>
+            <h6 class="mb-0">
+              
+            </h6>
             <span id="fyersSymbolDisplay" class="d-none" style="font-size: 10px; color: #6c757d; font-weight: 500;">
               <span id="fyersSymbolText">NSE:NIFTY50-INDEX</span>
             </span>
           </div>
           <div class="d-flex align-items-center gap-3">
             <div id="selectedDetailsDisplay" style="font-size: 11px; color: #adb5bd; font-weight: 500;">
+              NSE | NIFTY 50 | Select Expiry
             </div>
             <div class="d-flex align-items-center gap-2">
               <button id="refreshBtn" class="btn btn-outline-light btn-sm p-1" style="width: 30px; height: 30px;">
@@ -829,39 +1056,6 @@
                 <i class="fas fa-expand"></i>
               </button>
               <div id="liveDataControls" class="d-flex align-items-center gap-2">
-              <div class="dropdown">
-                <button class="btn btn-outline-light btn-sm dropdown-toggle p-1" type="button" id="columnVisibilityDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="height: 30px; font-size: 11px;" title="Column Visibility">
-                  <i class="fas fa-columns"></i>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="columnVisibilityDropdown" style="min-width: 250px; max-height: 400px; overflow-y: auto;">
-                  <li><h6 class="dropdown-header">Column Visibility</h6></li>
-                  <li><hr class="dropdown-divider"></li>
-                  <li class="px-3 py-1">
-                    <div class="d-flex gap-2 mb-2">
-                      <button id="selectAllColumns" class="btn btn-success btn-sm flex-fill" style="font-size: 10px;">Select All</button>
-                      <button id="deselectAllColumns" class="btn btn-secondary btn-sm flex-fill" style="font-size: 10px;">Clear All</button>
-                      <button id="resetToDefaults" class="btn btn-primary btn-sm flex-fill" style="font-size: 10px;">Defaults</button>
-                    </div>
-                  </li>
-                  <li><hr class="dropdown-divider"></li>
-                  <li class="px-3">
-                    <div class="row" style="font-size: 11px;">
-                      <div class="col-6">
-                        <div class="form-check"><input class="form-check-input" type="checkbox" data-column="16" id="col16"><label class="form-check-label" for="col16">CE Chart</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" data-column="17" id="col17"><label class="form-check-label" for="col17">CE LTP</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" data-column="15" id="col15"><label class="form-check-label" for="col15">CE Vol</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" data-column="14" id="col14"><label class="form-check-label" for="col14">CE OI</label></div>
-                      </div>
-                      <div class="col-6">
-                        <div class="form-check"><input class="form-check-input" type="checkbox" data-column="21" id="col21"><label class="form-check-label" for="col21">PE LTP</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" data-column="22" id="col22"><label class="form-check-label" for="col22">PE Chart</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" data-column="23" id="col23"><label class="form-check-label" for="col23">PE Vol</label></div>
-                        <div class="form-check"><input class="form-check-input" type="checkbox" data-column="24" id="col24"><label class="form-check-label" for="col24">PE OI</label></div>
-                      </div>
-                    </div>
-                  </li>
-                </ul>
-              </div>
                 <span id="liveDataStatus" style="font-size: 12px; color: #6c757d;">
                   <i class="fas fa-circle text-secondary"></i> Live Data Ready
                 </span>
@@ -872,7 +1066,7 @@
 
         <!-- Single Option Chain Navigation -->
         <div class="card-header bg-secondary text-white p-2 border-bottom">
-          <div class="d-flex justify-content-start align-items-center gap-1" style="font-size: 12px;">
+          <div class="d-flex justify-content-between align-items-center gap-1" style="font-size: 12px;">
             <span class="text-light" style="font-size: 11px; font-weight: 500;">
               Option Chain
             </span>
@@ -880,36 +1074,8 @@
         </div>
 
         <div class="card-body p-0">
-          <!-- Loading Indicator -->
-          <div id="optionChainLoading" class="text-center py-5" style="display: none;">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Loading...</span>
-            </div>
-            <div class="mt-2">
-              <small class="text-muted">Loading option chain data...</small>
-            </div>
-          </div>
           <!-- Single Option Chain Table -->
-          <div id="optionChainContainer" style="max-height: 60vh; overflow-y: auto;">
-            <!-- Column Visibility Controls - positioned above table -->
-            <div class="d-flex justify-content-end align-items-center mb-1" style="padding: 5px 0;">
-              <div class="dropdown">
-                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="columnVisibilityDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                  <i class="fas fa-columns"></i> Columns
-                </button>
-                <div class="dropdown-menu dropdown-menu-end p-3" aria-labelledby="columnVisibilityDropdown" style="width: 300px; max-height: 400px; overflow-y: auto;">
-                  <div class="d-flex justify-content-between mb-2">
-                    <button class="btn btn-sm btn-outline-primary" id="selectAllColumns">Select All</button>
-                    <button class="btn btn-sm btn-outline-secondary" id="deselectAllColumns">Deselect All</button>
-                    <button class="btn btn-sm btn-outline-info" id="resetDefaultColumns">Reset</button>
-                  </div>
-                  <hr class="my-2">
-                  <div id="columnCheckboxes">
-                    <!-- Checkboxes will be populated by JavaScript -->
-                  </div>
-                </div>
-              </div>
-            </div>
+          <div style="max-height: 60vh; overflow-y: auto;">
             <div class="table-container">
               <table class="table table-sm mb-0" id="optionChainTable">
                 <thead>
@@ -930,13 +1096,11 @@
                     <th>Chng in OI</th>
                     <th>OI</th>
                     <th>Vol</th>
-                    <th>Chart</th>
                     <th>LTP</th>
                     <th>Δ</th>
                     <th style="background-color: #f39c12; color: #000;">Strike</th>
                     <th>Δ</th>
                     <th>LTP</th>
-                    <th>Chart</th>
                     <th>Vol</th>
                     <th>OI</th>
                     <th>Chng in OI</th>
@@ -1039,6 +1203,7 @@
           <div class="d-flex justify-content-start align-items-center gap-1 flex-wrap" style="font-size: 13px;">
             <button class="btn btn-sm btn-primary active-tab-btn" id="payoff-tab" data-bs-toggle="tab" data-bs-target="#payoff-content" type="button" role="tab" style="padding: 4px 12px; font-size: 12px;">
               Payoff Chart
+
             </button>
             <button class="btn btn-sm btn-outline-secondary" id="mtm-tab" data-bs-toggle="tab" data-bs-target="#mtm-content" type="button" role="tab" style="padding: 4px 12px; font-size: 12px;">
               MTM
@@ -1110,7 +1275,7 @@
 
         <!-- Payoff Chart - No Header -->
         <div class="mb-3">
-          <div id="chartContainer" style="width: 100%; height: 350px; border: 1px solid #dee2e6; border-radius: 0.375rem; background-color: #fff;"></div>
+          <div id="chartContainer" style="width: 100%; height: 350px; min-height: 250px; border: 1px solid #dee2e6; border-radius: 0.375rem; background-color: #fff; resize: both; overflow: auto;"></div>
         </div>
       </div>
 
@@ -1131,8 +1296,6 @@
             <button id="clearAllBtn" class="btn btn-outline-light btn-sm">
               <i class="fas fa-trash me-1"></i>Clear All
             </button>
-            <span class="small text-white-75">Lot Size:</span>
-            <span id="lotSizeDisplay" class="badge bg-warning text-dark fw-bold">75</span>
             <span id="positionCount" class="badge bg-light text-dark">0 Positions</span>
           </div>
         </div>
@@ -1148,6 +1311,7 @@
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 40px; text-align: center;">Action</th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 45px; text-align: center;">Lots</th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 45px; text-align: center;">Qty</th>
+                  <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 140px; text-align: center;">Symbol</th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 80px; text-align: center;">Trade Date/Time</th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 70px; text-align: center;">Strike</th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 80px; text-align: center;">Expiry</th>
@@ -1162,8 +1326,8 @@
               </thead>
               <tbody id="positionTableBody">
                 <tr>
-                  <td colspan="15" class="text-center text-muted py-3">
-                    <i class="fas fa-plus-circle me-2"></i>No positions yet. Start trading by clicking B/S buttons in option chain!
+                  <td colspan="16" class="text-center text-muted py-3">
+                    <i class="fas fa-plus-circle me-2"></i>No positions yet. Start trading!
                   </td>
                 </tr>
               </tbody>
@@ -1179,7 +1343,7 @@
                 <option value="2">2</option>
                 <option value="3">3</option>
               </select>
-              <span>Lot Size: <span id="footerLotSize">75</span></span>
+              <span>Lot Size: 75</span>
               <button class="btn btn-outline-primary btn-sm" style="padding: 2px 8px; font-size: 10px;">Add Alert</button>
               <button class="btn btn-outline-success btn-sm" style="padding: 2px 8px; font-size: 10px;">Save</button>
               <button class="btn btn-outline-info btn-sm" style="padding: 2px 8px; font-size: 10px;">Share</button>
@@ -1261,64 +1425,8 @@
 <!-- Include Resizable Layout CSS -->
 <link href="{{ url_for('static', filename='css/resizable.css') }}" rel="stylesheet">
 
-<!-- Option Chain Styling for WebSocket -->
-<style>
-  /* ATM Strike Highlighting */
-  .atm-strike {
-    background-color: #ffc107 !important;
-    font-weight: bold;
-  }
-  
-  .atm-strike td {
-    background-color: #ffc107 !important;
-    color: #000 !important;
-  }
-  
-  /* ITM/OTM Styling */
-  .call-ltp.itm {
-    background-color: #d4edda !important;
-    color: #155724 !important;
-  }
-  
-  .call-ltp.otm {
-    background-color: #f8d7da !important;
-    color: #721c24 !important;
-  }
-  
-  .put-ltp.itm {
-    background-color: #d4edda !important;
-    color: #155724 !important;
-  }
-  
-  .put-ltp.otm {
-    background-color: #f8d7da !important;
-    color: #721c24 !important;
-  }
-  
-  /* Strike Price Column */
-  .strike-price {
-    background-color: #495057 !important;
-    color: #fff !important;
-    font-weight: bold;
-  }
-  
-  /* Spot Price Animation */
-  .spot-price-updated {
-    animation: priceFlash 0.5s ease-in-out;
-  }
-  
-  @keyframes priceFlash {
-    0% { background-color: #28a745; }
-    100% { background-color: transparent; }
-  }
-</style>
-
 <!-- *** NEW: symbol / expiry logic *** -->
 <script src="{{ url_for('static', filename='js/symbol_selector_fixed.js') }}"></script>
-<script src="{{ url_for('static', filename='js/websocket_handler.js') }}"></script>
-<script src="{{ url_for('static', filename='js/option_microchart.js') }}"></script>
-<script src="{{ url_for('static', filename='js/chart_popup.js') }}"></script>
-<script src="{{ url_for('static', filename='js/column_visibility.js') }}"></script>
 
 <!-- Highcharts (Pay-off chart) -->
 <script src="https://code.highcharts.com/highcharts.js"></script>
@@ -1335,38 +1443,16 @@
 <!-- Broker settings -->
 <script src="{{ url_for('static', filename='js/broker_settings.js') }}"></script>
 
-<!-- Position Manager - Three Card Integration -->
-<script src="{{ url_for('static', filename='js/position_manager.js') }}"></script>
+<script src="{{ url_for('static', filename='js/simple_websocket.js') }}"></script>
 
-<!-- Payoff Chart Integration -->
-<script src="{{ url_for('static', filename='js/payoff_chart_integration.js') }}"></script>
+<!-- Column visibility controller -->
+<script src="{{ url_for('static', filename='js/column_visibility.js') }}"></script>
 
-<script>
-// Initialize components when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize column visibility controller
-    window.columnVisibilityController = new ColumnVisibilityController();
-    console.log('Column visibility controller initialized');
-    
-    // Initialize position manager
-    window.positionManager = new PositionManager();
-    console.log('Position manager initialized');
-    
-    // Initialize payoff chart integration
-    window.payoffChartIntegration = new PayoffChartIntegration();
-    console.log('Payoff chart integration initialized');
-    
-    // Connect clear all button to position manager
-    const clearAllBtn = document.getElementById('clearAllBtn');
-    if (clearAllBtn) {
-        clearAllBtn.addEventListener('click', function() {
-            window.positionManager.clearAllPositions();
-            console.log('All positions cleared');
-        });
-    }
-});
-</script>
-
+<!-- Additional Separated Modules (for enhanced modularity) -->
+<script src="{{ url_for('static', filename='js/symbol_selection_listener_generator.js') }}"></script>
+<script src="{{ url_for('static', filename='js/marketcall_spot.js') }}"></script>
+<script src="{{ url_for('static', filename='js/option_chain_loader.js') }}"></script>
+<script src="{{ url_for('static', filename='js/three_card_synchronization.js') }}"></script>
 
 
 {% endblock %}
