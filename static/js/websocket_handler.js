@@ -161,9 +161,6 @@ class WebSocketHandler {
             }, 500);
         }
         
-        // Store current spot price for ITM calculations
-        this.currentSpotPrice = spotPrice;
-        
         // Update any element containing "Spot Price:"
         const allElements = document.querySelectorAll('*');
         allElements.forEach(element => {
@@ -194,40 +191,28 @@ class WebSocketHandler {
             atmElement.style.display = 'inline-block';
         }
         
-        // Update ITM highlighting in option chain table
-        this.updateITMHighlighting(spotPrice);
+        // Update ATM highlighting in option chain table
+        this.highlightATMStrike(atmStrike);
     }
     
     highlightATMStrike(atmStrike) {
         // ATM highlighting disabled for clean professional appearance
         return;
-    }
-    
-    updateITMHighlighting(spotPrice) {
-        if (!this.optionChainTable) return;
         
-        // Remove all existing highlighting classes
-        const allRows = this.optionChainTable.querySelectorAll('tr[data-strike]');
-        allRows.forEach(row => {
-            row.classList.remove('itm-call-row', 'itm-put-row', 'atm-row');
-        });
-        
-        // Apply new highlighting based on current spot price
-        allRows.forEach(row => {
-            const strikePrice = parseFloat(row.dataset.strike);
-            if (strikePrice && spotPrice) {
-                if (strikePrice < spotPrice) {
-                    // Call ITM (strike below spot price)
-                    row.classList.add('itm-call-row');
-                } else if (strikePrice > spotPrice) {
-                    // Put ITM (strike above spot price)  
-                    row.classList.add('itm-put-row');
-                } else {
-                    // ATM - no highlighting
-                    row.classList.add('atm-row');
-                }
-            }
-        });
+        // if (!this.optionChainTable) return;
+        // 
+        // // Remove existing ATM highlights
+        // const existingATM = this.optionChainTable.querySelectorAll('.atm-strike');
+        // existingATM.forEach(el => el.classList.remove('atm-strike'));
+        // 
+        // // Add ATM highlight to current strike
+        // const strikeRows = this.optionChainTable.querySelectorAll('tr[data-strike]');
+        // strikeRows.forEach(row => {
+        //     const strike = parseFloat(row.dataset.strike);
+        //     if (strike === atmStrike) {
+        //         row.classList.add('atm-strike');
+        //     }
+        // });
     }
     
     async startOptionChainUpdates() {
@@ -291,22 +276,14 @@ class WebSocketHandler {
         const row = document.createElement('tr');
         row.dataset.strike = strike.strike;
         
-        // Apply ITM highlighting for calls and puts based on spot price
-        if (this.currentSpotPrice && strike.strike) {
-            const spotPrice = parseFloat(this.currentSpotPrice);
-            const strikePrice = parseFloat(strike.strike);
-            
-            if (strikePrice < spotPrice) {
-                // Call ITM (strike below spot price)
-                row.classList.add('itm-call-row');
-            } else if (strikePrice > spotPrice) {
-                // Put ITM (strike above spot price)  
-                row.classList.add('itm-put-row');
-            } else {
-                // ATM - no highlighting
-                row.classList.add('atm-row');
-            }
-        }
+        // Remove ATM highlighting for clean professional appearance
+        // if (strike.is_atm) {
+        //     row.classList.add('atm-strike');
+        // }
+        
+        // Determine ITM/OTM classes
+        const isCallITM = strike.strike <= strike.strike; // Simplified for now
+        const isPutITM = strike.strike >= strike.strike; // Simplified for now
         
         // Create cells using column-specific approach
         const cells = [
