@@ -1335,8 +1335,8 @@
 <!-- Broker settings -->
 <script src="{{ url_for('static', filename='js/broker_settings.js') }}"></script>
 
-<!-- Position Manager - Three Card Integration -->
-<script src="{{ url_for('static', filename='js/position_manager.js') }}"></script>
+<!-- Position Manager - Working Implementation -->
+<script src="{{ url_for('static', filename='js/position_manager_working.js') }}"></script>
 
 <!-- Payoff Chart Integration -->
 <script src="{{ url_for('static', filename='js/payoff_chart_integration.js') }}"></script>
@@ -1348,9 +1348,9 @@ document.addEventListener('DOMContentLoaded', function() {
     window.columnVisibilityController = new ColumnVisibilityController();
     console.log('Column visibility controller initialized');
     
-    // Initialize position manager
-    window.positionManager = new PositionManager();
-    console.log('Position manager initialized');
+    // Initialize working position manager
+    window.positionManager = new PositionManagerWorking();
+    console.log('Position manager working initialized');
     
     // Initialize payoff chart integration
     window.payoffChartIntegration = new PayoffChartIntegration();
