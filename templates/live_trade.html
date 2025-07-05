@@ -1394,8 +1394,119 @@
 <script>
 // Initialize components when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-
+    // Attach click handlers to buy/sell buttons
+    attachBuySellHandlers();
 });
+
+function attachBuySellHandlers() {
+    // Add event listeners to all buy/sell buttons
+    document.addEventListener('click', async function(event) {
+        if (event.target.classList.contains('option_button')) {
+            const button = event.target;
+            const row = button.closest('tr');
+            const strikeCell = row.querySelector('.strike-price');
+            const strike = parseFloat(strikeCell.textContent);
+            
+            let ltp, optionType, action;
+            
+            if (button.classList.contains('buy_button')) {
+                action = 'BUY';
+            } else if (button.classList.contains('sell_button')) {
+                action = 'SELL';
+            }
+            
+            // Determine if it's CE or PE based on position
+            const buyCell = button.closest('.buy_sell_cell');
+            const allCells = Array.from(row.children);
+            const cellIndex = allCells.indexOf(buyCell);
+            
+            if (cellIndex === 0) {
+                // First buy_sell_cell is CE
+                optionType = 'CE';
+                const ltpCell = row.querySelector('.ce-ltp');
+                ltp = parseFloat(ltpCell.textContent.replace(/[^\d.-]/g, '')) || 0;
+            } else {
+                // Last buy_sell_cell is PE
+                optionType = 'PE';
+                const ltpCell = row.querySelector('.pe-ltp');
+                ltp = parseFloat(ltpCell.textContent.replace(/[^\d.-]/g, '')) || 0;
+            }
+            
+            // Add position
+            await addPosition(action, optionType, strike, ltp);
+        }
+    });
+}
+
+async function addPosition(action, optionType, strike, ltp) {
+    // Get current symbol and expiry from WebSocket handler
+    const currentSymbol = window.wsHandler?.currentSymbol || '';
+    const currentExpiry = window.wsHandler?.currentExpiry || '';
+    
+    if (!currentSymbol || !currentExpiry) {
+        showAlert('Please select a symbol and expiry first', 'warning');
+        return;
+    }
+
+    if (!ltp || ltp <= 0) {
+        showAlert('Invalid LTP price', 'warning');
+        return;
+    }
+
+    const positionData = {
+        symbol: currentSymbol,
+        strike: strike,
+        expiry: currentExpiry,
+        option_type: optionType,
+        action: action,
+        quantity: 75, // Default lot size
+        entry_price: ltp,
+        current_price: ltp,
+        lot_size: 75
+    };
+
+    try {
+        const response = await fetch('/api/positions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(positionData)
+        });
+
+        if (response.ok) {
+            const newPosition = await response.json();
+            showAlert(`${action} ${optionType} position added successfully`, 'success');
+            console.log('Position added:', newPosition);
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to add position');
+        }
+    } catch (error) {
+        console.error('Error adding position:', error);
+        showAlert('Failed to add position: ' + error.message, 'danger');
+    }
+}
+
+function showAlert(message, type = 'info') {
+    // Create a simple toast notification
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 3000);
+}
 </script>
 
 
