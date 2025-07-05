@@ -10,8 +10,8 @@ class PositionManager {
         this.currentExpiry = null;
         this.currentSpotPrice = null;
         this.lotSize = 75; // Default lot size
-        this.counters = {}; // Track clicks per button
-        this.firstClickFlags = {}; // Track first click behavior
+        this.counters = []; // Track clicks per button per row
+        this.firstClickFlags = []; // Track first click behavior per row
         this.init();
     }
 
@@ -60,51 +60,67 @@ class PositionManager {
         const button = event.target;
         const row = button.closest('tr');
         
-        // Simple strike extraction - look for the highlighted ATM cell or middle cell
-        const cells = row.querySelectorAll('td');
-        let strike = null;
+        // Get row index from the table
+        const tableBody = document.querySelector('#optionChainTableBody');
+        const rowIndex = Array.from(tableBody.querySelectorAll('tr')).indexOf(row);
         
-        // Find the strike cell (usually orange/highlighted or in the middle)
-        for (let cell of cells) {
-            const text = cell.textContent.trim();
-            if (text.match(/^\d+$/) && parseInt(text) > 20000) {
-                strike = parseInt(text);
-                break;
-            }
-        }
-        
-        if (!strike) {
-            console.log('Could not find strike price');
+        if (rowIndex === -1) {
+            console.log('Could not find row index');
             return;
         }
         
+        // Initialize counters for this row if not exists
+        if (!this.counters[rowIndex]) {
+            this.counters[rowIndex] = { ceBuy: 0, ceSell: 0, peBuy: 0, peSell: 0 };
+        }
+        if (!this.firstClickFlags[rowIndex]) {
+            this.firstClickFlags[rowIndex] = { ceBuy: true, ceSell: true, peBuy: true, peSell: true };
+        }
+        
+        // Determine button type based on classes and position
         const isBuy = button.classList.contains('buy_button');
-        const buttonText = button.textContent;
+        const buttonCell = button.closest('td');
+        const isCallSide = buttonCell.classList.contains('call_bs') || 
+                          Array.from(row.querySelectorAll('td')).indexOf(buttonCell) < 3;
         
-        // Determine if this is CE or PE based on button position
-        const buttonIndex = Array.from(row.querySelectorAll('.option_button')).indexOf(button);
-        const optionType = buttonIndex < 2 ? 'CE' : 'PE';
+        const buttonKey = isCallSide ? 
+            (isBuy ? 'ceBuy' : 'ceSell') : 
+            (isBuy ? 'peBuy' : 'peSell');
         
-        // Create position
-        const position = {
-            strike: strike,
-            optionType: optionType,
-            action: isBuy ? 'BUY' : 'SELL',
-            lots: 1,
-            entryPrice: 100, // Default price for now
-            currentPrice: 100,
-            symbol: `NSE:NIFTY${strike}${optionType}`,
-            expiry: this.currentExpiry || '10-Jul-25',
-            timestamp: new Date().toISOString()
-        };
+        console.log('Button clicked:', {
+            rowIndex: rowIndex,
+            buttonKey: buttonKey,
+            isFirstClick: this.firstClickFlags[rowIndex][buttonKey],
+            currentCount: this.counters[rowIndex][buttonKey]
+        });
         
-        console.log('Creating position:', position);
-        
-        // Add position and update UI
-        this.updatePosition(position);
-        this.updateButtonBadge(button, position);
-        this.updateCurrentPositionCard();
-        this.syncWithPayoffChart();
+        // Handle first click vs subsequent clicks
+        if (this.firstClickFlags[rowIndex][buttonKey]) {
+            // First click: immediately increment and add position
+            this.counters[rowIndex][buttonKey] = 1;
+            this.firstClickFlags[rowIndex][buttonKey] = false;
+            
+            // Update badge immediately
+            this.updateButtonBadge(button, this.counters[rowIndex][buttonKey]);
+            
+            // Add to log and create position
+            this.addLogEntry(rowIndex, buttonKey);
+            this.updatePayoffChart();
+            this.updateCurrentPositionCard();
+            
+            console.log('First click processed - position added');
+        } else {
+            // Subsequent clicks: increment counter
+            this.counters[rowIndex][buttonKey]++;
+            this.updateButtonBadge(button, this.counters[rowIndex][buttonKey]);
+            
+            // Update existing log entry
+            this.updateLogEntry(rowIndex, buttonKey);
+            this.updatePayoffChart();
+            this.updateCurrentPositionCard();
+            
+            console.log('Subsequent click processed - count:', this.counters[rowIndex][buttonKey]);
+        }
 
         // Get current price for this option
         const currentPrice = this.getCurrentPriceFromRow(row, optionType);
@@ -227,15 +243,7 @@ class PositionManager {
         this.savePositionsToStorage();
     }
 
-    updateButtonBadge(button, position) {
-        // Count positions for this strike/type/action
-        const isBuy = button.classList.contains('buy_button');
-        const count = this.positions.filter(p => 
-            p.strike === position.strike && 
-            p.optionType === position.optionType &&
-            p.action === (isBuy ? 'BUY' : 'SELL')
-        ).reduce((sum, p) => sum + p.lots, 0);
-        
+    updateButtonBadge(button, count) {
         let badge = button.querySelector('.count_badge');
         if (!badge) {
             badge = document.createElement('span');
@@ -653,6 +661,65 @@ class PositionManager {
         modal.addEventListener('hidden.bs.modal', () => {
             document.body.removeChild(modal);
         });
+    }
+
+    addLogEntry(rowIndex, buttonKey) {
+        // Get strike from table row
+        const tableBody = document.querySelector('#optionChainTableBody');
+        const row = tableBody.querySelectorAll('tr')[rowIndex];
+        const strikeCell = row.querySelector('td:nth-child(3)'); // Strike is usually the 3rd column
+        const strike = strikeCell ? parseInt(strikeCell.textContent.trim()) : 0;
+        
+        const isCall = buttonKey.startsWith('ce');
+        const isBuy = buttonKey.includes('Buy');
+        
+        const logEntry = {
+            rowIndex: rowIndex,
+            buttonKey: buttonKey,
+            strike: strike,
+            optionType: isCall ? 'CE' : 'PE',
+            action: isBuy ? 'BUY' : 'SELL',
+            count: this.counters[rowIndex][buttonKey],
+            entryPrice: 100, // Default for now
+            currentPrice: 100,
+            lotSize: this.lotSize,
+            timestamp: new Date().toISOString()
+        };
+        
+        this.positions.push(logEntry);
+        console.log('Log entry added:', logEntry);
+    }
+
+    updateLogEntry(rowIndex, buttonKey) {
+        // Find and update existing log entry
+        const entry = this.positions.find(p => 
+            p.rowIndex === rowIndex && p.buttonKey === buttonKey
+        );
+        
+        if (entry) {
+            entry.count = this.counters[rowIndex][buttonKey];
+            console.log('Log entry updated:', entry);
+        }
+    }
+
+    updatePayoffChart() {
+        // Create payoff data from positions
+        const payoffData = this.positions.map(position => ({
+            strike: position.strike,
+            optionType: position.optionType,
+            action: position.action,
+            lots: position.count,
+            entryPrice: position.entryPrice,
+            currentPrice: position.currentPrice
+        }));
+        
+        // Trigger payoff chart update
+        const event = new CustomEvent('positionsUpdated', {
+            detail: { positions: payoffData }
+        });
+        document.dispatchEvent(event);
+        
+        console.log('Payoff chart updated with positions:', payoffData);
     }
 }
 
