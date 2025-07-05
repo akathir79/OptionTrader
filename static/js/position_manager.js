@@ -21,7 +21,7 @@ class PositionManager {
 
     setupEventListeners() {
         // Clear all positions button
-        const clearBtn = document.getElementById('clearAllPositions');
+        const clearBtn = document.getElementById('clearAllBtn');
         if (clearBtn) {
             clearBtn.addEventListener('click', () => this.clearAllPositions());
         }
@@ -168,10 +168,10 @@ class PositionManager {
     }
 
     updatePositionsCard() {
-        const tableBody = document.getElementById('positionsTableBody');
+        const tableBody = document.getElementById('positionTableBody');
         const positionCount = document.getElementById('positionCount');
-        const totalPnL = document.getElementById('totalPnL');
-        const totalPremium = document.getElementById('totalPremium');
+        const totalPnL = document.getElementById('totalPnLSummary') || document.querySelector('.position-total-pnl');
+        const totalPremium = document.getElementById('totalPremium') || document.querySelector('.total-premium');
 
         if (!tableBody) return;
 
@@ -233,9 +233,12 @@ class PositionManager {
         });
 
         // Update totals
+        if (positionCount) {
+            positionCount.textContent = `${this.positions.length} Position${this.positions.length !== 1 ? 's' : ''}`;
+        }
         if (totalPnL) {
             totalPnL.textContent = `₹${totalPnLValue.toFixed(2)}`;
-            totalPnL.className = `h5 mb-0 ${totalPnLValue >= 0 ? 'text-success' : 'text-danger'}`;
+            totalPnL.className = `text-${totalPnLValue >= 0 ? 'success' : 'danger'}`;
         }
         if (totalPremium) {
             totalPremium.textContent = `₹${totalP.toFixed(2)}`;
@@ -260,10 +263,10 @@ class PositionManager {
     }
 
     initPayoffChart() {
-        // Initialize Highcharts or Chart.js here
-        const chartContainer = document.getElementById('payoffChart');
+        // Initialize Highcharts using existing chartContainer
+        const chartContainer = document.getElementById('chartContainer');
         if (chartContainer && typeof Highcharts !== 'undefined') {
-            this.payoffChart = Highcharts.chart('payoffChart', {
+            this.payoffChart = Highcharts.chart('chartContainer', {
                 chart: {
                     type: 'line',
                     height: 300
@@ -375,6 +378,7 @@ class PositionManager {
 let positionManager;
 document.addEventListener('DOMContentLoaded', function() {
     positionManager = new PositionManager();
+    window.positionManager = positionManager;
     
     // Integrate with existing WebSocket handler
     if (window.wsHandler) {

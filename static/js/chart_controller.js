@@ -92,7 +92,7 @@ class ChartController {
     fsBtn && (fsBtn.innerHTML = '<i class="fas fa-compress"></i>', fsBtn.title = 'Exit Fullscreen');
 
     /* Highcharts reflow */
-    setTimeout(() => tradingState?.payoffChart?.reflow(), 100);
+    setTimeout(() => positionManager?.payoffChart?.reflow?.(), 100);
 
     this.isPayoffFullscreen = true;
   }
@@ -108,7 +108,7 @@ class ChartController {
     const fsBtn = document.getElementById('fullscreenPayoff');
     fsBtn && (fsBtn.innerHTML = '<i class="fas fa-expand"></i>', fsBtn.title = 'Fullscreen View');
 
-    setTimeout(() => tradingState?.payoffChart?.reflow(), 100);
+    setTimeout(() => positionManager?.payoffChart?.reflow?.(), 100);
     this.isPayoffFullscreen = false;
   }
 
