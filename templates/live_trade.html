@@ -1496,8 +1496,9 @@ async function addPosition(action, optionType, strike, ltp) {
             showAlert(`${action} ${optionType} position added successfully`, 'success');
             console.log('Position added:', newPosition);
             
-            // Show position dropdown after successful addition
-            showPositionDropdown(strike, optionType);
+            // Update payoff chart and positions table directly
+            await updatePayoffChart();
+            await updatePositionsTable();
         } else {
             const error = await response.json();
             throw new Error(error.error || 'Failed to add position');
@@ -1528,146 +1529,111 @@ function showAlert(message, type = 'info') {
     }, 3000);
 }
 
-async function showPositionDropdown(strike, optionType) {
-    // Remove any existing dropdown
-    const existingDropdown = document.getElementById('positionDropdown');
-    if (existingDropdown) {
-        existingDropdown.remove();
+// Removed popup functions - using direct table/chart updates instead
+
+async function updatePayoffChart() {
+    try {
+        const response = await fetch('/api/positions/payoff');
+        const data = await response.json();
+        
+        if (data.payoff_data && data.payoff_data.length > 0) {
+            // Create payoff chart with Chart.js
+            const ctx = document.getElementById('payoffChart');
+            if (ctx) {
+                // Clear existing chart
+                if (window.payoffChartInstance) {
+                    window.payoffChartInstance.destroy();
+                }
+                
+                // Create new chart
+                window.payoffChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.payoff_data.map(point => point[0].toFixed(0)),
+                        datasets: [{
+                            label: 'P&L',
+                            data: data.payoff_data.map(point => point[1]),
+                            borderColor: 'rgb(75, 192, 192)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            x: { title: { display: true, text: 'Stock Price' } },
+                            y: { title: { display: true, text: 'P&L (₹)' } }
+                        }
+                    }
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error updating payoff chart:', error);
     }
-    
-    // Get current positions for this strike and option type
+}
+
+async function updatePositionsTable() {
     try {
         const response = await fetch('/api/positions');
         const positions = await response.json();
         
-        const relevantPositions = positions.filter(pos => 
-            pos.strike === strike && pos.option_type === optionType
-        );
+        const tableBody = document.querySelector('#positionsTableBody');
+        if (!tableBody) return;
         
-        if (relevantPositions.length === 0) return;
-        
-        // Create dropdown
-        const dropdown = document.createElement('div');
-        dropdown.id = 'positionDropdown';
-        dropdown.className = 'card position-fixed';
-        dropdown.style.cssText = `
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 10000; min-width: 350px; max-width: 500px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-        `;
+        if (positions.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="12" class="text-center">No positions yet. Start trading!</td></tr>';
+            return;
+        }
         
         let totalPnL = 0;
-        let positionRows = '';
+        tableBody.innerHTML = '';
         
-        relevantPositions.forEach(pos => {
+        positions.forEach(pos => {
             const pnl = (pos.current_price - pos.entry_price) * pos.quantity;
             if (pos.action === 'BUY') {
                 totalPnL += pnl;
             } else {
-                totalPnL += -pnl;
+                totalPnL -= pnl;
             }
             
-            positionRows += `
-                <tr>
-                    <td>
-                        <span class="badge ${pos.option_type === 'CE' ? 'bg-success' : 'bg-info'}">${pos.option_type}</span>
-                    </td>
-                    <td>
-                        <span class="badge ${pos.action === 'BUY' ? 'bg-primary' : 'bg-warning'}">${pos.action}</span>
-                    </td>
-                    <td>1</td>
-                    <td>${pos.quantity}</td>
-                    <td>${pos.strike}</td>
-                    <td>₹${pos.entry_price.toFixed(2)}</td>
-                    <td>₹${pos.current_price.toFixed(2)}</td>
-                    <td class="${pnl >= 0 ? 'text-success' : 'text-danger'}">₹${pnl.toFixed(2)}</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-danger" onclick="removePosition(${pos.id})">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><input type="checkbox" class="form-check-input"></td>
+                <td><span class="badge ${pos.option_type === 'CE' ? 'bg-success' : 'bg-info'}">${pos.option_type}</span></td>
+                <td><span class="badge ${pos.action === 'BUY' ? 'bg-primary' : 'bg-warning'}">${pos.action}</span></td>
+                <td>1</td>
+                <td>${pos.quantity}</td>
+                <td>${pos.trade_date}</td>
+                <td>${pos.strike}</td>
+                <td>${pos.expiry}</td>
+                <td>₹${pos.entry_price.toFixed(2)}</td>
+                <td>₹${pos.current_price.toFixed(2)}</td>
+                <td class="${pnl >= 0 ? 'text-success' : 'text-danger'}">₹${pnl.toFixed(2)}</td>
+                <td class="${pnl >= 0 ? 'text-success' : 'text-danger'}">₹${pnl.toFixed(2)}</td>
+                <td>-</td>
+                <td>-</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removePositionFromTable(${pos.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
             `;
+            tableBody.appendChild(row);
         });
         
-        dropdown.innerHTML = `
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">
-                    <i class="fas fa-briefcase me-2"></i>Current Positions - ${strike} ${optionType}
-                </h6>
-                <button type="button" class="btn-close" onclick="closePositionDropdown()"></button>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-sm table-striped">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Type</th>
-                                <th>Action</th>
-                                <th>Lots</th>
-                                <th>Qty</th>
-                                <th>Strike</th>
-                                <th>Entry</th>
-                                <th>LTP</th>
-                                <th>P&L</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${positionRows}
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="row mt-3">
-                    <div class="col-md-6">
-                        <div class="text-center">
-                            <small class="text-muted">Total P&L</small>
-                            <div class="h5 mb-0 ${totalPnL >= 0 ? 'text-success' : 'text-danger'}">₹${totalPnL.toFixed(2)}</div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="text-center">
-                            <small class="text-muted">Position Count</small>
-                            <div class="h5 mb-0">${relevantPositions.length}</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="d-flex justify-content-end mt-3 gap-2">
-                    <button class="btn btn-outline-secondary" onclick="closePositionDropdown()">Close</button>
-                    <button class="btn btn-outline-primary" onclick="viewAllPositions()">View All Positions</button>
-                    <button class="btn btn-outline-danger" onclick="clearStrikePositions(${strike}, '${optionType}')">Clear All</button>
-                </div>
-            </div>
-        `;
-        
-        document.body.appendChild(dropdown);
-        
-        // Add backdrop
-        const backdrop = document.createElement('div');
-        backdrop.id = 'positionBackdrop';
-        backdrop.style.cssText = `
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.5); z-index: 9999;
-        `;
-        backdrop.onclick = closePositionDropdown;
-        document.body.appendChild(backdrop);
+        // Update position count
+        const positionCount = document.querySelector('.position-count');
+        if (positionCount) {
+            positionCount.textContent = positions.length;
+        }
         
     } catch (error) {
-        console.error('Error showing position dropdown:', error);
+        console.error('Error updating positions table:', error);
     }
 }
 
-function closePositionDropdown() {
-    const dropdown = document.getElementById('positionDropdown');
-    const backdrop = document.getElementById('positionBackdrop');
-    
-    if (dropdown) dropdown.remove();
-    if (backdrop) backdrop.remove();
-}
-
-async function removePosition(positionId) {
+async function removePositionFromTable(positionId) {
     try {
         const response = await fetch(`/api/positions/${positionId}`, {
             method: 'DELETE'
@@ -1675,7 +1641,8 @@ async function removePosition(positionId) {
         
         if (response.ok) {
             showAlert('Position removed successfully', 'success');
-            closePositionDropdown();
+            await updatePositionsTable();
+            await updatePayoffChart();
         }
     } catch (error) {
         console.error('Error removing position:', error);
@@ -1683,33 +1650,11 @@ async function removePosition(positionId) {
     }
 }
 
-function viewAllPositions() {
-    closePositionDropdown();
-    showAlert('All positions view - feature coming soon', 'info');
-}
-
-async function clearStrikePositions(strike, optionType) {
-    if (!confirm(`Clear all ${optionType} positions for strike ${strike}?`)) return;
-    
-    try {
-        const response = await fetch('/api/positions');
-        const positions = await response.json();
-        
-        const strikePositions = positions.filter(pos => 
-            pos.strike === strike && pos.option_type === optionType
-        );
-        
-        for (const pos of strikePositions) {
-            await fetch(`/api/positions/${pos.id}`, { method: 'DELETE' });
-        }
-        
-        showAlert('All strike positions cleared', 'success');
-        closePositionDropdown();
-    } catch (error) {
-        console.error('Error clearing positions:', error);
-        showAlert('Failed to clear positions', 'danger');
-    }
-}
+// Initialize positions table and payoff chart on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updatePositionsTable();
+    updatePayoffChart();
+});
 </script>
 
 
