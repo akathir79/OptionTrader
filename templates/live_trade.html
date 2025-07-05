@@ -1439,13 +1439,30 @@ function attachBuySellHandlers() {
 }
 
 async function addPosition(action, optionType, strike, ltp) {
-    // Get current symbol and expiry from WebSocket handler
-    const currentSymbol = window.wsHandler?.currentSymbol || '';
-    const currentExpiry = window.wsHandler?.currentExpiry || '';
+    // Get current symbol and expiry from DOM elements
+    let currentSymbol = window.wsHandler?.currentSymbol || '';
+    let currentExpiry = window.wsHandler?.currentExpiry || '';
     
+    // Fallback: get from DOM if not available in wsHandler
     if (!currentSymbol || !currentExpiry) {
-        showAlert('Please select a symbol and expiry first', 'warning');
-        return;
+        const symbolHeader = document.querySelector('#symbolDisplay');
+        const expiryButton = document.querySelector('.expiry-btn.active, .expiry-btn[style*="background"]');
+        
+        if (symbolHeader) {
+            currentSymbol = symbolHeader.textContent.trim() || 'NIFTY50';
+        }
+        if (expiryButton) {
+            currentExpiry = expiryButton.textContent.trim();
+        }
+    }
+    
+    // Use default values if still not found
+    if (!currentSymbol) currentSymbol = 'NIFTY50';
+    if (!currentExpiry) {
+        const today = new Date();
+        const nextThursday = new Date(today);
+        nextThursday.setDate(today.getDate() + (4 - today.getDay() + 7) % 7);
+        currentExpiry = nextThursday.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }).replace(/ /g, '-');
     }
 
     if (!ltp || ltp <= 0) {
@@ -1478,6 +1495,9 @@ async function addPosition(action, optionType, strike, ltp) {
             const newPosition = await response.json();
             showAlert(`${action} ${optionType} position added successfully`, 'success');
             console.log('Position added:', newPosition);
+            
+            // Show position dropdown after successful addition
+            showPositionDropdown(strike, optionType);
         } else {
             const error = await response.json();
             throw new Error(error.error || 'Failed to add position');
@@ -1506,6 +1526,189 @@ function showAlert(message, type = 'info') {
             alertDiv.parentNode.removeChild(alertDiv);
         }
     }, 3000);
+}
+
+async function showPositionDropdown(strike, optionType) {
+    // Remove any existing dropdown
+    const existingDropdown = document.getElementById('positionDropdown');
+    if (existingDropdown) {
+        existingDropdown.remove();
+    }
+    
+    // Get current positions for this strike and option type
+    try {
+        const response = await fetch('/api/positions');
+        const positions = await response.json();
+        
+        const relevantPositions = positions.filter(pos => 
+            pos.strike === strike && pos.option_type === optionType
+        );
+        
+        if (relevantPositions.length === 0) return;
+        
+        // Create dropdown
+        const dropdown = document.createElement('div');
+        dropdown.id = 'positionDropdown';
+        dropdown.className = 'card position-fixed';
+        dropdown.style.cssText = `
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 10000; min-width: 350px; max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        `;
+        
+        let totalPnL = 0;
+        let positionRows = '';
+        
+        relevantPositions.forEach(pos => {
+            const pnl = (pos.current_price - pos.entry_price) * pos.quantity;
+            if (pos.action === 'BUY') {
+                totalPnL += pnl;
+            } else {
+                totalPnL += -pnl;
+            }
+            
+            positionRows += `
+                <tr>
+                    <td>
+                        <span class="badge ${pos.option_type === 'CE' ? 'bg-success' : 'bg-info'}">${pos.option_type}</span>
+                    </td>
+                    <td>
+                        <span class="badge ${pos.action === 'BUY' ? 'bg-primary' : 'bg-warning'}">${pos.action}</span>
+                    </td>
+                    <td>1</td>
+                    <td>${pos.quantity}</td>
+                    <td>${pos.strike}</td>
+                    <td>₹${pos.entry_price.toFixed(2)}</td>
+                    <td>₹${pos.current_price.toFixed(2)}</td>
+                    <td class="${pnl >= 0 ? 'text-success' : 'text-danger'}">₹${pnl.toFixed(2)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="removePosition(${pos.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        dropdown.innerHTML = `
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="fas fa-briefcase me-2"></i>Current Positions - ${strike} ${optionType}
+                </h6>
+                <button type="button" class="btn-close" onclick="closePositionDropdown()"></button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Type</th>
+                                <th>Action</th>
+                                <th>Lots</th>
+                                <th>Qty</th>
+                                <th>Strike</th>
+                                <th>Entry</th>
+                                <th>LTP</th>
+                                <th>P&L</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${positionRows}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <small class="text-muted">Total P&L</small>
+                            <div class="h5 mb-0 ${totalPnL >= 0 ? 'text-success' : 'text-danger'}">₹${totalPnL.toFixed(2)}</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <small class="text-muted">Position Count</small>
+                            <div class="h5 mb-0">${relevantPositions.length}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-end mt-3 gap-2">
+                    <button class="btn btn-outline-secondary" onclick="closePositionDropdown()">Close</button>
+                    <button class="btn btn-outline-primary" onclick="viewAllPositions()">View All Positions</button>
+                    <button class="btn btn-outline-danger" onclick="clearStrikePositions(${strike}, '${optionType}')">Clear All</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(dropdown);
+        
+        // Add backdrop
+        const backdrop = document.createElement('div');
+        backdrop.id = 'positionBackdrop';
+        backdrop.style.cssText = `
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 9999;
+        `;
+        backdrop.onclick = closePositionDropdown;
+        document.body.appendChild(backdrop);
+        
+    } catch (error) {
+        console.error('Error showing position dropdown:', error);
+    }
+}
+
+function closePositionDropdown() {
+    const dropdown = document.getElementById('positionDropdown');
+    const backdrop = document.getElementById('positionBackdrop');
+    
+    if (dropdown) dropdown.remove();
+    if (backdrop) backdrop.remove();
+}
+
+async function removePosition(positionId) {
+    try {
+        const response = await fetch(`/api/positions/${positionId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok) {
+            showAlert('Position removed successfully', 'success');
+            closePositionDropdown();
+        }
+    } catch (error) {
+        console.error('Error removing position:', error);
+        showAlert('Failed to remove position', 'danger');
+    }
+}
+
+function viewAllPositions() {
+    closePositionDropdown();
+    showAlert('All positions view - feature coming soon', 'info');
+}
+
+async function clearStrikePositions(strike, optionType) {
+    if (!confirm(`Clear all ${optionType} positions for strike ${strike}?`)) return;
+    
+    try {
+        const response = await fetch('/api/positions');
+        const positions = await response.json();
+        
+        const strikePositions = positions.filter(pos => 
+            pos.strike === strike && pos.option_type === optionType
+        );
+        
+        for (const pos of strikePositions) {
+            await fetch(`/api/positions/${pos.id}`, { method: 'DELETE' });
+        }
+        
+        showAlert('All strike positions cleared', 'success');
+        closePositionDropdown();
+    } catch (error) {
+        console.error('Error clearing positions:', error);
+        showAlert('Failed to clear positions', 'danger');
+    }
 }
 </script>
 
