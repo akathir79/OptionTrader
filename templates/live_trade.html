@@ -1500,6 +1500,7 @@ async function addPosition(action, optionType, strike, ltp) {
             // Update both the payoff chart and positions table directly
             await updatePayoffChart();
             await updatePositionsTable();
+            await updateBadgeCount();
         } else {
             const error = await response.json();
             throw new Error(error.error || 'Failed to add position');
@@ -1541,19 +1542,48 @@ async function updatePayoffChart() {
             // Use Highcharts with existing chartContainer
             const chartContainer = document.getElementById('chartContainer');
             if (chartContainer && typeof Highcharts !== 'undefined') {
+                // Get current strike prices from option chain for X-axis range
+                const strikeElements = document.querySelectorAll('.strike-price');
+                let minStrike = Infinity, maxStrike = -Infinity;
+                strikeElements.forEach(el => {
+                    const strike = parseFloat(el.textContent);
+                    if (strike) {
+                        minStrike = Math.min(minStrike, strike);
+                        maxStrike = Math.max(maxStrike, strike);
+                    }
+                });
+                
+                // If no strikes found, use data range
+                if (minStrike === Infinity) {
+                    minStrike = Math.min(...data.payoff_data.map(point => point[0]));
+                    maxStrike = Math.max(...data.payoff_data.map(point => point[0]));
+                }
+                
                 // Create or update Highcharts chart
                 if (!window.payoffChart) {
                     window.payoffChart = Highcharts.chart('chartContainer', {
                         chart: { type: 'line', height: 350 },
                         title: { text: 'Option Strategy Payoff' },
-                        xAxis: { title: { text: 'Underlying Price' } },
+                        xAxis: { 
+                            title: { text: 'Underlying Price (₹)' },
+                            min: minStrike * 0.9,
+                            max: maxStrike * 1.1
+                        },
                         yAxis: { 
                             title: { text: 'P&L (₹)' },
                             plotLines: [{ value: 0, color: 'black', dashStyle: 'solid', width: 1 }]
                         },
-                        series: [{ name: 'Payoff', data: [] }],
-                        legend: { enabled: false }
+                        series: [{ name: 'Payoff', data: [], color: '#007bff' }],
+                        legend: { enabled: false },
+                        tooltip: {
+                            formatter: function() {
+                                return `<b>Price: ₹${this.x.toFixed(0)}</b><br/>P&L: ₹${this.y.toFixed(2)}`;
+                            }
+                        }
                     });
+                } else {
+                    // Update X-axis range
+                    window.payoffChart.xAxis[0].setExtremes(minStrike * 0.9, maxStrike * 1.1);
                 }
                 // Update chart data
                 window.payoffChart.series[0].setData(data.payoff_data);
@@ -1621,6 +1651,81 @@ async function updatePositionsTable() {
         
     } catch (error) {
         console.error('Error updating positions table:', error);
+    }
+}
+
+async function updateBadgeCount() {
+    try {
+        const response = await fetch('/api/positions');
+        const positions = await response.json();
+        
+        // Clear all existing badges
+        document.querySelectorAll('.count_badge').forEach(badge => {
+            badge.textContent = '0';
+            badge.style.display = 'none';
+        });
+        
+        // Count positions by strike, option type, and action
+        const positionCounts = {};
+        positions.forEach(pos => {
+            const key = `${pos.strike}_${pos.option_type}_${pos.action}`;
+            positionCounts[key] = (positionCounts[key] || 0) + 1;
+        });
+        
+        // Update badges on buy/sell buttons
+        Object.entries(positionCounts).forEach(([key, count]) => {
+            const [strike, optionType, action] = key.split('_');
+            
+            // Find the row with this strike
+            const strikeRows = document.querySelectorAll('tr');
+            strikeRows.forEach(row => {
+                const strikeCell = row.querySelector('.strike-price');
+                if (strikeCell && parseFloat(strikeCell.textContent) === parseFloat(strike)) {
+                    // Determine which cell (CE or PE)
+                    const buySellCells = row.querySelectorAll('.buy_sell_cell');
+                    let targetCell;
+                    if (optionType === 'CE') {
+                        targetCell = buySellCells[0]; // First cell is CE
+                    } else {
+                        targetCell = buySellCells[1]; // Second cell is PE
+                    }
+                    
+                    if (targetCell) {
+                        // Find the specific button (Buy or Sell)
+                        const buttonClass = action === 'BUY' ? '.buy_button' : '.sell_button';
+                        const button = targetCell.querySelector(buttonClass);
+                        if (button) {
+                            // Create or update badge
+                            let badge = button.querySelector('.count_badge');
+                            if (!badge) {
+                                badge = document.createElement('span');
+                                badge.className = 'count_badge';
+                                badge.style.cssText = `
+                                    position: absolute;
+                                    top: -8px;
+                                    right: -8px;
+                                    width: 18px;
+                                    height: 18px;
+                                    line-height: 18px;
+                                    text-align: center;
+                                    font-size: 11px;
+                                    color: #fff;
+                                    border-radius: 50%;
+                                    background: ${action === 'BUY' ? '#28a745' : '#dc3545'};
+                                `;
+                                button.appendChild(badge);
+                            }
+                            if (count > 0) {
+                                badge.textContent = count;
+                                badge.style.display = 'block';
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    } catch (error) {
+        console.error('Error updating badge counts:', error);
     }
 }
 
