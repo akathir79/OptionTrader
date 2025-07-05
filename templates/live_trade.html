@@ -533,6 +533,64 @@
   font-weight: 700;
 }
 
+/* Enhanced Option Chain Table Professional Styling */
+#optionChainTable {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 11px;
+  border: 1px solid #dee2e6;
+}
+
+#optionChainTable thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Enhanced table body styling */
+#optionChainTable tbody tr {
+  border-bottom: 1px solid #f1f3f4;
+  transition: background-color 0.15s ease;
+}
+
+#optionChainTable tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+#optionChainTable tbody tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+#optionChainTable tbody tr:nth-child(even):hover {
+  background-color: #f0f0f0;
+}
+
+#optionChainTable tbody td {
+  padding: 4px 6px;
+  text-align: center;
+  border-right: 1px solid #f1f3f4;
+  white-space: nowrap;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+#optionChainTable tbody td:last-child {
+  border-right: none;
+}
+
+/* Remove ATM highlighting */
+#optionChainTable .atm-strike {
+  background-color: inherit !important;
+}
+
+/* Strike column enhancement */
+#optionChainTable tbody td:nth-child(20) {
+  font-weight: 600;
+  background-color: #fff3cd;
+  border-left: 2px solid #f39c12;
+  border-right: 2px solid #f39c12;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .card-body {

@@ -196,20 +196,23 @@ class WebSocketHandler {
     }
     
     highlightATMStrike(atmStrike) {
-        if (!this.optionChainTable) return;
+        // ATM highlighting disabled for clean professional appearance
+        return;
         
-        // Remove existing ATM highlights
-        const existingATM = this.optionChainTable.querySelectorAll('.atm-strike');
-        existingATM.forEach(el => el.classList.remove('atm-strike'));
-        
-        // Add ATM highlight to current strike
-        const strikeRows = this.optionChainTable.querySelectorAll('tr[data-strike]');
-        strikeRows.forEach(row => {
-            const strike = parseFloat(row.dataset.strike);
-            if (strike === atmStrike) {
-                row.classList.add('atm-strike');
-            }
-        });
+        // if (!this.optionChainTable) return;
+        // 
+        // // Remove existing ATM highlights
+        // const existingATM = this.optionChainTable.querySelectorAll('.atm-strike');
+        // existingATM.forEach(el => el.classList.remove('atm-strike'));
+        // 
+        // // Add ATM highlight to current strike
+        // const strikeRows = this.optionChainTable.querySelectorAll('tr[data-strike]');
+        // strikeRows.forEach(row => {
+        //     const strike = parseFloat(row.dataset.strike);
+        //     if (strike === atmStrike) {
+        //         row.classList.add('atm-strike');
+        //     }
+        // });
     }
     
     async startOptionChainUpdates() {
@@ -273,10 +276,10 @@ class WebSocketHandler {
         const row = document.createElement('tr');
         row.dataset.strike = strike.strike;
         
-        // Add ATM class if this is the ATM strike
-        if (strike.is_atm) {
-            row.classList.add('atm-strike');
-        }
+        // Remove ATM highlighting for clean professional appearance
+        // if (strike.is_atm) {
+        //     row.classList.add('atm-strike');
+        // }
         
         // Determine ITM/OTM classes
         const isCallITM = strike.strike <= strike.strike; // Simplified for now
