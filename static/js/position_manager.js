@@ -10,6 +10,8 @@ class PositionManager {
         this.currentExpiry = null;
         this.currentSpotPrice = null;
         this.lotSize = 75; // Default lot size
+        this.counters = {}; // Track clicks per button
+        this.firstClickFlags = {}; // Track first click behavior
         this.init();
     }
 
@@ -80,6 +82,27 @@ class PositionManager {
         if (!strike || !optionType) {
             console.log('Missing strike or option type, returning');
             return;
+        }
+
+        // Create unique key for this button
+        const buttonKey = `${strike}_${optionType}_${isBuy ? 'buy' : 'sell'}`;
+        
+        // Initialize counters if needed
+        if (!this.counters[buttonKey]) {
+            this.counters[buttonKey] = 0;
+            this.firstClickFlags[buttonKey] = true;
+        }
+
+        // Handle first click or subsequent clicks
+        if (this.firstClickFlags[buttonKey]) {
+            // First click: immediately add position
+            this.counters[buttonKey] = 1;
+            this.firstClickFlags[buttonKey] = false;
+            console.log('First click - adding position immediately');
+        } else {
+            // Subsequent clicks: increment counter
+            this.counters[buttonKey]++;
+            console.log(`Subsequent click - counter now: ${this.counters[buttonKey]}`);
         }
 
         // Get current price for this option
@@ -204,6 +227,10 @@ class PositionManager {
     }
 
     updateButtonBadge(button, position) {
+        const isBuy = button.classList.contains('buy_button');
+        const buttonKey = `${position.strike}_${position.optionType}_${isBuy ? 'buy' : 'sell'}`;
+        const count = this.counters[buttonKey] || 0;
+        
         let badge = button.querySelector('.count_badge');
         if (!badge) {
             badge = document.createElement('span');
@@ -211,11 +238,8 @@ class PositionManager {
             button.appendChild(badge);
         }
 
-        // Find total lots for this strike/option type
-        const totalLots = this.getTotalLotsForPosition(position.strike, position.optionType);
-        
-        if (totalLots > 0) {
-            badge.textContent = totalLots;
+        if (count > 0) {
+            badge.textContent = count;
             badge.style.display = 'block';
             button.classList.add('active');
         } else {
@@ -230,6 +254,23 @@ class PositionManager {
             .reduce((total, p) => {
                 return p.action === 'BUY' ? total + p.lots : total - p.lots;
             }, 0);
+    }
+
+    getPositionCounts(strike, optionType) {
+        let buyCount = 0;
+        let sellCount = 0;
+        
+        this.positions.forEach(p => {
+            if (p.strike === strike && p.optionType === optionType && p.expiry === this.currentExpiry) {
+                if (p.action === 'BUY') {
+                    buyCount += p.lots;
+                } else if (p.action === 'SELL') {
+                    sellCount += p.lots;
+                }
+            }
+        });
+        
+        return { buy: buyCount, sell: sellCount };
     }
 
     syncWithPayoffChart() {
