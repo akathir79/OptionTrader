@@ -2112,7 +2112,7 @@ document.addEventListener('DOMContentLoaded', function() {
             type: 'area',
             data: combinedPayoffData,
             color: '#000000',
-            lineWidth: 3,
+            lineWidth: 2,
             zIndex: 10,
             zones: zones,
             fillOpacity: 0.4
@@ -2182,7 +2182,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const zones = [];
         const firstPayoff = payoffData[0][1];
-        let currentColor = firstPayoff >= 0 ? "#28A745" : "#FF4C4C"; // Green for profit, Red for loss
+        let currentColor = firstPayoff >= 0 ? "rgba(40, 167, 69, 0.3)" : "rgba(255, 76, 76, 0.3)"; // Light green for profit, Light red for loss
         
         // Sort breakeven points
         const sortedBreakevens = [...breakevenPoints].sort((a, b) => a - b);
@@ -2191,7 +2191,7 @@ document.addEventListener('DOMContentLoaded', function() {
         sortedBreakevens.forEach((be) => {
             zones.push({ value: be, color: currentColor });
             // Alternate colors at each breakeven point
-            currentColor = currentColor === "#FF4C4C" ? "#28A745" : "#FF4C4C";
+            currentColor = currentColor === "rgba(255, 76, 76, 0.3)" ? "rgba(40, 167, 69, 0.3)" : "rgba(255, 76, 76, 0.3)";
         });
         
         // Add final zone that extends to the end
