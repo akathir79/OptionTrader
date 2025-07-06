@@ -347,9 +347,14 @@ class WebSocketHandler {
         }
         // If currentSpot == strike.strike, no ITM highlighting (ATM)
         
-        // Create CE B/S cell with proper buttons
-        const ceBuyButton = window.createOptionButton ? window.createOptionButton(rowIndex, 'ce', 'buy', 'buy_button') : null;
-        const ceSellButton = window.createOptionButton ? window.createOptionButton(rowIndex, 'ce', 'sell', 'sell_button') : null;
+        // Initialize counters for this row
+        if (!window.counters) window.counters = [];
+        if (!window.firstClickFlags) window.firstClickFlags = [];
+        
+        if (!window.counters[rowIndex]) {
+            window.counters[rowIndex] = { ceBuy: 0, ceSell: 0, peBuy: 0, peSell: 0 };
+            window.firstClickFlags[rowIndex] = { ceBuy: true, ceSell: true, peBuy: true, peSell: true };
+        }
         
         // Create cells using column-specific approach
         const cells = [
@@ -403,21 +408,21 @@ class WebSocketHandler {
         
         row.innerHTML = cells.join('');
         
-        // After creating the row, append the Buy/Sell buttons
+        // After creating the row, append the Buy/Sell buttons using attached code approach
         setTimeout(() => {
             const ceBsCell = document.getElementById(`ce-bs-${rowIndex}`);
             const peBsCell = document.getElementById(`pe-bs-${rowIndex}`);
             
             if (ceBsCell && window.createOptionButton) {
-                const ceBuyBtn = window.createOptionButton(rowIndex, 'ce', 'buy', 'buy_button');
-                const ceSellBtn = window.createOptionButton(rowIndex, 'ce', 'sell', 'sell_button');
+                const ceBuyBtn = window.createOptionButton(rowIndex, 'ceBuy', 'B', 'buy_button');
+                const ceSellBtn = window.createOptionButton(rowIndex, 'ceSell', 'S', 'sell_button');
                 ceBsCell.appendChild(ceBuyBtn);
                 ceBsCell.appendChild(ceSellBtn);
             }
             
             if (peBsCell && window.createOptionButton) {
-                const peBuyBtn = window.createOptionButton(rowIndex, 'pe', 'buy', 'buy_button');
-                const peSellBtn = window.createOptionButton(rowIndex, 'pe', 'sell', 'sell_button');
+                const peBuyBtn = window.createOptionButton(rowIndex, 'peBuy', 'B', 'buy_button');
+                const peSellBtn = window.createOptionButton(rowIndex, 'peSell', 'S', 'sell_button');
                 peBsCell.appendChild(peBuyBtn);
                 peBsCell.appendChild(peSellBtn);
             }

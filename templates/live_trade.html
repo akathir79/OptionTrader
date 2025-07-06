@@ -497,76 +497,99 @@
   border-color: #007bff;
 }
 
-/* Buy/Sell button styling */
+/* Buy/Sell button styling - using attached code approach */
 .option_button {
-  position: relative;
-  display: inline-flex;
+  display: none;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  margin: 0 2px;
-  font-size: 9px;
-  font-weight: bold;
-  border: 1px solid #ddd;
-  border-radius: 2px;
+  position: relative;
+  padding: 0 10px;
+  height: 28px;
+  font-size: 12px;
+  border: 1px solid;
+  border-radius: 4px;
+  background: #fff;
   cursor: pointer;
-  transition: all 0.2s ease;
-  user-select: none;
-}
-
-.option_button.buy_button {
-  background-color: #e8f5e8;
-  border-color: #28a745;
-  color: #28a745;
-}
-
-.option_button.sell_button {
-  background-color: #fdeaea;
-  border-color: #dc3545;
-  color: #dc3545;
+  margin: 0 5px;
+  transition: 0.3s;
 }
 
 .option_button:hover {
-  opacity: 0.8;
-  transform: scale(1.05);
+  box-shadow: 0 0 5px -1px rgba(0, 0, 0, 0.5);
 }
 
 .option_button.active {
-  font-weight: bold;
-  box-shadow: 0 0 0 2px rgba(0,123,255,0.3);
-}
-
-.option_button.buy_button.active {
-  background-color: #28a745;
-  color: white;
-}
-
-.option_button.sell_button.active {
-  background-color: #dc3545;
-  color: white;
-}
-
-.count_badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  background-color: #007bff;
-  color: white;
-  font-size: 7px;
-  font-weight: bold;
-  border-radius: 50%;
-  width: 12px;
-  height: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
+  display: inline-flex !important;
 }
 
 .buy_sell_cell {
-  padding: 2px !important;
-  min-width: 50px;
+  position: relative;
+  vertical-align: middle !important;
+  padding: 0.5rem !important;
+}
+
+.buy_sell_cell:hover .option_button {
+  display: inline-flex;
+}
+
+.buy_button {
+  color: #03b760;
+  border-color: #03b760;
+}
+
+.sell_button {
+  color: #ef6161;
+  border-color: #ef6161;
+}
+
+.count_badge {
+  display: none;
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  font-size: 11px;
+  color: #fff;
+  border-radius: 50%;
+}
+
+.buy_button .count_badge {
+  background: #03b760;
+}
+
+.sell_button .count_badge {
+  background: #ef6161;
+}
+
+.dropdown_menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-width: 80px;
+  z-index: 9999;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.dropdown_menu button {
+  display: block;
+  width: 100%;
+  padding: 6px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.dropdown_menu button:hover {
+  background: #f2f2f2;
 }
 
 /* Position table enhancements */
@@ -1504,183 +1527,154 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 1000);
     
-    // Add position tracking variables
-    let optionCounters = {};
-    let firstClickFlags = {};
+    // Position tracking variables - using attached code approach
     const defaultLotSize = 75;
+    const defaultLot = 1;
+    let counters = [];
+    let firstClickFlags = [];
     let payoffChart = null;
     
     // Initialize payoff chart
     function initPayoffChart() {
-        if (document.getElementById('payoffChart')) {
+        const chartContainer = document.getElementById('payoffChart');
+        if (chartContainer) {
             payoffChart = Highcharts.chart('payoffChart', {
                 chart: { type: 'area', height: 300 },
-                title: { text: 'Multi-Leg Payoff' },
-                xAxis: { title: { text: 'Underlying Price' }, crosshair: true },
-                yAxis: { title: { text: 'Net P&L (₹)' } },
-                tooltip: { valuePrefix: '₹' },
+                title: { text: 'Multi-Leg Payoff Chart' },
+                xAxis: { 
+                    title: { text: 'Underlying Price' }, 
+                    crosshair: true 
+                },
+                yAxis: { 
+                    title: { text: 'Net P&L (₹)' },
+                    plotLines: [{
+                        value: 0,
+                        color: '#000',
+                        width: 1,
+                        zIndex: 4
+                    }]
+                },
+                tooltip: { 
+                    valuePrefix: '₹',
+                    valueDecimals: 2
+                },
                 plotOptions: {
                     area: {
                         marker: { enabled: false },
                         zoneAxis: 'y',
-                        zones: []
+                        zones: [{
+                            value: 0,
+                            color: '#ff4444',
+                            fillColor: 'rgba(255, 68, 68, 0.1)'
+                        }, {
+                            color: '#44ff44',
+                            fillColor: 'rgba(68, 255, 68, 0.1)'
+                        }]
                     }
                 },
-                series: [{ name: 'Payoff', data: [] }]
+                series: [{ 
+                    name: 'Net P&L', 
+                    data: [],
+                    color: '#007bff'
+                }],
+                credits: { enabled: false }
             });
         }
     }
     
-    // Create Buy/Sell button with badge
-    function createOptionButton(rowIndex, optionType, action, extraClass) {
-        const key = `${optionType}${action}`; // ce_buy, ce_sell, pe_buy, pe_sell
-        const buttonId = `${key}_${rowIndex}`;
-        
-        // Initialize counter if not exists
-        if (!optionCounters[buttonId]) {
-            optionCounters[buttonId] = 0;
-            firstClickFlags[buttonId] = true;
-        }
-        
+    // Create Buy/Sell button with badge - using attached code approach
+    function createOptionButton(rowIndex, key, label, extraClass) {
         const div = document.createElement('div');
         div.className = `option_button ${extraClass}`;
-        div.id = buttonId;
-        div.textContent = action.charAt(0); // 'B' or 'S'
-        div.style.position = 'relative';
-        div.style.display = 'inline-flex';
-        div.style.alignItems = 'center';
-        div.style.justifyContent = 'center';
-        div.style.padding = '2px 6px';
-        div.style.margin = '0 2px';
-        div.style.height = '20px';
-        div.style.fontSize = '10px';
-        div.style.border = '1px solid';
-        div.style.borderRadius = '3px';
-        div.style.cursor = 'pointer';
-        div.style.transition = '0.2s';
+        div.id = `${key}Btn_${rowIndex}`;
+        div.textContent = label + ' ';
         
-        // Badge element
+        // The numeric badge that shows how many lots
         const badge = document.createElement('span');
         badge.className = 'count_badge';
-        badge.id = `${key}_badge_${rowIndex}`;
+        badge.id = `${key}Badge_${rowIndex}`;
         badge.textContent = '0';
-        badge.style.display = 'none';
         div.appendChild(badge);
         
         // Dropdown menu
         const dropdown = document.createElement('div');
         dropdown.className = 'dropdown_menu';
-        dropdown.id = `${key}_menu_${rowIndex}`;
-        dropdown.style.display = 'none';
+        dropdown.id = `${key}Menu_${rowIndex}`;
         
         const addBtn = document.createElement('button');
         addBtn.textContent = '+ Add';
-        addBtn.onclick = (e) => incrementPosition(rowIndex, optionType, action, e);
+        addBtn.onclick = (e) => {
+            e.stopPropagation();
+            handleButtonClick(rowIndex, key, 'add');
+        };
         
         const removeBtn = document.createElement('button');
-        removeBtn.textContent = '× Remove';
-        removeBtn.onclick = (e) => decrementPosition(rowIndex, optionType, action, e);
+        removeBtn.textContent = '- Remove';
+        removeBtn.onclick = (e) => {
+            e.stopPropagation();
+            handleButtonClick(rowIndex, key, 'remove');
+        };
         
         dropdown.appendChild(addBtn);
         dropdown.appendChild(removeBtn);
         div.appendChild(dropdown);
         
         // Main click handler
-        div.onclick = (e) => onOptionButtonClick(e, rowIndex, optionType, action);
+        div.onclick = (e) => {
+            e.stopPropagation();
+            if (firstClickFlags[rowIndex][key]) {
+                handleButtonClick(rowIndex, key, 'add');
+                firstClickFlags[rowIndex][key] = false;
+            } else {
+                toggleDropdown(rowIndex, key);
+            }
+        };
         
         return div;
     }
     
-    // Handle button clicks
-    function onOptionButtonClick(e, rowIndex, optionType, action) {
-        e.stopPropagation();
-        const key = `${optionType}${action}`;
-        const buttonId = `${key}_${rowIndex}`;
-        
-        if (firstClickFlags[buttonId]) {
-            incrementPosition(rowIndex, optionType, action, e);
-            firstClickFlags[buttonId] = false;
-        } else {
-            toggleDropdown(rowIndex, optionType, action);
+    // Handle button clicks - using attached code approach
+    function handleButtonClick(rowIndex, key, action) {
+        if (action === 'add') {
+            counters[rowIndex][key]++;
+        } else if (action === 'remove' && counters[rowIndex][key] > 0) {
+            counters[rowIndex][key]--;
         }
-    }
-    
-    // Increment position
-    function incrementPosition(rowIndex, optionType, action, e) {
-        e.stopPropagation();
-        const key = `${optionType}${action}`;
-        const buttonId = `${key}_${rowIndex}`;
         
-        optionCounters[buttonId]++;
-        updateButtonUI(rowIndex, optionType, action);
-        hideDropdown(rowIndex, optionType, action);
-        addToPositionTable(rowIndex, optionType, action);
+        updateButtonDisplay(rowIndex, key);
+        closeAllDropdowns();
         updatePayoffChart();
+        
+        // Keep existing position table intact - just log the action
+        console.log(`${action} ${key} for row ${rowIndex}, new count: ${counters[rowIndex][key]}`);
     }
     
-    // Decrement position
-    function decrementPosition(rowIndex, optionType, action, e) {
-        e.stopPropagation();
-        const key = `${optionType}${action}`;
-        const buttonId = `${key}_${rowIndex}`;
+    // Update button display - using attached code approach
+    function updateButtonDisplay(rowIndex, key) {
+        const count = counters[rowIndex][key];
+        const button = document.getElementById(`${key}Btn_${rowIndex}`);
+        const badge = document.getElementById(`${key}Badge_${rowIndex}`);
         
-        if (optionCounters[buttonId] > 0) {
-            optionCounters[buttonId]--;
-            updateButtonUI(rowIndex, optionType, action);
-            if (optionCounters[buttonId] === 0) {
-                firstClickFlags[buttonId] = true;
-                removeFromPositionTable(rowIndex, optionType, action);
-            } else {
-                updatePositionTable(rowIndex, optionType, action);
-            }
-            hideDropdown(rowIndex, optionType, action);
-            updatePayoffChart();
-        }
-    }
-    
-    // Update button UI
-    function updateButtonUI(rowIndex, optionType, action) {
-        const key = `${optionType}${action}`;
-        const buttonId = `${key}_${rowIndex}`;
-        const badgeId = `${key}_badge_${rowIndex}`;
-        
-        const button = document.getElementById(buttonId);
-        const badge = document.getElementById(badgeId);
-        const count = optionCounters[buttonId] || 0;
-        
-        if (badge) {
+        if (button && badge) {
             badge.textContent = count;
-            badge.style.display = count > 0 ? 'block' : 'none';
-        }
-        
-        if (button) {
             if (count > 0) {
                 button.classList.add('active');
-                button.style.fontWeight = 'bold';
+                badge.style.display = 'block';
             } else {
                 button.classList.remove('active');
-                button.style.fontWeight = 'normal';
+                badge.style.display = 'none';
+                firstClickFlags[rowIndex][key] = true;
             }
         }
     }
     
-    // Toggle dropdown
-    function toggleDropdown(rowIndex, optionType, action) {
+    // Toggle dropdown - using attached code approach
+    function toggleDropdown(rowIndex, key) {
         closeAllDropdowns();
-        const key = `${optionType}${action}`;
-        const menuId = `${key}_menu_${rowIndex}`;
-        const menu = document.getElementById(menuId);
+        const menu = document.getElementById(`${key}Menu_${rowIndex}`);
         if (menu) {
             menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
         }
-    }
-    
-    // Hide dropdown
-    function hideDropdown(rowIndex, optionType, action) {
-        const key = `${optionType}${action}`;
-        const menuId = `${key}_menu_${rowIndex}`;
-        const menu = document.getElementById(menuId);
-        if (menu) menu.style.display = 'none';
     }
     
     // Close all dropdowns
@@ -1690,113 +1684,160 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Add to position table
-    function addToPositionTable(rowIndex, optionType, action) {
-        // Implementation for adding to current position table
-        updatePositionDisplay();
-    }
-    
-    // Remove from position table
-    function removeFromPositionTable(rowIndex, optionType, action) {
-        // Implementation for removing from current position table
-        updatePositionDisplay();
-    }
-    
-    // Update position table
-    function updatePositionTable(rowIndex, optionType, action) {
-        // Implementation for updating position table
-        updatePositionDisplay();
-    }
-    
-    // Update position display
-    function updatePositionDisplay() {
-        // This will sync with the existing current position table
-        console.log('Position display updated');
-    }
-    
-    // Update payoff chart
+    // Update payoff chart - using attached code approach
     function updatePayoffChart() {
         if (!payoffChart) return;
         
-        // Calculate payoff data based on current positions
         const legs = [];
         
-        // Gather all active positions
-        Object.keys(optionCounters).forEach(buttonId => {
-            const count = optionCounters[buttonId];
-            if (count > 0) {
-                // Parse button ID to get position details
-                const parts = buttonId.split('_');
-                const optionType = parts[0].substring(0, 2); // 'ce' or 'pe'
-                const action = parts[0].substring(2); // 'buy' or 'sell'
-                const rowIndex = parts[1];
-                
-                // Get strike and premium from table
-                const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${parseInt(rowIndex) + 1})`);
-                if (row) {
-                    const strikeTd = row.children[19]; // Strike column
-                    const strike = parseFloat(strikeTd?.textContent || 0);
-                    
-                    // Get premium based on option type
-                    let premium = 0;
-                    if (optionType === 'ce') {
-                        const ltpTd = row.children[17]; // CE LTP column
-                        premium = parseFloat(ltpTd?.textContent || 0);
-                    } else {
-                        const ltpTd = row.children[21]; // PE LTP column  
-                        premium = parseFloat(ltpTd?.textContent || 0);
-                    }
-                    
-                    if (strike > 0 && premium > 0) {
-                        legs.push({
-                            action: `${optionType.toUpperCase()} ${action.charAt(0).toUpperCase() + action.slice(1)}`,
-                            strike: strike,
-                            premium: premium,
-                            count: count
-                        });
-                    }
+        // Iterate through all rows and their counters
+        counters.forEach((rowCounters, rowIndex) => {
+            if (!rowCounters) return;
+            
+            // Get strike and premiums from the table row
+            const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
+            if (!row) return;
+            
+            const strikeTd = row.children[19]; // Strike column
+            const strike = parseFloat(strikeTd?.textContent || 0);
+            if (strike === 0) return;
+            
+            // CE Buy
+            if (rowCounters.ceBuy > 0) {
+                const ltpTd = row.children[17]; // CE LTP column
+                const premium = parseFloat(ltpTd?.textContent || 0);
+                if (premium > 0) {
+                    legs.push({
+                        type: 'CE',
+                        action: 'Buy',
+                        strike: strike,
+                        premium: premium,
+                        lots: rowCounters.ceBuy,
+                        qty: rowCounters.ceBuy * defaultLotSize
+                    });
+                }
+            }
+            
+            // CE Sell
+            if (rowCounters.ceSell > 0) {
+                const ltpTd = row.children[17]; // CE LTP column
+                const premium = parseFloat(ltpTd?.textContent || 0);
+                if (premium > 0) {
+                    legs.push({
+                        type: 'CE',
+                        action: 'Sell',
+                        strike: strike,
+                        premium: premium,
+                        lots: rowCounters.ceSell,
+                        qty: rowCounters.ceSell * defaultLotSize
+                    });
+                }
+            }
+            
+            // PE Buy
+            if (rowCounters.peBuy > 0) {
+                const ltpTd = row.children[21]; // PE LTP column
+                const premium = parseFloat(ltpTd?.textContent || 0);
+                if (premium > 0) {
+                    legs.push({
+                        type: 'PE',
+                        action: 'Buy',
+                        strike: strike,
+                        premium: premium,
+                        lots: rowCounters.peBuy,
+                        qty: rowCounters.peBuy * defaultLotSize
+                    });
+                }
+            }
+            
+            // PE Sell
+            if (rowCounters.peSell > 0) {
+                const ltpTd = row.children[21]; // PE LTP column
+                const premium = parseFloat(ltpTd?.textContent || 0);
+                if (premium > 0) {
+                    legs.push({
+                        type: 'PE',
+                        action: 'Sell',
+                        strike: strike,
+                        premium: premium,
+                        lots: rowCounters.peSell,
+                        qty: rowCounters.peSell * defaultLotSize
+                    });
                 }
             }
         });
         
         if (legs.length === 0) {
             payoffChart.series[0].setData([], true);
+            updateMarginInfo(0, 0, 0);
             return;
         }
         
-        // Calculate payoff data
+        // Calculate payoff curve
         const allStrikes = legs.map(leg => leg.strike);
         const minStrike = Math.min(...allStrikes) - 500;
         const maxStrike = Math.max(...allStrikes) + 500;
-        const step = Math.max(1, Math.floor((maxStrike - minStrike) / 100));
+        const step = Math.max(5, Math.floor((maxStrike - minStrike) / 200));
         
         const payoffData = [];
-        for (let S = minStrike; S <= maxStrike; S += step) {
-            let total = 0;
+        let netCredit = 0;
+        let maxProfit = -Infinity;
+        let maxLoss = Infinity;
+        
+        // Calculate net credit/debit
+        legs.forEach(leg => {
+            const credit = leg.action === 'Sell' ? leg.premium * leg.qty : -leg.premium * leg.qty;
+            netCredit += credit;
+        });
+        
+        for (let spotPrice = minStrike; spotPrice <= maxStrike; spotPrice += step) {
+            let totalPayoff = netCredit; // Start with net credit/debit
+            
             legs.forEach(leg => {
-                total += calculateOptionPayoff(leg.action, leg.strike, leg.premium, leg.count, S);
+                let optionValue = 0;
+                
+                if (leg.type === 'CE') {
+                    optionValue = Math.max(0, spotPrice - leg.strike);
+                } else { // PE
+                    optionValue = Math.max(0, leg.strike - spotPrice);
+                }
+                
+                if (leg.action === 'Buy') {
+                    totalPayoff += (optionValue - leg.premium) * leg.qty;
+                } else { // Sell
+                    totalPayoff += (leg.premium - optionValue) * leg.qty;
+                }
             });
-            payoffData.push([S, total]);
+            
+            payoffData.push([spotPrice, totalPayoff]);
+            maxProfit = Math.max(maxProfit, totalPayoff);
+            maxLoss = Math.min(maxLoss, totalPayoff);
         }
         
         payoffChart.series[0].setData(payoffData, true);
+        updateMarginInfo(netCredit, maxProfit, maxLoss);
+    }
+    
+    // Update margin info display
+    function updateMarginInfo(netCredit, maxProfit, maxLoss) {
+        const netCreditEl = document.getElementById('netCreditValue');
+        const maxProfitEl = document.getElementById('maxProfitValue');
+        const maxLossEl = document.getElementById('maxLossValue');
         
-        // Add profit/loss zones
-        const zones = [];
-        let currentColor = payoffData[0][1] >= 0 ? '#28a745' : '#dc3545';
-        
-        for (let i = 1; i < payoffData.length; i++) {
-            const [x1, y1] = payoffData[i - 1];
-            const [x2, y2] = payoffData[i];
-            
-            if ((y1 < 0 && y2 >= 0) || (y1 > 0 && y2 <= 0)) {
-                zones.push({ value: x1, color: currentColor });
-                currentColor = currentColor === '#dc3545' ? '#28a745' : '#dc3545';
-            }
+        if (netCreditEl) {
+            netCreditEl.textContent = `₹${netCredit.toFixed(2)}`;
+            netCreditEl.className = netCredit >= 0 ? 'metric-value text-success' : 'metric-value text-danger';
         }
-        zones.push({ value: maxStrike, color: currentColor });
         
-        payoffChart.series[0].update({ zones: zones }, true);
+        if (maxProfitEl) {
+            maxProfitEl.textContent = maxProfit === -Infinity ? '₹0.00' : `₹${maxProfit.toFixed(2)}`;
+            maxProfitEl.className = 'metric-value text-success';
+        }
+        
+        if (maxLossEl) {
+            maxLossEl.textContent = maxLoss === Infinity ? '₹0.00' : `₹${maxLoss.toFixed(2)}`;
+            maxLossEl.className = 'metric-value text-danger';
+        }
     }
     
     // Calculate single option payoff
@@ -1827,10 +1868,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Make functions globally available
     window.createOptionButton = createOptionButton;
-    window.incrementPosition = incrementPosition;
-    window.decrementPosition = decrementPosition;
+    window.handleButtonClick = handleButtonClick;
+    window.updateButtonDisplay = updateButtonDisplay;
     window.updatePayoffChart = updatePayoffChart;
     window.initPayoffChart = initPayoffChart;
+    window.counters = counters;
+    window.firstClickFlags = firstClickFlags;
     
     // Initialize payoff chart when document is ready
     initPayoffChart();
