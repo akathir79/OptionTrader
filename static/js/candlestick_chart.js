@@ -106,6 +106,14 @@ class CandlestickChart {
                 this.hide();
             }
         });
+        
+        // Minimize button functionality
+        const minimizeButton = document.getElementById('minimizeChart');
+        if (minimizeButton) {
+            minimizeButton.addEventListener('click', () => {
+                this.minimize();
+            });
+        }
     }
 
     async loadChart() {
@@ -533,6 +541,79 @@ class CandlestickChart {
         if (this.chart) {
             this.chart.destroy();
             this.chart = null;
+        }
+    }
+    
+    minimize() {
+        // Hide the main modal
+        this.hide();
+        
+        // Create or show minimized floating window
+        this.createMinimizedWindow();
+    }
+    
+    createMinimizedWindow() {
+        // Remove existing minimized window if any
+        const existingWindow = document.getElementById('minimizedChartWindow');
+        if (existingWindow) {
+            existingWindow.remove();
+        }
+        
+        // Create minimized floating window
+        const minimizedWindow = document.createElement('div');
+        minimizedWindow.id = 'minimizedChartWindow';
+        minimizedWindow.className = 'position-fixed bg-primary text-white p-2 rounded shadow';
+        minimizedWindow.style.cssText = `
+            bottom: 20px;
+            right: 20px;
+            z-index: 1060;
+            cursor: pointer;
+            min-width: 200px;
+            border: 1px solid #ccc;
+        `;
+        
+        minimizedWindow.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="small">
+                    <i class="fas fa-chart-line me-1"></i>
+                    ${this.currentSymbol} Chart
+                </span>
+                <div>
+                    <button class="btn btn-sm btn-outline-light me-1" onclick="window.candlestickChart.restore()" title="Restore">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-light" onclick="window.candlestickChart.closeMinimized()" title="Close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Add click to restore functionality
+        minimizedWindow.addEventListener('click', (e) => {
+            if (!e.target.closest('button')) {
+                this.restore();
+            }
+        });
+        
+        document.body.appendChild(minimizedWindow);
+    }
+    
+    restore() {
+        // Remove minimized window
+        const minimizedWindow = document.getElementById('minimizedChartWindow');
+        if (minimizedWindow) {
+            minimizedWindow.remove();
+        }
+        
+        // Show the main modal again
+        this.show(this.currentSymbol);
+    }
+    
+    closeMinimized() {
+        const minimizedWindow = document.getElementById('minimizedChartWindow');
+        if (minimizedWindow) {
+            minimizedWindow.remove();
         }
     }
 }

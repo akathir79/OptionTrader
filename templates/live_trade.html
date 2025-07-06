@@ -1511,14 +1511,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!-- Candlestick Chart Modal -->
 <div class="modal fade" id="candlestickModal" tabindex="-1" aria-labelledby="candlestickModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-fullscreen">
-    <div class="modal-content">
+  <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 95%; height: 90vh;">
+    <div class="modal-content h-100">
       <div class="modal-header border-0 pb-2">
         <h5 class="modal-title" id="candlestickModalLabel">
           <i class="fas fa-chart-line text-primary me-2"></i>
           <span id="chartSymbolTitle">Chart Analysis</span>
         </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="minimizeChart" title="Minimize">
+            <i class="fas fa-minus"></i>
+          </button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
       </div>
       <div class="modal-body p-0">
         <!-- Timeframe Controls -->
@@ -1568,7 +1573,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
         
         <!-- Chart Container -->
-        <div id="candlestickChartContainer" style="height: calc(100vh - 150px); position: relative;">
+        <div id="candlestickChartContainer" style="height: calc(90vh - 200px); position: relative;">
           <div id="candlestickChart" style="height: 100%; width: 100%;"></div>
           <div id="chartLoading" class="d-flex justify-content-center align-items-center position-absolute top-50 start-50 translate-middle" style="display: none !important;">
             <div class="spinner-border text-primary" role="status">
