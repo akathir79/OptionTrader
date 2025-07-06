@@ -142,7 +142,6 @@ class CandlestickChart {
         } catch (error) {
             console.error('Error loading chart data:', error);
             this.showError(`Failed to load chart data: ${error.message}`);
-        } finally {
             this.hideLoading();
         }
     }
@@ -205,9 +204,13 @@ class CandlestickChart {
                 labels: {
                     style: {
                         color: 'var(--bs-body-color)'
+                    },
+                    formatter: function() {
+                        return Highcharts.dateFormat('%H:%M<br/>%d %b', this.value);
                     }
                 },
-                gridLineColor: 'var(--bs-border-color)'
+                gridLineColor: 'var(--bs-border-color)',
+                crosshair: true
             },
             yAxis: [{
                 title: {
@@ -255,6 +258,24 @@ class CandlestickChart {
                 borderColor: 'var(--bs-border-color)',
                 style: {
                     color: 'var(--bs-body-color)'
+                },
+                shared: true,
+                formatter: function() {
+                    let tooltip = '<b>' + Highcharts.dateFormat('%A, %b %e, %Y %H:%M', this.x) + '</b><br/>';
+                    
+                    this.points.forEach(function(point) {
+                        if (point.series.type === 'candlestick') {
+                            tooltip += `<span style="color:${point.color}">●</span> ${point.series.name}<br/>`;
+                            tooltip += `Open: <b>${point.point.open.toFixed(2)}</b><br/>`;
+                            tooltip += `High: <b>${point.point.high.toFixed(2)}</b><br/>`;
+                            tooltip += `Low: <b>${point.point.low.toFixed(2)}</b><br/>`;
+                            tooltip += `Close: <b>${point.point.close.toFixed(2)}</b><br/>`;
+                        } else if (point.series.type === 'column') {
+                            tooltip += `<span style="color:${point.color}">●</span> Volume: <b>${point.y.toLocaleString()}</b><br/>`;
+                        }
+                    });
+                    
+                    return tooltip;
                 }
             },
             legend: {
@@ -299,6 +320,9 @@ class CandlestickChart {
 
         // Create new chart
         this.chart = Highcharts.stockChart('candlestickChart', chartConfig);
+        
+        // Hide loading after chart is created
+        this.hideLoading();
     }
 
     calculateSupportResistance(prices) {
