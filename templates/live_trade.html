@@ -1617,7 +1617,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     },
                     area: {
                         marker: { enabled: false },
-                        lineWidth: 2
+                        lineWidth: 2,
+                        fillOpacity: 0.3
                     }
                 },
                 series: [],
@@ -2102,46 +2103,19 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
-        // Add profit/loss zones as area series
-        const profitLossZones = createProfitLossZones(combinedPayoffData);
+        // Create profit/loss zones using Highcharts zones feature
+        const zones = createProfitLossZones(combinedPayoffData, breakevenPoints);
         
-        // Add profit zone (green area)
-        if (profitLossZones.profitZone.length > 0) {
-            payoffChart.addSeries({
-                name: 'Profit Zone',
-                data: profitLossZones.profitZone,
-                type: 'area',
-                color: 'rgba(40, 167, 69, 0.3)',
-                fillOpacity: 0.3,
-                lineWidth: 0,
-                enableMouseTracking: false,
-                showInLegend: false,
-                zIndex: 1
-            }, false);
-        }
-        
-        // Add loss zone (red area)
-        if (profitLossZones.lossZone.length > 0) {
-            payoffChart.addSeries({
-                name: 'Loss Zone',
-                data: profitLossZones.lossZone,
-                type: 'area',
-                color: 'rgba(220, 53, 69, 0.3)',
-                fillOpacity: 0.3,
-                lineWidth: 0,
-                enableMouseTracking: false,
-                showInLegend: false,
-                zIndex: 1
-            }, false);
-        }
-        
-        // Add combined strategy line (bold) - on top of zones
+        // Add combined strategy line with dynamic profit/loss zones
         payoffChart.addSeries({
             name: 'Net P&L',
+            type: 'area',
             data: combinedPayoffData,
             color: '#000000',
             lineWidth: 3,
-            zIndex: 10
+            zIndex: 10,
+            zones: zones,
+            fillOpacity: 0.3
         }, false);
         
         payoffChart.redraw();
@@ -2202,41 +2176,37 @@ document.addEventListener('DOMContentLoaded', function() {
         return breakevenPoints;
     }
     
-    // Helper function to create profit/loss zones
-    function createProfitLossZones(payoffData) {
-        const profitZone = [];
-        const lossZone = [];
+    // Helper function to create profit/loss zones using Highcharts zones
+    function createProfitLossZones(payoffData, breakevenPoints) {
+        if (!payoffData || payoffData.length === 0) return [];
         
-        // Create profit zone data (only positive values)
-        for (let i = 0; i < payoffData.length; i++) {
-            const point = payoffData[i];
-            const spotPrice = point[0];
-            const pnl = point[1];
-            
-            if (pnl > 0) {
-                profitZone.push([spotPrice, pnl]);
-            } else {
-                profitZone.push([spotPrice, 0]);
-            }
-        }
+        const zones = [];
+        const firstPayoff = payoffData[0][1];
+        let currentColor = firstPayoff >= 0 ? "#28A745" : "#DC3545"; // Green for profit, Red for loss
         
-        // Create loss zone data (only negative values, but as positive areas)
-        for (let i = 0; i < payoffData.length; i++) {
-            const point = payoffData[i];
-            const spotPrice = point[0];
-            const pnl = point[1];
-            
-            if (pnl < 0) {
-                lossZone.push([spotPrice, pnl]);
-            } else {
-                lossZone.push([spotPrice, 0]);
-            }
-        }
+        // Sort breakeven points
+        const sortedBreakevens = [...breakevenPoints].sort((a, b) => a - b);
         
-        return {
-            profitZone: profitZone,
-            lossZone: lossZone
-        };
+        // Create zones based on breakeven points
+        sortedBreakevens.forEach((be) => {
+            zones.push({ 
+                value: be, 
+                color: currentColor,
+                fillColor: currentColor === "#28A745" ? "rgba(40, 167, 69, 0.2)" : "rgba(220, 53, 69, 0.2)"
+            });
+            // Alternate colors at each breakeven point
+            currentColor = currentColor === "#DC3545" ? "#28A745" : "#DC3545";
+        });
+        
+        // Add final zone
+        const maxStrike = Math.max(...payoffData.map(p => p[0]));
+        zones.push({ 
+            value: maxStrike, 
+            color: currentColor,
+            fillColor: currentColor === "#28A745" ? "rgba(40, 167, 69, 0.2)" : "rgba(220, 53, 69, 0.2)"
+        });
+        
+        return zones;
     }
     
     // Helper function to get current spot price
