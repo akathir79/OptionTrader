@@ -208,8 +208,10 @@ class CandlestickChart {
                 style: {
                     fontFamily: 'var(--bs-font-sans-serif)'
                 },
-                marginBottom: 60,
-                spacingBottom: 20
+                marginBottom: 80,
+                spacingBottom: 30,
+                spacingLeft: 10,
+                spacingRight: 10
             },
             title: {
                 text: `${this.currentSymbol} - ${this.getTimeframeName()} Chart`,
@@ -222,14 +224,19 @@ class CandlestickChart {
                 type: 'datetime',
                 labels: {
                     style: {
-                        color: 'var(--bs-body-color)'
+                        color: 'var(--bs-body-color)',
+                        fontSize: '11px'
                     },
                     formatter: function() {
                         return Highcharts.dateFormat('%H:%M<br/>%d %b', this.value);
-                    }
+                    },
+                    y: 20
                 },
                 gridLineColor: 'var(--bs-border-color)',
-                crosshair: true
+                crosshair: true,
+                tickLength: 5,
+                lineWidth: 1,
+                lineColor: 'var(--bs-border-color)'
             },
             yAxis: [{
                 title: {
@@ -339,6 +346,20 @@ class CandlestickChart {
 
         // Create new chart
         this.chart = Highcharts.stockChart('candlestickChart', chartConfig);
+        
+        // Force axis display
+        if (this.chart && this.chart.xAxis && this.chart.xAxis[0]) {
+            this.chart.xAxis[0].update({
+                visible: true,
+                labels: {
+                    enabled: true,
+                    style: {
+                        color: 'var(--bs-body-color)',
+                        fontSize: '11px'
+                    }
+                }
+            });
+        }
         
         // Hide loading after chart is created
         this.hideLoading();
@@ -628,7 +649,7 @@ class CandlestickChart {
             // Update chart container height for normal size
             const chartContainer = document.getElementById('candlestickChartContainer');
             if (chartContainer) {
-                chartContainer.style.height = 'calc(90vh - 180px)';
+                chartContainer.style.height = 'calc(90vh - 160px)';
             }
             
             // Update restore button back to maximize button
