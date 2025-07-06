@@ -113,17 +113,35 @@ class CandlestickChart {
         
         try {
             // Fetch historical data with current timeframe
+            console.log(`Loading chart data for ${this.currentSymbol} with resolution ${this.currentTimeframe}`);
             const response = await fetch(`/api/option_history/${encodeURIComponent(this.currentSymbol)}?resolution=${this.currentTimeframe}`);
-            const data = await response.json();
             
-            if (data.count > 0) {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            console.log('Chart data received:', {
+                symbol: data.symbol,
+                count: data.count,
+                hasTimestamps: !!data.timestamps,
+                hasPrices: !!data.prices,
+                timestampsLength: data.timestamps?.length,
+                pricesLength: data.prices?.length
+            });
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            if (data.count > 0 && data.timestamps && data.prices) {
                 this.renderChart(data);
             } else {
                 this.showNoData();
             }
         } catch (error) {
             console.error('Error loading chart data:', error);
-            this.showError('Failed to load chart data');
+            this.showError(`Failed to load chart data: ${error.message}`);
         } finally {
             this.hideLoading();
         }
