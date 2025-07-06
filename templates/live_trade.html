@@ -1548,7 +1548,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 chart: { 
                     type: 'line', 
                     height: 350,
-                    backgroundColor: '#fafafa'
+                    backgroundColor: '#fafafa',
+                    zoomType: 'xy',
+                    panning: {
+                        enabled: true,
+                        type: 'xy'
+                    },
+                    panKey: 'shift',
+                    resetZoomButton: {
+                        theme: {
+                            fill: '#ffffff',
+                            stroke: '#cccccc',
+                            style: {
+                                fontSize: '10px',
+                                color: '#333333'
+                            }
+                        },
+                        position: {
+                            align: 'right',
+                            verticalAlign: 'top',
+                            x: -10,
+                            y: 45
+                        }
+                    }
                 },
                 title: { 
                     text: 'Multi-Leg Payoff Chart',
@@ -1557,15 +1579,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 xAxis: { 
                     title: { text: 'Underlying Price' }, 
                     crosshair: {
-                        width: 1,
-                        color: '#666',
-                        dashStyle: 'dash'
+                        width: 2,
+                        color: '#007BFF',
+                        dashStyle: 'solid',
+                        label: {
+                            enabled: true,
+                            format: '₹{value:.0f}',
+                            style: {
+                                backgroundColor: '#007BFF',
+                                color: '#ffffff',
+                                fontSize: '10px',
+                                fontWeight: 'bold'
+                            }
+                        }
                     },
                     gridLineWidth: 1,
                     gridLineColor: '#e0e0e0'
                 },
                 yAxis: { 
                     title: { text: 'Net P&L (₹)' },
+                    crosshair: {
+                        width: 2,
+                        color: '#28a745',
+                        dashStyle: 'solid',
+                        label: {
+                            enabled: true,
+                            format: '₹{value:.0f}',
+                            style: {
+                                backgroundColor: '#28a745',
+                                color: '#ffffff',
+                                fontSize: '10px',
+                                fontWeight: 'bold'
+                            }
+                        }
+                    },
                     plotLines: [{
                         value: 0,
                         color: '#000000',
@@ -1597,18 +1644,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 tooltip: { 
                     shared: true,
                     crosshairs: true,
+                    useHTML: true,
                     formatter: function() {
-                        let s = '<b>Spot: ₹' + this.x + '</b><br/>';
+                        let tooltip = '<div style="font-size: 11px; padding: 8px; background: rgba(255,255,255,0.95); border: 1px solid #ccc; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);">';
+                        tooltip += '<div style="font-weight: bold; margin-bottom: 4px; color: #333;">Underlying Price: ₹' + this.x.toFixed(2) + '</div>';
+                        
                         this.points.forEach(function(point) {
-                            s += '<span style="color:' + point.color + '">' + point.series.name + 
-                                 ': ₹' + point.y.toFixed(2) + '</span><br/>';
+                            if (point.series.name === 'Net P&L') {
+                                const pnl = point.y;
+                                const color = pnl >= 0 ? '#28a745' : '#dc3545';
+                                const profitLossIcon = pnl >= 0 ? '📈' : '📉';
+                                
+                                tooltip += '<div style="margin: 2px 0; padding: 2px 0; border-bottom: 1px solid #eee;">';
+                                tooltip += '<span style="color: ' + color + '; font-weight: bold;">● Net P&L: ₹' + pnl.toFixed(2) + '</span><br/>';
+                                
+                                // Add percentage return calculation
+                                const spotPrice = this.x;
+                                if (spotPrice > 0) {
+                                    const percentage = ((pnl / (spotPrice * 0.05)) * 100).toFixed(2);
+                                    tooltip += '<span style="color: ' + color + '; font-size: 10px;">Return: ' + percentage + '%</span><br/>';
+                                }
+                                
+                                // Show zone type
+                                tooltip += '<span style="color: ' + color + '; font-size: 10px;">' + profitLossIcon + ' ' + (pnl >= 0 ? 'Profit Zone' : 'Loss Zone') + '</span>';
+                                tooltip += '</div>';
+                            } else {
+                                // Individual leg information
+                                tooltip += '<div style="margin: 1px 0;">';
+                                tooltip += '<span style="color: ' + point.color + '; font-size: 10px;">● ' + point.series.name + ': ₹' + point.y.toFixed(2) + '</span>';
+                                tooltip += '</div>';
+                            }
                         });
-                        return s;
+                        
+                        tooltip += '<div style="margin-top: 4px; font-size: 9px; color: #666; font-style: italic;">💡 Drag to zoom • Shift+drag to pan • Double-click to reset</div>';
+                        tooltip += '</div>';
+                        return tooltip;
                     },
                     valueDecimals: 2,
-                    backgroundColor: '#ffffff',
+                    backgroundColor: 'rgba(255,255,255,0.95)',
                     borderColor: '#cccccc',
-                    borderWidth: 1
+                    borderWidth: 1,
+                    borderRadius: 6,
+                    shadow: true
                 },
                 plotOptions: {
                     line: {
