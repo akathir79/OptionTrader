@@ -497,6 +497,78 @@
   border-color: #007bff;
 }
 
+/* Buy/Sell button styling */
+.option_button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin: 0 2px;
+  font-size: 9px;
+  font-weight: bold;
+  border: 1px solid #ddd;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.option_button.buy_button {
+  background-color: #e8f5e8;
+  border-color: #28a745;
+  color: #28a745;
+}
+
+.option_button.sell_button {
+  background-color: #fdeaea;
+  border-color: #dc3545;
+  color: #dc3545;
+}
+
+.option_button:hover {
+  opacity: 0.8;
+  transform: scale(1.05);
+}
+
+.option_button.active {
+  font-weight: bold;
+  box-shadow: 0 0 0 2px rgba(0,123,255,0.3);
+}
+
+.option_button.buy_button.active {
+  background-color: #28a745;
+  color: white;
+}
+
+.option_button.sell_button.active {
+  background-color: #dc3545;
+  color: white;
+}
+
+.count_badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background-color: #007bff;
+  color: white;
+  font-size: 7px;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.buy_sell_cell {
+  padding: 2px !important;
+  min-width: 50px;
+}
+
 /* Position table enhancements */
 .position-row {
   transition: background-color 0.2s;
@@ -1431,6 +1503,337 @@ document.addEventListener('DOMContentLoaded', function() {
             document.head.appendChild(script);
         }
     }, 1000);
+    
+    // Add position tracking variables
+    let optionCounters = {};
+    let firstClickFlags = {};
+    const defaultLotSize = 75;
+    let payoffChart = null;
+    
+    // Initialize payoff chart
+    function initPayoffChart() {
+        if (document.getElementById('payoffChart')) {
+            payoffChart = Highcharts.chart('payoffChart', {
+                chart: { type: 'area', height: 300 },
+                title: { text: 'Multi-Leg Payoff' },
+                xAxis: { title: { text: 'Underlying Price' }, crosshair: true },
+                yAxis: { title: { text: 'Net P&L (₹)' } },
+                tooltip: { valuePrefix: '₹' },
+                plotOptions: {
+                    area: {
+                        marker: { enabled: false },
+                        zoneAxis: 'y',
+                        zones: []
+                    }
+                },
+                series: [{ name: 'Payoff', data: [] }]
+            });
+        }
+    }
+    
+    // Create Buy/Sell button with badge
+    function createOptionButton(rowIndex, optionType, action, extraClass) {
+        const key = `${optionType}${action}`; // ce_buy, ce_sell, pe_buy, pe_sell
+        const buttonId = `${key}_${rowIndex}`;
+        
+        // Initialize counter if not exists
+        if (!optionCounters[buttonId]) {
+            optionCounters[buttonId] = 0;
+            firstClickFlags[buttonId] = true;
+        }
+        
+        const div = document.createElement('div');
+        div.className = `option_button ${extraClass}`;
+        div.id = buttonId;
+        div.textContent = action.charAt(0); // 'B' or 'S'
+        div.style.position = 'relative';
+        div.style.display = 'inline-flex';
+        div.style.alignItems = 'center';
+        div.style.justifyContent = 'center';
+        div.style.padding = '2px 6px';
+        div.style.margin = '0 2px';
+        div.style.height = '20px';
+        div.style.fontSize = '10px';
+        div.style.border = '1px solid';
+        div.style.borderRadius = '3px';
+        div.style.cursor = 'pointer';
+        div.style.transition = '0.2s';
+        
+        // Badge element
+        const badge = document.createElement('span');
+        badge.className = 'count_badge';
+        badge.id = `${key}_badge_${rowIndex}`;
+        badge.textContent = '0';
+        badge.style.display = 'none';
+        div.appendChild(badge);
+        
+        // Dropdown menu
+        const dropdown = document.createElement('div');
+        dropdown.className = 'dropdown_menu';
+        dropdown.id = `${key}_menu_${rowIndex}`;
+        dropdown.style.display = 'none';
+        
+        const addBtn = document.createElement('button');
+        addBtn.textContent = '+ Add';
+        addBtn.onclick = (e) => incrementPosition(rowIndex, optionType, action, e);
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = '× Remove';
+        removeBtn.onclick = (e) => decrementPosition(rowIndex, optionType, action, e);
+        
+        dropdown.appendChild(addBtn);
+        dropdown.appendChild(removeBtn);
+        div.appendChild(dropdown);
+        
+        // Main click handler
+        div.onclick = (e) => onOptionButtonClick(e, rowIndex, optionType, action);
+        
+        return div;
+    }
+    
+    // Handle button clicks
+    function onOptionButtonClick(e, rowIndex, optionType, action) {
+        e.stopPropagation();
+        const key = `${optionType}${action}`;
+        const buttonId = `${key}_${rowIndex}`;
+        
+        if (firstClickFlags[buttonId]) {
+            incrementPosition(rowIndex, optionType, action, e);
+            firstClickFlags[buttonId] = false;
+        } else {
+            toggleDropdown(rowIndex, optionType, action);
+        }
+    }
+    
+    // Increment position
+    function incrementPosition(rowIndex, optionType, action, e) {
+        e.stopPropagation();
+        const key = `${optionType}${action}`;
+        const buttonId = `${key}_${rowIndex}`;
+        
+        optionCounters[buttonId]++;
+        updateButtonUI(rowIndex, optionType, action);
+        hideDropdown(rowIndex, optionType, action);
+        addToPositionTable(rowIndex, optionType, action);
+        updatePayoffChart();
+    }
+    
+    // Decrement position
+    function decrementPosition(rowIndex, optionType, action, e) {
+        e.stopPropagation();
+        const key = `${optionType}${action}`;
+        const buttonId = `${key}_${rowIndex}`;
+        
+        if (optionCounters[buttonId] > 0) {
+            optionCounters[buttonId]--;
+            updateButtonUI(rowIndex, optionType, action);
+            if (optionCounters[buttonId] === 0) {
+                firstClickFlags[buttonId] = true;
+                removeFromPositionTable(rowIndex, optionType, action);
+            } else {
+                updatePositionTable(rowIndex, optionType, action);
+            }
+            hideDropdown(rowIndex, optionType, action);
+            updatePayoffChart();
+        }
+    }
+    
+    // Update button UI
+    function updateButtonUI(rowIndex, optionType, action) {
+        const key = `${optionType}${action}`;
+        const buttonId = `${key}_${rowIndex}`;
+        const badgeId = `${key}_badge_${rowIndex}`;
+        
+        const button = document.getElementById(buttonId);
+        const badge = document.getElementById(badgeId);
+        const count = optionCounters[buttonId] || 0;
+        
+        if (badge) {
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'block' : 'none';
+        }
+        
+        if (button) {
+            if (count > 0) {
+                button.classList.add('active');
+                button.style.fontWeight = 'bold';
+            } else {
+                button.classList.remove('active');
+                button.style.fontWeight = 'normal';
+            }
+        }
+    }
+    
+    // Toggle dropdown
+    function toggleDropdown(rowIndex, optionType, action) {
+        closeAllDropdowns();
+        const key = `${optionType}${action}`;
+        const menuId = `${key}_menu_${rowIndex}`;
+        const menu = document.getElementById(menuId);
+        if (menu) {
+            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+        }
+    }
+    
+    // Hide dropdown
+    function hideDropdown(rowIndex, optionType, action) {
+        const key = `${optionType}${action}`;
+        const menuId = `${key}_menu_${rowIndex}`;
+        const menu = document.getElementById(menuId);
+        if (menu) menu.style.display = 'none';
+    }
+    
+    // Close all dropdowns
+    function closeAllDropdowns() {
+        document.querySelectorAll('.dropdown_menu').forEach(menu => {
+            menu.style.display = 'none';
+        });
+    }
+    
+    // Add to position table
+    function addToPositionTable(rowIndex, optionType, action) {
+        // Implementation for adding to current position table
+        updatePositionDisplay();
+    }
+    
+    // Remove from position table
+    function removeFromPositionTable(rowIndex, optionType, action) {
+        // Implementation for removing from current position table
+        updatePositionDisplay();
+    }
+    
+    // Update position table
+    function updatePositionTable(rowIndex, optionType, action) {
+        // Implementation for updating position table
+        updatePositionDisplay();
+    }
+    
+    // Update position display
+    function updatePositionDisplay() {
+        // This will sync with the existing current position table
+        console.log('Position display updated');
+    }
+    
+    // Update payoff chart
+    function updatePayoffChart() {
+        if (!payoffChart) return;
+        
+        // Calculate payoff data based on current positions
+        const legs = [];
+        
+        // Gather all active positions
+        Object.keys(optionCounters).forEach(buttonId => {
+            const count = optionCounters[buttonId];
+            if (count > 0) {
+                // Parse button ID to get position details
+                const parts = buttonId.split('_');
+                const optionType = parts[0].substring(0, 2); // 'ce' or 'pe'
+                const action = parts[0].substring(2); // 'buy' or 'sell'
+                const rowIndex = parts[1];
+                
+                // Get strike and premium from table
+                const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${parseInt(rowIndex) + 1})`);
+                if (row) {
+                    const strikeTd = row.children[19]; // Strike column
+                    const strike = parseFloat(strikeTd?.textContent || 0);
+                    
+                    // Get premium based on option type
+                    let premium = 0;
+                    if (optionType === 'ce') {
+                        const ltpTd = row.children[17]; // CE LTP column
+                        premium = parseFloat(ltpTd?.textContent || 0);
+                    } else {
+                        const ltpTd = row.children[21]; // PE LTP column  
+                        premium = parseFloat(ltpTd?.textContent || 0);
+                    }
+                    
+                    if (strike > 0 && premium > 0) {
+                        legs.push({
+                            action: `${optionType.toUpperCase()} ${action.charAt(0).toUpperCase() + action.slice(1)}`,
+                            strike: strike,
+                            premium: premium,
+                            count: count
+                        });
+                    }
+                }
+            }
+        });
+        
+        if (legs.length === 0) {
+            payoffChart.series[0].setData([], true);
+            return;
+        }
+        
+        // Calculate payoff data
+        const allStrikes = legs.map(leg => leg.strike);
+        const minStrike = Math.min(...allStrikes) - 500;
+        const maxStrike = Math.max(...allStrikes) + 500;
+        const step = Math.max(1, Math.floor((maxStrike - minStrike) / 100));
+        
+        const payoffData = [];
+        for (let S = minStrike; S <= maxStrike; S += step) {
+            let total = 0;
+            legs.forEach(leg => {
+                total += calculateOptionPayoff(leg.action, leg.strike, leg.premium, leg.count, S);
+            });
+            payoffData.push([S, total]);
+        }
+        
+        payoffChart.series[0].setData(payoffData, true);
+        
+        // Add profit/loss zones
+        const zones = [];
+        let currentColor = payoffData[0][1] >= 0 ? '#28a745' : '#dc3545';
+        
+        for (let i = 1; i < payoffData.length; i++) {
+            const [x1, y1] = payoffData[i - 1];
+            const [x2, y2] = payoffData[i];
+            
+            if ((y1 < 0 && y2 >= 0) || (y1 > 0 && y2 <= 0)) {
+                zones.push({ value: x1, color: currentColor });
+                currentColor = currentColor === '#dc3545' ? '#28a745' : '#dc3545';
+            }
+        }
+        zones.push({ value: maxStrike, color: currentColor });
+        
+        payoffChart.series[0].update({ zones: zones }, true);
+    }
+    
+    // Calculate single option payoff
+    function calculateOptionPayoff(action, strike, premium, count, spotPrice) {
+        let payoff = 0;
+        const lotSize = defaultLotSize;
+        
+        switch (action) {
+            case 'CE Buy':
+                payoff = Math.max(spotPrice - strike, 0) - premium;
+                break;
+            case 'CE Sell':
+                payoff = premium - Math.max(spotPrice - strike, 0);
+                break;
+            case 'PE Buy':
+                payoff = Math.max(strike - spotPrice, 0) - premium;
+                break;
+            case 'PE Sell':
+                payoff = premium - Math.max(strike - spotPrice, 0);
+                break;
+        }
+        
+        return payoff * count * lotSize;
+    }
+    
+    // Global click handler to close dropdowns
+    document.addEventListener('click', closeAllDropdowns);
+    
+    // Make functions globally available
+    window.createOptionButton = createOptionButton;
+    window.incrementPosition = incrementPosition;
+    window.decrementPosition = decrementPosition;
+    window.updatePayoffChart = updatePayoffChart;
+    window.initPayoffChart = initPayoffChart;
+    
+    // Initialize payoff chart when document is ready
+    initPayoffChart();
     
     // Add candlestick chart function
     window.openCandlestickChart = function() {

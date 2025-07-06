@@ -319,6 +319,10 @@ class WebSocketHandler {
         const row = document.createElement('tr');
         row.dataset.strike = strike.strike;
         
+        // Get row index for button tracking
+        const tableBody = document.querySelector('#optionChainTable tbody');
+        const rowIndex = tableBody ? tableBody.children.length : 0;
+        
         // Remove ATM highlighting for clean professional appearance
         // if (strike.is_atm) {
         //     row.classList.add('atm-strike');
@@ -343,10 +347,14 @@ class WebSocketHandler {
         }
         // If currentSpot == strike.strike, no ITM highlighting (ATM)
         
+        // Create CE B/S cell with proper buttons
+        const ceBuyButton = window.createOptionButton ? window.createOptionButton(rowIndex, 'ce', 'buy', 'buy_button') : null;
+        const ceSellButton = window.createOptionButton ? window.createOptionButton(rowIndex, 'ce', 'sell', 'sell_button') : null;
+        
         // Create cells using column-specific approach
         const cells = [
-            // CE B/S
-            `<td class="text-center buy_sell_cell"><span class="option_button buy_button">B</span><span class="option_button sell_button">S</span></td>`,
+            // CE B/S - Create cell and append buttons after
+            `<td class="text-center buy_sell_cell" id="ce-bs-${rowIndex}"></td>`,
             // CE Greeks
             `<td class="text-center ce-veta">0</td>`,
             `<td class="text-center ce-volga">0</td>`,
@@ -389,11 +397,32 @@ class WebSocketHandler {
             `<td class="text-center pe-charm">0</td>`,
             `<td class="text-center pe-volga">0</td>`,
             `<td class="text-center pe-veta">0</td>`,
-            // PE B/S
-            `<td class="text-center buy_sell_cell pe-buy-sell-cell"><span class="option_button buy_button">B</span><span class="option_button sell_button">S</span></td>`
+            // PE B/S - Create cell and append buttons after
+            `<td class="text-center buy_sell_cell pe-buy-sell-cell" id="pe-bs-${rowIndex}"></td>`
         ];
         
         row.innerHTML = cells.join('');
+        
+        // After creating the row, append the Buy/Sell buttons
+        setTimeout(() => {
+            const ceBsCell = document.getElementById(`ce-bs-${rowIndex}`);
+            const peBsCell = document.getElementById(`pe-bs-${rowIndex}`);
+            
+            if (ceBsCell && window.createOptionButton) {
+                const ceBuyBtn = window.createOptionButton(rowIndex, 'ce', 'buy', 'buy_button');
+                const ceSellBtn = window.createOptionButton(rowIndex, 'ce', 'sell', 'sell_button');
+                ceBsCell.appendChild(ceBuyBtn);
+                ceBsCell.appendChild(ceSellBtn);
+            }
+            
+            if (peBsCell && window.createOptionButton) {
+                const peBuyBtn = window.createOptionButton(rowIndex, 'pe', 'buy', 'buy_button');
+                const peSellBtn = window.createOptionButton(rowIndex, 'pe', 'sell', 'sell_button');
+                peBsCell.appendChild(peBuyBtn);
+                peBsCell.appendChild(peSellBtn);
+            }
+        }, 10);
+        
         return row;
     }
 
