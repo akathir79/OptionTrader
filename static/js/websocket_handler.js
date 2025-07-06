@@ -161,6 +161,12 @@ class WebSocketHandler {
             }, 500);
         }
         
+        // Show chart icon when symbol is selected
+        const chartIcon = document.getElementById('chartIcon');
+        if (chartIcon && this.currentSymbol) {
+            chartIcon.style.display = 'inline';
+        }
+        
         // Update any element containing "Spot Price:"
         const allElements = document.querySelectorAll('*');
         allElements.forEach(element => {

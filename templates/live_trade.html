@@ -745,7 +745,12 @@
                 <div class="carousel-page">
                   <div class="d-flex justify-content-between align-items-center">
                     <div class="text-center">
-                      <small class="text-muted me-1">Spot Price:</small><strong id="spotPrice" class="text-muted">Select Symbol</strong>
+                      <small class="text-muted me-1">Spot Price:</small>
+                      <strong id="spotPrice" class="text-muted">Select Symbol</strong>
+                      <i id="chartIcon" class="fas fa-chart-line text-primary ms-2" 
+                         style="cursor: pointer; font-size: 14px; display: none;" 
+                         title="Open Candlestick Chart"
+                         onclick="openCandlestickChart()"></i>
                     </div>
                     <div class="text-center">
                       <small class="text-muted me-1">Day Open:</small><strong class="text-secondary">23,649</strong>
@@ -1424,9 +1429,107 @@ document.addEventListener('DOMContentLoaded', function() {
             document.head.appendChild(script);
         }
     }, 1000);
+    
+    // Add candlestick chart function
+    window.openCandlestickChart = function() {
+        if (window.websocketHandler && window.websocketHandler.currentSymbol) {
+            if (window.candlestickChart) {
+                window.candlestickChart.show(window.websocketHandler.currentSymbol);
+            } else {
+                // Load candlestick chart script if not already loaded
+                const script = document.createElement('script');
+                script.src = '/static/js/candlestick_chart.js';
+                script.onload = function() {
+                    if (window.candlestickChart) {
+                        window.candlestickChart.show(window.websocketHandler.currentSymbol);
+                    }
+                };
+                document.head.appendChild(script);
+            }
+        } else {
+            alert('Please select a symbol first');
+        }
+    };
+    
+    window.refreshCandlestickChart = function() {
+        if (window.candlestickChart) {
+            window.candlestickChart.refresh();
+        }
+    };
 });
 </script>
 
 
 
 {% endblock %}
+<!-- Candlestick Chart Modal -->
+<div class="modal fade" id="candlestickModal" tabindex="-1" aria-labelledby="candlestickModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-fullscreen">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-2">
+        <h5 class="modal-title" id="candlestickModalLabel">
+          <i class="fas fa-chart-line text-primary me-2"></i>
+          <span id="chartSymbolTitle">Chart Analysis</span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <!-- Timeframe Controls -->
+        <div class="d-flex justify-content-between align-items-center px-3 py-2 bg-light border-bottom">
+          <div class="d-flex gap-2">
+            <div class="btn-group" role="group" aria-label="Timeframe">
+              <input type="radio" class="btn-check" name="timeframe" id="tf1m" value="1" checked>
+              <label class="btn btn-outline-primary btn-sm" for="tf1m">1m</label>
+              
+              <input type="radio" class="btn-check" name="timeframe" id="tf3m" value="3">
+              <label class="btn btn-outline-primary btn-sm" for="tf3m">3m</label>
+              
+              <input type="radio" class="btn-check" name="timeframe" id="tf5m" value="5">
+              <label class="btn btn-outline-primary btn-sm" for="tf5m">5m</label>
+              
+              <input type="radio" class="btn-check" name="timeframe" id="tf15m" value="15">
+              <label class="btn btn-outline-primary btn-sm" for="tf15m">15m</label>
+              
+              <input type="radio" class="btn-check" name="timeframe" id="tf1h" value="60">
+              <label class="btn btn-outline-primary btn-sm" for="tf1h">1h</label>
+              
+              <input type="radio" class="btn-check" name="timeframe" id="tfD" value="D">
+              <label class="btn btn-outline-primary btn-sm" for="tfD">Daily</label>
+              
+              <input type="radio" class="btn-check" name="timeframe" id="tfW" value="W">
+              <label class="btn btn-outline-primary btn-sm" for="tfW">Weekly</label>
+              
+              <input type="radio" class="btn-check" name="timeframe" id="tfM" value="M">
+              <label class="btn btn-outline-primary btn-sm" for="tfM">Monthly</label>
+            </div>
+          </div>
+          
+          <div class="d-flex gap-2">
+            <!-- Support/Resistance Toggle -->
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" id="supportResistanceToggle" checked>
+              <label class="form-check-label" for="supportResistanceToggle">
+                <small>Support/Resistance</small>
+              </label>
+            </div>
+            
+            <!-- Refresh Button -->
+            <button class="btn btn-outline-secondary btn-sm" onclick="refreshCandlestickChart()">
+              <i class="fas fa-refresh"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Chart Container -->
+        <div id="candlestickChartContainer" style="height: calc(100vh - 150px); position: relative;">
+          <div id="candlestickChart" style="height: 100%; width: 100%;"></div>
+          <div id="chartLoading" class="d-flex justify-content-center align-items-center position-absolute top-50 start-50 translate-middle" style="display: none !important;">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading chart...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
