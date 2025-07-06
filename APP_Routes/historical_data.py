@@ -41,9 +41,9 @@ def get_option_history(symbol):
         if error:
             return jsonify({"error": error}), 500
         
-        # Get date range (last 7 days to ensure we get weekday data)
+        # Get date range (last 4 days to current time for recent market data)
         end_date = datetime.now()
-        start_date = end_date - timedelta(days=7)
+        start_date = end_date - timedelta(days=4)
         
         # Format dates for FYERS API
         from_date = start_date.strftime("%Y-%m-%d")
@@ -52,15 +52,20 @@ def get_option_history(symbol):
         print(f"FETCHING HISTORICAL DATA FOR: {symbol}")
         print(f"Date Range: {from_date} to {to_date}")
         
+        # Get resolution from query parameter (default: 1-minute for more granular data)
+        resolution = request.args.get('resolution', '1')  # 1-minute intervals
+        
         # FYERS historical data request
         data = {
             "symbol": symbol,
-            "resolution": "5",  # 5-minute intervals
+            "resolution": resolution,
             "date_format": "1",
             "range_from": from_date,
             "range_to": to_date,
             "cont_flag": "1"
         }
+        
+        print(f"Resolution: {resolution}-minute intervals")
         
         response = fyers.history(data=data)
         
@@ -110,6 +115,80 @@ def get_option_history(symbol):
     except Exception as e:
         print(f"HISTORICAL DATA ERROR: {e}")
         return jsonify({"error": f"Server error: {str(e)}"}), 500
+
+
+@historical_bp.route('/api/tick_data/<symbol>')
+def get_tick_data(symbol):
+    """Get tick-level data for real-time market analysis"""
+    try:
+        # Get FYERS client
+        fyers, error = get_fyers_client()
+        if error:
+            return jsonify({"error": error}), 500
+        
+        # Get current time for tick data (last 2 hours for maximum granularity)
+        end_time = datetime.now()
+        start_time = end_time - timedelta(hours=2)
+        
+        # Format for FYERS API
+        from_date = start_time.strftime("%Y-%m-%d")
+        to_date = end_time.strftime("%Y-%m-%d")
+        
+        print(f"FETCHING TICK DATA FOR: {symbol}")
+        print(f"Time Range: {start_time} to {end_time}")
+        
+        # Try highest resolution first (tick data)
+        for resolution in ['1', '3', '5']:  # 1-min, 3-min, 5-min
+            data = {
+                "symbol": symbol,
+                "resolution": resolution,
+                "date_format": "1",
+                "range_from": from_date,
+                "range_to": to_date,
+                "cont_flag": "1"
+            }
+            
+            response = fyers.history(data=data)
+            print(f"TICK DATA RESPONSE ({resolution}-min): {response.get('s', 'unknown')}")
+            
+            if response.get('s') == 'ok' and response.get('candles'):
+                candles = response.get('candles', [])
+                
+                # Process tick data
+                tick_data = []
+                for candle in candles:
+                    if len(candle) >= 6:
+                        tick_data.append({
+                            "timestamp": int(candle[0]),
+                            "open": float(candle[1]),
+                            "high": float(candle[2]),
+                            "low": float(candle[3]),
+                            "close": float(candle[4]),
+                            "volume": int(candle[5])
+                        })
+                
+                print(f"TICK DATA: {len(tick_data)} data points at {resolution}-min resolution")
+                
+                return jsonify({
+                    "symbol": symbol,
+                    "resolution": f"{resolution}-minute",
+                    "tick_count": len(tick_data),
+                    "ticks": tick_data,
+                    "latest_price": tick_data[-1]["close"] if tick_data else None,
+                    "latest_time": tick_data[-1]["timestamp"] if tick_data else None
+                })
+        
+        # No tick data available
+        return jsonify({
+            "symbol": symbol,
+            "message": "No tick data available",
+            "ticks": [],
+            "tick_count": 0
+        })
+        
+    except Exception as e:
+        print(f"TICK DATA ERROR: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @historical_bp.route('/api/batch_option_history', methods=['POST'])
 def get_batch_option_history():

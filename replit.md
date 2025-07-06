@@ -100,6 +100,7 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- July 06, 2025. Enhanced historical data system with 4-day range and 1-minute resolution - providing 1125 granular price points for real-time market analysis, added tick data endpoint for high-frequency data access, and optimized date ranges to capture weekday trading sessions
 - July 06, 2025. Fixed microcharts display issue in option chain table - resolved historical data API to properly handle FYERS "no_data" responses, added debug logging for chart loading process, and implemented proper fallback display with chart icons when historical data isn't available for options
 - July 05, 2025. Enhanced World Market Clock with individual market notification and sound controls, allowing per-market toggle switches for open/close notifications and sound alerts, plus bulk control buttons for managing all markets at once
 - July 05, 2025. Added notification and sound muting controls to World Market Clock system with global toggle switches, visual status indicators on Markets button, and persistent user preferences stored in localStorage
