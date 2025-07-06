@@ -1957,7 +1957,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 payoffChart.series[0].remove(false);
             }
             payoffChart.redraw();
-            updateMarginInfo(0, 0, 0);
+            updateMarginInfo(0, 0, 0, []);
             console.log('No positions found, chart cleared');
             return;
         }
@@ -2054,9 +2054,31 @@ document.addEventListener('DOMContentLoaded', function() {
         // Calculate breakeven points
         const breakevenPoints = findBreakevenPoints(combinedPayoffData);
         
-        // Clear existing breakeven plot lines
+        // Clear existing plot lines
         for (let i = 0; i < 10; i++) {
             payoffChart.xAxis[0].removePlotLine('breakeven' + i);
+        }
+        payoffChart.xAxis[0].removePlotLine('currentSpot');
+        
+        // Add current spot price vertical line
+        const currentSpotPrice = getCurrentSpotPrice();
+        if (currentSpotPrice > 0) {
+            payoffChart.xAxis[0].addPlotLine({
+                id: 'currentSpot',
+                value: currentSpotPrice,
+                color: '#007BFF',
+                width: 2,
+                zIndex: 7,
+                label: {
+                    text: 'Current Spot: ₹' + currentSpotPrice.toFixed(2),
+                    align: 'center',
+                    style: {
+                        color: '#007BFF',
+                        fontSize: '10px',
+                        fontWeight: 'bold'
+                    }
+                }
+            });
         }
         
         // Add breakeven point plot lines
@@ -2123,10 +2145,43 @@ document.addEventListener('DOMContentLoaded', function() {
         }, false);
         
         payoffChart.redraw();
-        updateMarginInfo(netCredit, maxProfit, maxLoss);
+        updateMarginInfo(netCredit, maxProfit, maxLoss, breakevenPoints);
         
         console.log(`Multi-leg payoff chart updated with ${legs.length} individual legs plus combined strategy`);
         console.log(`Net Credit: ₹${netCredit.toFixed(2)}, Max Profit: ₹${maxProfit.toFixed(2)}, Max Loss: ₹${maxLoss.toFixed(2)}`);
+    }
+    
+    // Enhanced margin info update with breakeven calculation
+    function updateMarginInfo(netCredit, maxProfit, maxLoss, breakevenPoints = []) {
+        const netCreditElement = document.getElementById('netCreditValue');
+        const maxProfitElement = document.getElementById('maxProfitValue');
+        const maxLossElement = document.getElementById('maxLossValue');
+        const breakevenElement = document.getElementById('breakevenValue');
+        
+        if (netCreditElement) {
+            netCreditElement.textContent = `₹${netCredit.toFixed(2)}`;
+            netCreditElement.className = netCredit >= 0 ? 'fw-bold text-success' : 'fw-bold text-danger';
+        }
+        
+        if (maxProfitElement) {
+            maxProfitElement.textContent = maxProfit === Infinity ? 'Unlimited' : `₹${maxProfit.toFixed(2)}`;
+        }
+        
+        if (maxLossElement) {
+            maxLossElement.textContent = maxLoss === -Infinity ? 'Unlimited' : `₹${maxLoss.toFixed(2)}`;
+        }
+        
+        // Update breakeven display with percentage from current spot
+        if (breakevenElement && breakevenPoints.length > 0) {
+            const currentSpot = getCurrentSpotPrice();
+            const beText = breakevenPoints.map((point, index) => {
+                const percentage = currentSpot > 0 ? ((point - currentSpot) / currentSpot * 100) : 0;
+                return `₹${point.toFixed(0)} (${percentage >= 0 ? '+' : ''}${percentage.toFixed(1)}%)`;
+            }).join(', ');
+            breakevenElement.textContent = beText;
+        } else if (breakevenElement) {
+            breakevenElement.textContent = 'No breakeven points';
+        }
     }
     
     // Helper function to find breakeven points
@@ -2182,6 +2237,57 @@ document.addEventListener('DOMContentLoaded', function() {
             profitZone: profitZone,
             lossZone: lossZone
         };
+    }
+    
+    // Helper function to get current spot price
+    function getCurrentSpotPrice() {
+        // Try to get from websocket handler
+        if (window.websocketHandler && window.websocketHandler.latestData) {
+            const data = window.websocketHandler.latestData;
+            if (data.lp) {
+                return parseFloat(data.lp);
+            }
+        }
+        
+        // Try to get from market data carousel
+        const priceElements = document.querySelectorAll('.market-price');
+        for (let elem of priceElements) {
+            const priceText = elem.textContent.trim();
+            const priceMatch = priceText.match(/[\d,]+\.?\d*/);
+            if (priceMatch) {
+                const price = parseFloat(priceMatch[0].replace(/,/g, ''));
+                if (price > 1000) { // Valid index price
+                    return price;
+                }
+            }
+        }
+        
+        // Try to get from any element with price data
+        const spotElements = document.querySelectorAll('[id*="spot"], [class*="spot"], [id*="price"], [class*="price"]');
+        for (let elem of spotElements) {
+            const spotText = elem.textContent.trim();
+            const spotMatch = spotText.match(/[\d,]+\.?\d*/);
+            if (spotMatch) {
+                const price = parseFloat(spotMatch[0].replace(/,/g, ''));
+                if (price > 1000 && price < 50000) { // Valid index price range
+                    return price;
+                }
+            }
+        }
+        
+        // Get from ATM strike as fallback (approximate spot)
+        const atmRow = document.querySelector('.atm-row');
+        if (atmRow) {
+            const strikeTd = atmRow.children[19];
+            if (strikeTd) {
+                const atmStrike = parseFloat(strikeTd.textContent.trim());
+                if (atmStrike > 0) {
+                    return atmStrike;
+                }
+            }
+        }
+        
+        return 25000; // Default fallback
     }
     
     // Update margin info display
