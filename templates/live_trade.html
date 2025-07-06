@@ -1545,7 +1545,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const chartContainer = document.getElementById('chartContainer');
         if (chartContainer) {
             payoffChart = Highcharts.chart('chartContainer', {
-                chart: { type: 'area', height: 300 },
+                chart: { type: 'line', height: 350 },
                 title: { text: 'Multi-Leg Payoff Chart' },
                 xAxis: { 
                     title: { text: 'Underlying Price' }, 
@@ -1555,34 +1555,38 @@ document.addEventListener('DOMContentLoaded', function() {
                     title: { text: 'Net P&L (₹)' },
                     plotLines: [{
                         value: 0,
-                        color: '#000',
+                        color: '#666',
                         width: 1,
+                        dashStyle: 'dash',
                         zIndex: 4
                     }]
                 },
+                legend: {
+                    enabled: true,
+                    align: 'right',
+                    verticalAlign: 'top',
+                    layout: 'vertical'
+                },
                 tooltip: { 
-                    valuePrefix: '₹',
+                    shared: true,
+                    crosshairs: true,
+                    formatter: function() {
+                        let s = '<b>Spot: ₹' + this.x + '</b><br/>';
+                        this.points.forEach(function(point) {
+                            s += '<span style="color:' + point.color + '">' + point.series.name + 
+                                 ': ₹' + point.y.toFixed(2) + '</span><br/>';
+                        });
+                        return s;
+                    },
                     valueDecimals: 2
                 },
                 plotOptions: {
-                    area: {
+                    line: {
                         marker: { enabled: false },
-                        zoneAxis: 'y',
-                        zones: [{
-                            value: 0,
-                            color: '#ff4444',
-                            fillColor: 'rgba(255, 68, 68, 0.1)'
-                        }, {
-                            color: '#44ff44',
-                            fillColor: 'rgba(68, 255, 68, 0.1)'
-                        }]
+                        lineWidth: 2
                     }
                 },
-                series: [{ 
-                    name: 'Net P&L', 
-                    data: [],
-                    color: '#007bff'
-                }],
+                series: [],
                 credits: { enabled: false }
             });
         }
@@ -1826,7 +1830,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateMarginInfo(netCredit, maxProfit, maxLoss);
     }
     
-    // Create payoff chart from loaded option chain data - step by step on button click
+    // Create multi-leg payoff chart from loaded option chain data - proper multi-leg concept
     function createPayoffChartFromOptionChain() {
         if (!payoffChart) {
             initPayoffChart();
@@ -1857,7 +1861,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const ceLtp = ceLtpTd ? parseFloat(ceLtpTd.textContent.trim()) : 0;
             const peLtp = peLtpTd ? parseFloat(peLtpTd.textContent.trim()) : 0;
             
-            // CE Buy positions
+            // Create individual legs for each position
             if (counters[rowIndex].ceBuy > 0 && ceLtp > 0) {
                 legs.push({
                     type: 'CE',
@@ -1865,13 +1869,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     strike: strike,
                     premium: ceLtp,
                     lots: counters[rowIndex].ceBuy,
-                    qty: counters[rowIndex].ceBuy * defaultLotSize
+                    qty: counters[rowIndex].ceBuy * defaultLotSize,
+                    name: `CE ${strike} Buy (${counters[rowIndex].ceBuy})`
                 });
                 totalPositions += counters[rowIndex].ceBuy;
-                console.log(`Added CE Buy: Strike ${strike}, Premium ${ceLtp}, Lots ${counters[rowIndex].ceBuy}`);
             }
             
-            // CE Sell positions
             if (counters[rowIndex].ceSell > 0 && ceLtp > 0) {
                 legs.push({
                     type: 'CE',
@@ -1879,13 +1882,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     strike: strike,
                     premium: ceLtp,
                     lots: counters[rowIndex].ceSell,
-                    qty: counters[rowIndex].ceSell * defaultLotSize
+                    qty: counters[rowIndex].ceSell * defaultLotSize,
+                    name: `CE ${strike} Sell (${counters[rowIndex].ceSell})`
                 });
                 totalPositions += counters[rowIndex].ceSell;
-                console.log(`Added CE Sell: Strike ${strike}, Premium ${ceLtp}, Lots ${counters[rowIndex].ceSell}`);
             }
             
-            // PE Buy positions
             if (counters[rowIndex].peBuy > 0 && peLtp > 0) {
                 legs.push({
                     type: 'PE',
@@ -1893,13 +1895,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     strike: strike,
                     premium: peLtp,
                     lots: counters[rowIndex].peBuy,
-                    qty: counters[rowIndex].peBuy * defaultLotSize
+                    qty: counters[rowIndex].peBuy * defaultLotSize,
+                    name: `PE ${strike} Buy (${counters[rowIndex].peBuy})`
                 });
                 totalPositions += counters[rowIndex].peBuy;
-                console.log(`Added PE Buy: Strike ${strike}, Premium ${peLtp}, Lots ${counters[rowIndex].peBuy}`);
             }
             
-            // PE Sell positions
             if (counters[rowIndex].peSell > 0 && peLtp > 0) {
                 legs.push({
                     type: 'PE',
@@ -1907,45 +1908,49 @@ document.addEventListener('DOMContentLoaded', function() {
                     strike: strike,
                     premium: peLtp,
                     lots: counters[rowIndex].peSell,
-                    qty: counters[rowIndex].peSell * defaultLotSize
+                    qty: counters[rowIndex].peSell * defaultLotSize,
+                    name: `PE ${strike} Sell (${counters[rowIndex].peSell})`
                 });
                 totalPositions += counters[rowIndex].peSell;
-                console.log(`Added PE Sell: Strike ${strike}, Premium ${peLtp}, Lots ${counters[rowIndex].peSell}`);
             }
         });
         
         console.log(`Total legs created: ${legs.length}, Total positions: ${totalPositions}`);
         
         if (legs.length === 0) {
-            // Clear chart if no positions
-            payoffChart.series[0].setData([], true);
+            // Clear all series
+            while (payoffChart.series.length > 0) {
+                payoffChart.series[0].remove(false);
+            }
+            payoffChart.redraw();
             updateMarginInfo(0, 0, 0);
             console.log('No positions found, chart cleared');
             return;
         }
         
-        // Calculate payoff curve using real option chain data
+        // Calculate chart range
         const allStrikes = legs.map(leg => leg.strike);
         const minStrike = Math.min(...allStrikes) - 500;
         const maxStrike = Math.max(...allStrikes) + 500;
         const step = Math.max(5, Math.floor((maxStrike - minStrike) / 200));
         
-        const payoffData = [];
+        // Clear existing series
+        while (payoffChart.series.length > 0) {
+            payoffChart.series[0].remove(false);
+        }
+        
+        // Color palette for different legs
+        const colors = ['#2E86C1', '#E74C3C', '#28B463', '#F39C12', '#8E44AD', '#17A2B8', '#DC3545', '#FFC107'];
+        
         let netCredit = 0;
         let maxProfit = -Infinity;
         let maxLoss = Infinity;
         
-        // Calculate net credit/debit from real premiums
-        legs.forEach(leg => {
-            const credit = leg.action === 'Sell' ? leg.premium * leg.qty : -leg.premium * leg.qty;
-            netCredit += credit;
-        });
+        // Calculate net position payoff (combined)
+        const combinedPayoffData = [];
         
-        console.log(`Net Credit/Debit: ₹${netCredit.toFixed(2)}`);
-        
-        // Generate payoff curve points
         for (let spotPrice = minStrike; spotPrice <= maxStrike; spotPrice += step) {
-            let totalPayoff = netCredit; // Start with net credit/debit
+            let totalPayoff = 0;
             
             legs.forEach(leg => {
                 let optionValue = 0;
@@ -1957,25 +1962,75 @@ document.addEventListener('DOMContentLoaded', function() {
                     optionValue = Math.max(0, leg.strike - spotPrice);
                 }
                 
-                // Calculate payoff based on position
+                // Calculate leg payoff
+                let legPayoff = 0;
                 if (leg.action === 'Buy') {
-                    totalPayoff += (optionValue - leg.premium) * leg.qty;
+                    legPayoff = (optionValue - leg.premium) * leg.qty;
                 } else { // Sell
-                    totalPayoff += (leg.premium - optionValue) * leg.qty;
+                    legPayoff = (leg.premium - optionValue) * leg.qty;
                 }
+                
+                totalPayoff += legPayoff;
             });
             
-            payoffData.push([spotPrice, totalPayoff]);
+            combinedPayoffData.push([spotPrice, totalPayoff]);
             maxProfit = Math.max(maxProfit, totalPayoff);
             maxLoss = Math.min(maxLoss, totalPayoff);
         }
         
-        // Update chart with real data
-        payoffChart.series[0].setData(payoffData, true);
+        // Calculate net credit/debit
+        legs.forEach(leg => {
+            const credit = leg.action === 'Sell' ? leg.premium * leg.qty : -leg.premium * leg.qty;
+            netCredit += credit;
+        });
+        
+        // Add individual leg series
+        legs.forEach((leg, index) => {
+            const legData = [];
+            const color = colors[index % colors.length];
+            
+            for (let spotPrice = minStrike; spotPrice <= maxStrike; spotPrice += step) {
+                let optionValue = 0;
+                
+                if (leg.type === 'CE') {
+                    optionValue = Math.max(0, spotPrice - leg.strike);
+                } else {
+                    optionValue = Math.max(0, leg.strike - spotPrice);
+                }
+                
+                let legPayoff = 0;
+                if (leg.action === 'Buy') {
+                    legPayoff = (optionValue - leg.premium) * leg.qty;
+                } else {
+                    legPayoff = (leg.premium - optionValue) * leg.qty;
+                }
+                
+                legData.push([spotPrice, legPayoff]);
+            }
+            
+            payoffChart.addSeries({
+                name: leg.name,
+                data: legData,
+                color: color,
+                lineWidth: 1,
+                dashStyle: 'ShortDash'
+            }, false);
+        });
+        
+        // Add combined strategy line (bold)
+        payoffChart.addSeries({
+            name: 'Net P&L',
+            data: combinedPayoffData,
+            color: '#000000',
+            lineWidth: 3,
+            zIndex: 10
+        }, false);
+        
+        payoffChart.redraw();
         updateMarginInfo(netCredit, maxProfit, maxLoss);
         
-        console.log(`Payoff chart updated with ${payoffData.length} data points`);
-        console.log(`Max Profit: ₹${maxProfit.toFixed(2)}, Max Loss: ₹${maxLoss.toFixed(2)}`);
+        console.log(`Multi-leg payoff chart updated with ${legs.length} individual legs plus combined strategy`);
+        console.log(`Net Credit: ₹${netCredit.toFixed(2)}, Max Profit: ₹${maxProfit.toFixed(2)}, Max Loss: ₹${maxLoss.toFixed(2)}`);
     }
     
     // Update margin info display
