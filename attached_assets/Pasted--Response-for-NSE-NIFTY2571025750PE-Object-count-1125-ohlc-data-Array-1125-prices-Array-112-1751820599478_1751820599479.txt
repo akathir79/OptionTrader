@@ -1,0 +1,49 @@
+
+Response for NSE:NIFTY2571025750PE: 
+Object {count: 1125, ohlc_data: Array(1125), prices: Array(1125), symbol: "NSE:NIFTY2571025750PE", timestamps: Array(1125)}
+Rendering chart for NSE:NIFTY2571025750PE with 1125 data points
+Response for NSE:NIFTY2571025800CE: 
+Object {count: 1125, ohlc_data: Array(1125), prices: Array(1125), symbol: "NSE:NIFTY2571025800CE", timestamps: Array(1125)}
+Rendering chart for NSE:NIFTY2571025800CE with 1125 data points
+Response for NSE:NIFTY2571025750CE: 
+Object {count: 1125, ohlc_data: Array(1125), prices: Array(1125), symbol: "NSE:NIFTY2571025750CE", timestamps: Array(1125)}
+Rendering chart for NSE:NIFTY2571025750CE with 1125 data points
+Response for NSE:NIFTY2571025850PE: 
+Object {count: 1125, ohlc_data: Array(1125), prices: Array(1125), symbol: "NSE:NIFTY2571025850PE", timestamps: Array(1125)}
+Rendering chart for NSE:NIFTY2571025850PE with 1125 data points
+Response for NSE:NIFTY2571025800PE: 
+Object {count: 1125, ohlc_data: Array(1125), prices: Array(1125), symbol: "NSE:NIFTY2571025800PE", timestamps: Array(1125)}
+Rendering chart for NSE:NIFTY2571025800PE with 1125 data points
+Spot price updated: 25461 for NSE:NIFTY50-INDEX
+Response for NSE:NIFTY2571025850CE: 
+Object {count: 1125, ohlc_data: Array(1125), prices: Array(1125), symbol: "NSE:NIFTY2571025850CE", timestamps: Array(1125)}
+Rendering chart for NSE:NIFTY2571025850CE with 1125 data points
+Response for NSE:NIFTY2571025900CE: 
+Object {count: 1125, ohlc_data: Array(1125), prices: Array(1125), symbol: "NSE:NIFTY2571025900CE", timestamps: Array(1125)}
+Rendering chart for NSE:NIFTY2571025900CE with 1125 data points
+Spot price updated: 25461 for NSE:NIFTY50-INDEX
+Response for NSE:NIFTY2571025900PE: 
+Object {count: 1125, ohlc_data: Array(1125), prices: Array(1125), symbol: "NSE:NIFTY2571025900PE", timestamps: Array(1125)}
+Rendering chart for NSE:NIFTY2571025900PE with 1125 data points
+Making request to: /api/option_history/NSE%3ANIFTY2571025950CE
+Making request to: /api/option_history/NSE%3ANIFTY2571025950PE
+Response for NSE:NIFTY2571025950PE: 
+Object {count: 1094, ohlc_data: Array(1094), prices: Array(1094), symbol: "NSE:NIFTY2571025950PE", timestamps: Array(1094)}
+Rendering chart for NSE:NIFTY2571025950PE with 1094 data points
+Response for NSE:NIFTY2571025950CE: 
+Object {count: 1125, ohlc_data: Array(1125), prices: Array(1125), symbol: "NSE:NIFTY2571025950CE", timestamps: Array(1125)}
+Rendering chart for NSE:NIFTY2571025950CE with 1125 data points
+Spot price updated: 25461 for NSE:NIFTY50-INDEX
+Total legs created: 1, Total positions: 2
+First payoff: 41805 Initial color: rgba(40, 167, 69, 0.3)
+Breakeven points: 
+Array [25528.7]
+Zone 0: value=25528.7, color=rgba(40, 167, 69, 0.3)
+Final zone: value=26750, color=rgba(255, 76, 76, 0.3)
+All zones: 
+(2) [{…}, {…}]
+
+    0: Object
+    1: Object
+    length: 2
+    [[Prototype]]: Array(0)

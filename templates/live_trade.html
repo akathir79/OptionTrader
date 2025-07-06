@@ -2193,7 +2193,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Create zones based on breakeven points
         sortedBreakevens.forEach((be, index) => {
             console.log(`Zone ${index}: value=${be}, color=${currentColor}`);
-            zones.push({ value: be, color: currentColor });
+            zones.push({ 
+                value: be, 
+                color: currentColor,
+                fillColor: currentColor
+            });
             // Alternate colors at each breakeven point
             currentColor = currentColor.includes("255, 76, 76") ? "rgba(40, 167, 69, 0.3)" : "rgba(255, 76, 76, 0.3)";
         });
@@ -2201,7 +2205,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add final zone that extends to the end
         const maxStrike = Math.max(...payoffData.map(p => p[0]));
         console.log(`Final zone: value=${maxStrike + 1000}, color=${currentColor}`);
-        zones.push({ value: maxStrike + 1000, color: currentColor });
+        zones.push({ 
+            value: maxStrike + 1000, 
+            color: currentColor,
+            fillColor: currentColor
+        });
         
         console.log('All zones:', zones);
         return zones;
