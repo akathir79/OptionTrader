@@ -1519,6 +1519,9 @@ document.addEventListener('DOMContentLoaded', function() {
           <span id="chartSymbolTitle">Chart Analysis</span>
         </h5>
         <div class="d-flex gap-2">
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="maximizeChart" title="Maximize">
+            <i class="fas fa-expand"></i>
+          </button>
           <button type="button" class="btn btn-sm btn-outline-secondary" id="minimizeChart" title="Minimize">
             <i class="fas fa-minus"></i>
           </button>
@@ -1573,7 +1576,7 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
         
         <!-- Chart Container -->
-        <div id="candlestickChartContainer" style="height: calc(90vh - 200px); position: relative;">
+        <div id="candlestickChartContainer" style="height: calc(90vh - 180px); position: relative; padding-bottom: 20px;">
           <div id="candlestickChart" style="height: 100%; width: 100%;"></div>
           <div id="chartLoading" class="d-flex justify-content-center align-items-center position-absolute top-50 start-50 translate-middle" style="display: none !important;">
             <div class="spinner-border text-primary" role="status">

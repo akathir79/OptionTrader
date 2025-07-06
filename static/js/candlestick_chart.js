@@ -114,6 +114,14 @@ class CandlestickChart {
                 this.minimize();
             });
         }
+        
+        // Maximize button functionality
+        const maximizeButton = document.getElementById('maximizeChart');
+        if (maximizeButton) {
+            maximizeButton.addEventListener('click', () => {
+                this.maximize();
+            });
+        }
     }
 
     async loadChart() {
@@ -199,7 +207,9 @@ class CandlestickChart {
                 backgroundColor: 'transparent',
                 style: {
                     fontFamily: 'var(--bs-font-sans-serif)'
-                }
+                },
+                marginBottom: 60,
+                spacingBottom: 20
             },
             title: {
                 text: `${this.currentSymbol} - ${this.getTimeframeName()} Chart`,
@@ -600,20 +610,78 @@ class CandlestickChart {
     }
     
     restore() {
-        // Remove minimized window
+        // Remove minimized window if exists
         const minimizedWindow = document.getElementById('minimizedChartWindow');
         if (minimizedWindow) {
             minimizedWindow.remove();
+            // Show the main modal again
+            this.show(this.currentSymbol);
+            return;
         }
         
-        // Show the main modal again
-        this.show(this.currentSymbol);
+        // Restore from maximized to normal centered size
+        const modalDialog = document.querySelector('#candlestickModal .modal-dialog');
+        if (modalDialog) {
+            modalDialog.className = 'modal-dialog modal-xl modal-dialog-centered';
+            modalDialog.style.cssText = 'max-width: 95%; height: 90vh;';
+            
+            // Update chart container height for normal size
+            const chartContainer = document.getElementById('candlestickChartContainer');
+            if (chartContainer) {
+                chartContainer.style.height = 'calc(90vh - 180px)';
+            }
+            
+            // Update restore button back to maximize button
+            const maximizeButton = document.getElementById('maximizeChart');
+            if (maximizeButton) {
+                maximizeButton.innerHTML = '<i class="fas fa-expand"></i>';
+                maximizeButton.title = 'Maximize';
+                maximizeButton.onclick = () => this.maximize();
+            }
+            
+            // Reflow the chart to fit new size
+            if (this.chart) {
+                setTimeout(() => {
+                    this.chart.reflow();
+                }, 100);
+            }
+        }
     }
     
     closeMinimized() {
         const minimizedWindow = document.getElementById('minimizedChartWindow');
         if (minimizedWindow) {
             minimizedWindow.remove();
+        }
+    }
+    
+    maximize() {
+        // Change modal to fullscreen
+        const modalDialog = document.querySelector('#candlestickModal .modal-dialog');
+        if (modalDialog) {
+            modalDialog.className = 'modal-dialog modal-fullscreen';
+            modalDialog.style.cssText = '';
+            
+            // Update chart container height for fullscreen
+            const chartContainer = document.getElementById('candlestickChartContainer');
+            if (chartContainer) {
+                chartContainer.style.height = 'calc(100vh - 160px)';
+            }
+            
+            // Update maximize button to restore button
+            const maximizeButton = document.getElementById('maximizeChart');
+            if (maximizeButton) {
+                maximizeButton.innerHTML = '<i class="fas fa-compress"></i>';
+                maximizeButton.title = 'Restore';
+                maximizeButton.onclick = () => this.restore();
+            }
+            
+            // Reflow the chart to fit new size
+            if (this.chart) {
+                setTimeout(() => {
+                    this.chart.reflow();
+                }, 100);
+            }
         }
     }
 }
