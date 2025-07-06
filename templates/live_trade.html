@@ -1545,27 +1545,54 @@ document.addEventListener('DOMContentLoaded', function() {
         const chartContainer = document.getElementById('chartContainer');
         if (chartContainer) {
             payoffChart = Highcharts.chart('chartContainer', {
-                chart: { type: 'line', height: 350 },
-                title: { text: 'Multi-Leg Payoff Chart' },
+                chart: { 
+                    type: 'line', 
+                    height: 350,
+                    backgroundColor: '#fafafa'
+                },
+                title: { 
+                    text: 'Multi-Leg Payoff Chart',
+                    style: { fontSize: '16px', fontWeight: 'bold' }
+                },
                 xAxis: { 
                     title: { text: 'Underlying Price' }, 
-                    crosshair: true 
+                    crosshair: {
+                        width: 1,
+                        color: '#666',
+                        dashStyle: 'dash'
+                    },
+                    gridLineWidth: 1,
+                    gridLineColor: '#e0e0e0'
                 },
                 yAxis: { 
                     title: { text: 'Net P&L (₹)' },
                     plotLines: [{
                         value: 0,
-                        color: '#666',
-                        width: 1,
-                        dashStyle: 'dash',
-                        zIndex: 4
-                    }]
+                        color: '#000000',
+                        width: 2,
+                        zIndex: 5,
+                        label: {
+                            text: 'Breakeven Line',
+                            align: 'right',
+                            style: {
+                                color: '#000000',
+                                fontSize: '10px'
+                            }
+                        }
+                    }],
+                    plotBands: [], // Will be populated dynamically
+                    gridLineWidth: 1,
+                    gridLineColor: '#e0e0e0'
                 },
                 legend: {
                     enabled: true,
                     align: 'right',
                     verticalAlign: 'top',
-                    layout: 'vertical'
+                    layout: 'vertical',
+                    backgroundColor: '#ffffff',
+                    borderColor: '#cccccc',
+                    borderWidth: 1,
+                    shadow: false
                 },
                 tooltip: { 
                     shared: true,
@@ -1578,10 +1605,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                         return s;
                     },
-                    valueDecimals: 2
+                    valueDecimals: 2,
+                    backgroundColor: '#ffffff',
+                    borderColor: '#cccccc',
+                    borderWidth: 1
                 },
                 plotOptions: {
                     line: {
+                        marker: { enabled: false },
+                        lineWidth: 2
+                    },
+                    area: {
                         marker: { enabled: false },
                         lineWidth: 2
                     }
@@ -2017,7 +2051,69 @@ document.addEventListener('DOMContentLoaded', function() {
             }, false);
         });
         
-        // Add combined strategy line (bold)
+        // Calculate breakeven points
+        const breakevenPoints = findBreakevenPoints(combinedPayoffData);
+        
+        // Clear existing breakeven plot lines
+        for (let i = 0; i < 10; i++) {
+            payoffChart.xAxis[0].removePlotLine('breakeven' + i);
+        }
+        
+        // Add breakeven point plot lines
+        breakevenPoints.forEach((point, index) => {
+            payoffChart.xAxis[0].addPlotLine({
+                id: 'breakeven' + index,
+                value: point,
+                color: '#FF6B35',
+                width: 2,
+                dashStyle: 'dash',
+                zIndex: 6,
+                label: {
+                    text: 'BE: ₹' + point.toFixed(0),
+                    align: 'center',
+                    style: {
+                        color: '#FF6B35',
+                        fontSize: '10px',
+                        fontWeight: 'bold'
+                    }
+                }
+            });
+        });
+        
+        // Add profit/loss zones as area series
+        const profitLossZones = createProfitLossZones(combinedPayoffData);
+        
+        // Add profit zone (green area)
+        if (profitLossZones.profitZone.length > 0) {
+            payoffChart.addSeries({
+                name: 'Profit Zone',
+                data: profitLossZones.profitZone,
+                type: 'area',
+                color: 'rgba(40, 167, 69, 0.3)',
+                fillOpacity: 0.3,
+                lineWidth: 0,
+                enableMouseTracking: false,
+                showInLegend: false,
+                zIndex: 1
+            }, false);
+        }
+        
+        // Add loss zone (red area)
+        if (profitLossZones.lossZone.length > 0) {
+            payoffChart.addSeries({
+                name: 'Loss Zone',
+                data: profitLossZones.lossZone,
+                type: 'area',
+                color: 'rgba(220, 53, 69, 0.3)',
+                fillOpacity: 0.3,
+                lineWidth: 0,
+                enableMouseTracking: false,
+                showInLegend: false,
+                zIndex: 1
+            }, false);
+        }
+        
+        // Add combined strategy line (bold) - on top of zones
         payoffChart.addSeries({
             name: 'Net P&L',
             data: combinedPayoffData,
@@ -2031,6 +2127,61 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log(`Multi-leg payoff chart updated with ${legs.length} individual legs plus combined strategy`);
         console.log(`Net Credit: ₹${netCredit.toFixed(2)}, Max Profit: ₹${maxProfit.toFixed(2)}, Max Loss: ₹${maxLoss.toFixed(2)}`);
+    }
+    
+    // Helper function to find breakeven points
+    function findBreakevenPoints(payoffData) {
+        const breakevenPoints = [];
+        for (let i = 0; i < payoffData.length - 1; i++) {
+            const current = payoffData[i];
+            const next = payoffData[i + 1];
+            
+            // Check if the line crosses zero between these two points
+            if ((current[1] <= 0 && next[1] >= 0) || (current[1] >= 0 && next[1] <= 0)) {
+                // Linear interpolation to find exact breakeven point
+                const slope = (next[1] - current[1]) / (next[0] - current[0]);
+                const breakevenX = current[0] - (current[1] / slope);
+                breakevenPoints.push(breakevenX);
+            }
+        }
+        return breakevenPoints;
+    }
+    
+    // Helper function to create profit/loss zones
+    function createProfitLossZones(payoffData) {
+        const profitZone = [];
+        const lossZone = [];
+        
+        // Create profit zone data (only positive values)
+        for (let i = 0; i < payoffData.length; i++) {
+            const point = payoffData[i];
+            const spotPrice = point[0];
+            const pnl = point[1];
+            
+            if (pnl > 0) {
+                profitZone.push([spotPrice, pnl]);
+            } else {
+                profitZone.push([spotPrice, 0]);
+            }
+        }
+        
+        // Create loss zone data (only negative values, but as positive areas)
+        for (let i = 0; i < payoffData.length; i++) {
+            const point = payoffData[i];
+            const spotPrice = point[0];
+            const pnl = point[1];
+            
+            if (pnl < 0) {
+                lossZone.push([spotPrice, pnl]);
+            } else {
+                lossZone.push([spotPrice, 0]);
+            }
+        }
+        
+        return {
+            profitZone: profitZone,
+            lossZone: lossZone
+        };
     }
     
     // Update margin info display
