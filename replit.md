@@ -100,7 +100,6 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
-- July 06, 2025. Added comprehensive support and resistance level system to payoff chart - displays 3 support levels (green dashed lines) and 3 resistance levels (red dashed lines) calculated using pivot point analysis combined with psychological level detection, providing professional technical analysis markers with clear S1/S2/S3 and R1/R2/R3 labels
 - July 06, 2025. Enhanced payoff chart with interactive features: zoom/pan functionality (drag to zoom, Shift+drag to pan), crosshairs with value labels, reset zoom button, simplified tooltip, removed title and legend for maximum space utilization, and improved horizontal label display for Breakeven and Spot price indicators with professional font styling
 - July 06, 2025. Enhanced historical data system with 4-day range and 1-minute resolution - providing 1125 granular price points for real-time market analysis, added tick data endpoint for high-frequency data access, and optimized date ranges to capture weekday trading sessions
 - July 06, 2025. Fixed microcharts display issue in option chain table - resolved historical data API to properly handle FYERS "no_data" responses, added debug logging for chart loading process, and implemented proper fallback display with chart icons when historical data isn't available for options
