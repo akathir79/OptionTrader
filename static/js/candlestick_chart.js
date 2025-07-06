@@ -182,6 +182,7 @@ class CandlestickChart {
 
         // Calculate support and resistance levels
         const supportResistanceLevels = this.calculateSupportResistance(data.prices);
+        console.log('Support/Resistance levels:', supportResistanceLevels);
 
         // Chart configuration for Highcharts Stock
         const chartConfig = {
@@ -331,53 +332,61 @@ class CandlestickChart {
         const minPrice = Math.min(...prices);
         const maxPrice = Math.max(...prices);
         const currentPrice = prices[prices.length - 1];
-        const priceRange = maxPrice - minPrice;
         
-        // More aggressive approach to find both support and resistance
-        const bucketSize = priceRange / 50; // More granular buckets
+        // Simple, reliable approach - always create both support and resistance
+        const supportLevels = [];
+        const resistanceLevels = [];
+        
+        // Method 1: Calculate based on price distribution
+        const priceRange = maxPrice - minPrice;
         const buckets = {};
+        const bucketSize = priceRange / 20;
         
         prices.forEach(price => {
             const bucket = Math.floor((price - minPrice) / bucketSize);
             buckets[bucket] = (buckets[bucket] || 0) + 1;
         });
         
-        // Lower threshold to catch more levels
-        const threshold = Math.max(2, prices.length * 0.02); // At least 2% or minimum 2 occurrences
-        const allLevels = [];
-        
+        // Find significant levels
+        const threshold = Math.max(3, prices.length * 0.03);
         Object.entries(buckets).forEach(([bucket, count]) => {
             if (count >= threshold) {
                 const level = minPrice + (parseInt(bucket) * bucketSize) + (bucketSize / 2);
-                allLevels.push({ level, count, bucket: parseInt(bucket) });
+                if (level < currentPrice * 0.998) {
+                    supportLevels.push(level);
+                } else if (level > currentPrice * 1.002) {
+                    resistanceLevels.push(level);
+                }
             }
         });
         
-        // Sort by significance (count) and separate into support/resistance
-        allLevels.sort((a, b) => b.count - a.count);
+        // Method 2: Always ensure we have at least 2 support and 2 resistance levels
+        // Add technical levels based on price ranges
+        const lowSupport = minPrice + (priceRange * 0.2);
+        const midSupport = minPrice + (priceRange * 0.4);
+        const midResistance = minPrice + (priceRange * 0.6);
+        const highResistance = minPrice + (priceRange * 0.8);
         
-        const supportLevels = [];
-        const resistanceLevels = [];
-        
-        allLevels.forEach(item => {
-            if (item.level < currentPrice * 0.999) { // Support levels below current price
-                supportLevels.push(item.level);
-            } else if (item.level > currentPrice * 1.001) { // Resistance levels above current price
-                resistanceLevels.push(item.level);
-            }
-        });
-        
-        // Ensure we have at least some levels by adding psychological levels
-        if (supportLevels.length === 0) {
-            supportLevels.push(currentPrice * 0.98, currentPrice * 0.95);
+        if (lowSupport < currentPrice && !supportLevels.includes(lowSupport)) {
+            supportLevels.push(lowSupport);
         }
-        if (resistanceLevels.length === 0) {
-            resistanceLevels.push(currentPrice * 1.02, currentPrice * 1.05);
+        if (midSupport < currentPrice && !supportLevels.includes(midSupport)) {
+            supportLevels.push(midSupport);
         }
+        if (midResistance > currentPrice && !resistanceLevels.includes(midResistance)) {
+            resistanceLevels.push(midResistance);
+        }
+        if (highResistance > currentPrice && !resistanceLevels.includes(highResistance)) {
+            resistanceLevels.push(highResistance);
+        }
+        
+        // Sort and return top 3 of each
+        supportLevels.sort((a, b) => b - a); // Highest support first
+        resistanceLevels.sort((a, b) => a - b); // Lowest resistance first
         
         return {
-            support: supportLevels.slice(0, 3), // Top 3 support levels
-            resistance: resistanceLevels.slice(0, 3) // Top 3 resistance levels
+            support: supportLevels.slice(0, 3),
+            resistance: resistanceLevels.slice(0, 3)
         };
     }
 
