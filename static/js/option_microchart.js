@@ -40,7 +40,14 @@ class OptionMicroChart {
                 this.data = result.prices || [];
                 this.timestamps = result.timestamps || [];
                 this.hasError = false;
-                this.renderChart();
+                
+                // Check if we have valid data
+                if (this.data.length > 0) {
+                    this.renderChart();
+                } else {
+                    // No data available, show appropriate indicator
+                    this.showNoData();
+                }
             } else {
                 this.hasError = true;
                 this.showError(result.error || 'Failed to load data');
@@ -222,8 +229,8 @@ class OptionMicroChart {
     showNoData() {
         if (!this.container) return;
         this.container.innerHTML = `
-            <div class="microchart-nodata text-muted" style="width: ${this.config.width}px; height: ${this.config.height}px; font-size: 8px;" title="No data available">
-                <i class="fas fa-minus"></i>
+            <div class="microchart-nodata d-flex align-items-center justify-content-center" style="width: ${this.config.width}px; height: ${this.config.height}px; font-size: 10px; color: #6c757d;" title="No chart data available">
+                <i class="fas fa-chart-line" style="opacity: 0.3;"></i>
             </div>
         `;
     }
