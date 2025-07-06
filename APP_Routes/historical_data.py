@@ -95,20 +95,32 @@ def get_option_history(symbol):
             })
         
         # Process candles data: [timestamp, open, high, low, close, volume]
-        prices = []
+        ohlc_data = []
         timestamps = []
+        prices = []  # Keep for backward compatibility with microcharts
         
         for candle in candles:
             if len(candle) >= 5:
-                timestamps.append(int(candle[0]))  # Unix timestamp
-                prices.append(float(candle[4]))    # Close price
+                timestamp = int(candle[0])
+                open_price = float(candle[1])
+                high_price = float(candle[2])
+                low_price = float(candle[3])
+                close_price = float(candle[4])
+                volume = int(candle[5]) if len(candle) > 5 else 0
+                
+                timestamps.append(timestamp)
+                prices.append(close_price)  # For microcharts
+                
+                # For candlestick charts: [timestamp, open, high, low, close, volume]
+                ohlc_data.append([timestamp * 1000, open_price, high_price, low_price, close_price, volume])
         
-        print(f"PROCESSED DATA: {len(prices)} price points for {symbol}")
+        print(f"PROCESSED DATA: {len(ohlc_data)} OHLC candles for {symbol}")
         
         return jsonify({
             "symbol": symbol,
-            "prices": prices,
-            "timestamps": timestamps,
+            "prices": prices,           # For microcharts
+            "timestamps": timestamps,   # For microcharts
+            "ohlc_data": ohlc_data,    # For candlestick charts
             "count": len(prices)
         })
         

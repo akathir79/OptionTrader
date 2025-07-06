@@ -148,32 +148,45 @@ class CandlestickChart {
     }
 
     renderChart(data) {
-        // Prepare candlestick data
-        const candlestickData = [];
-        const volumeData = [];
+        // Use real OHLC data from the API
+        let candlestickData = [];
+        let volumeData = [];
         
-        for (let i = 0; i < data.timestamps.length; i++) {
-            const timestamp = data.timestamps[i] * 1000; // Convert to milliseconds
-            const price = data.prices[i];
+        if (data.ohlc_data && data.ohlc_data.length > 0) {
+            // Use real OHLC data: [timestamp_ms, open, high, low, close, volume]
+            candlestickData = data.ohlc_data.map(candle => [
+                candle[0], // timestamp (already in milliseconds)
+                candle[1], // open
+                candle[2], // high
+                candle[3], // low
+                candle[4]  // close
+            ]);
             
-            // For now, create OHLC from single price point
-            // In a real implementation, you'd have open, high, low, close data
-            const open = i > 0 ? data.prices[i-1] : price;
-            const high = Math.max(open, price) * 1.002; // Add small variation
-            const low = Math.min(open, price) * 0.998;
-            const close = price;
-            
-            candlestickData.push([timestamp, open, high, low, close]);
-            volumeData.push([timestamp, Math.floor(Math.random() * 10000) + 1000]); // Mock volume
+            volumeData = data.ohlc_data.map(candle => [
+                candle[0], // timestamp
+                candle[5] || 1000  // volume (fallback to 1000 if not available)
+            ]);
+        } else {
+            // Fallback: create OHLC from price data (for compatibility)
+            for (let i = 0; i < data.timestamps.length; i++) {
+                const timestamp = data.timestamps[i] * 1000;
+                const price = data.prices[i];
+                const open = i > 0 ? data.prices[i-1] : price;
+                const high = Math.max(open, price) * 1.002;
+                const low = Math.min(open, price) * 0.998;
+                const close = price;
+                
+                candlestickData.push([timestamp, open, high, low, close]);
+                volumeData.push([timestamp, 1000]);
+            }
         }
 
         // Calculate support and resistance levels
         const supportResistanceLevels = this.calculateSupportResistance(data.prices);
 
-        // Chart configuration
+        // Chart configuration for Highcharts Stock
         const chartConfig = {
             chart: {
-                type: 'candlestick',
                 height: '100%',
                 backgroundColor: 'transparent',
                 style: {
@@ -248,6 +261,7 @@ class CandlestickChart {
                 enabled: false
             },
             series: [{
+                type: 'candlestick',
                 name: this.currentSymbol,
                 data: candlestickData,
                 yAxis: 0
