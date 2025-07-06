@@ -15,19 +15,38 @@ class CandlestickChart {
     async show(symbol) {
         this.currentSymbol = symbol;
         
-        // Show modal
-        this.modal = new bootstrap.Modal(document.getElementById('candlestickModal'));
-        this.modal.show();
-        this.isVisible = true;
-        
         // Update title
         document.getElementById('chartSymbolTitle').textContent = `${symbol} - Chart Analysis`;
         
-        // Setup event listeners
+        // Setup event listeners first
         this.setupEventListeners();
         
-        // Load initial chart
-        await this.loadChart();
+        // Show modal with proper initialization
+        const modalElement = document.getElementById('candlestickModal');
+        if (modalElement) {
+            // Check if bootstrap is available
+            if (typeof bootstrap !== 'undefined') {
+                this.modal = new bootstrap.Modal(modalElement);
+                this.modal.show();
+            } else {
+                // Fallback: manually show modal
+                modalElement.classList.add('show');
+                modalElement.style.display = 'block';
+                document.body.classList.add('modal-open');
+                
+                // Create backdrop
+                const backdrop = document.createElement('div');
+                backdrop.className = 'modal-backdrop fade show';
+                backdrop.id = 'candlestick-backdrop';
+                document.body.appendChild(backdrop);
+            }
+            this.isVisible = true;
+            
+            // Load initial chart
+            await this.loadChart();
+        } else {
+            console.error('Candlestick modal element not found');
+        }
     }
 
     setupEventListeners() {
@@ -47,12 +66,28 @@ class CandlestickChart {
             }
         });
         
-        // Modal hidden event
-        document.getElementById('candlestickModal').addEventListener('hidden.bs.modal', () => {
+        // Modal close button event
+        const closeButton = document.querySelector('#candlestickModal .btn-close');
+        if (closeButton) {
+            closeButton.addEventListener('click', () => {
+                this.hide();
+            });
+        }
+        
+        // Modal hidden event (Bootstrap)
+        const modalElement = document.getElementById('candlestickModal');
+        modalElement.addEventListener('hidden.bs.modal', () => {
             this.isVisible = false;
             if (this.chart) {
                 this.chart.destroy();
                 this.chart = null;
+            }
+        });
+        
+        // Escape key to close modal
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.isVisible) {
+                this.hide();
             }
         });
     }
@@ -379,8 +414,29 @@ class CandlestickChart {
     }
 
     hide() {
-        if (this.modal) {
+        if (this.modal && typeof this.modal.hide === 'function') {
             this.modal.hide();
+        } else {
+            // Manual hide for fallback
+            const modalElement = document.getElementById('candlestickModal');
+            if (modalElement) {
+                modalElement.classList.remove('show');
+                modalElement.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                
+                // Remove backdrop
+                const backdrop = document.getElementById('candlestick-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
+                }
+            }
+        }
+        this.isVisible = false;
+        
+        // Destroy chart
+        if (this.chart) {
+            this.chart.destroy();
+            this.chart = null;
         }
     }
 }
