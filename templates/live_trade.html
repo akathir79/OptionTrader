@@ -2124,19 +2124,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 width: 2,
                 zIndex: 7,
                 label: {
-                    text: 'Current Spot: ₹' + currentSpotPrice.toFixed(2),
+                    text: 'Spot: ₹' + currentSpotPrice.toFixed(0),
                     align: 'center',
                     rotation: 0,
-                    verticalAlign: 'top',
-                    y: 15,
+                    verticalAlign: 'bottom',
+                    y: -5,
+                    x: 0,
+                    useHTML: true,
                     style: {
-                        color: '#ffffff',
-                        fontSize: '11px',
+                        color: '#007BFF',
+                        fontSize: '12px',
                         fontWeight: 'bold',
                         fontFamily: 'Arial, sans-serif',
-                        backgroundColor: '#007BFF',
-                        padding: '2px 6px',
-                        borderRadius: '3px'
+                        zIndex: 1000
                     }
                 }
             });
@@ -2155,16 +2155,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     text: 'BE: ₹' + point.toFixed(0),
                     align: 'center',
                     rotation: 0,
-                    verticalAlign: 'top',
-                    y: 15,
+                    verticalAlign: 'bottom',
+                    y: -5,
+                    x: 0,
+                    useHTML: true,
                     style: {
-                        color: '#ffffff',
-                        fontSize: '11px',
+                        color: '#FF6B35',
+                        fontSize: '12px',
                         fontWeight: 'bold',
                         fontFamily: 'Arial, sans-serif',
-                        backgroundColor: '#FF6B35',
-                        padding: '2px 6px',
-                        borderRadius: '3px'
+                        zIndex: 1000
                     }
                 }
             });
