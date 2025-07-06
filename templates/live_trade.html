@@ -1534,11 +1534,17 @@ document.addEventListener('DOMContentLoaded', function() {
     let firstClickFlags = [];
     let payoffChart = null;
     
-    // Initialize payoff chart
+    // Initialize payoff chart when DOM is ready
+    setTimeout(() => {
+        initPayoffChart();
+        console.log('Payoff chart initialized in Payoff Chart tab');
+    }, 1500);
+    
+    // Initialize payoff chart in the existing Payoff Chart tab
     function initPayoffChart() {
-        const chartContainer = document.getElementById('payoffChart');
+        const chartContainer = document.getElementById('chartContainer');
         if (chartContainer) {
-            payoffChart = Highcharts.chart('payoffChart', {
+            payoffChart = Highcharts.chart('chartContainer', {
                 chart: { type: 'area', height: 300 },
                 title: { text: 'Multi-Leg Payoff Chart' },
                 xAxis: { 
@@ -1980,17 +1986,21 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (netCreditEl) {
             netCreditEl.textContent = `₹${netCredit.toFixed(2)}`;
-            netCreditEl.className = netCredit >= 0 ? 'metric-value text-success' : 'metric-value text-danger';
+            netCreditEl.className = netCredit >= 0 ? 'fw-bold text-success' : 'fw-bold text-danger';
         }
         
         if (maxProfitEl) {
             maxProfitEl.textContent = maxProfit === -Infinity ? '₹0.00' : `₹${maxProfit.toFixed(2)}`;
-            maxProfitEl.className = 'metric-value text-success';
+            maxProfitEl.className = 'fw-bold text-success';
         }
         
         if (maxLossEl) {
-            maxLossEl.textContent = maxLoss === Infinity ? '₹0.00' : `₹${maxLoss.toFixed(2)}`;
-            maxLossEl.className = 'metric-value text-danger';
+            if (maxLoss === Infinity || maxLoss === -Infinity) {
+                maxLossEl.textContent = '(Unlimited)';
+            } else {
+                maxLossEl.textContent = `₹${Math.abs(maxLoss).toFixed(2)}`;
+            }
+            maxLossEl.className = 'fw-bold text-danger';
         }
     }
     
