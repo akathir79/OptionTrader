@@ -1482,24 +1482,14 @@ document.addEventListener('DOMContentLoaded', function() {
             if (window.candlestickChart) {
                 window.candlestickChart.show(currentSymbol);
             } else {
-                // Load candlestick chart script if not already loaded
-                const script = document.createElement('script');
-                script.src = '/static/js/candlestick_chart.js';
-                script.onload = function() {
-                    // Wait a bit for the script to initialize
-                    setTimeout(() => {
-                        if (window.candlestickChart) {
-                            window.candlestickChart.show(currentSymbol);
-                        } else {
-                            console.error('Candlestick chart failed to initialize');
-                        }
-                    }, 200);
-                };
-                script.onerror = function() {
-                    console.error('Failed to load candlestick chart script');
-                    alert('Failed to load chart. Please refresh the page and try again.');
-                };
-                document.head.appendChild(script);
+                // Try to initialize if not already done
+                if (typeof CandlestickChart !== 'undefined') {
+                    window.candlestickChart = new CandlestickChart();
+                    window.candlestickChart.show(currentSymbol);
+                } else {
+                    console.error('CandlestickChart class not available');
+                    alert('Chart feature is loading, please try again in a moment');
+                }
             }
         } else {
             alert('Please select a symbol first');
@@ -1588,3 +1578,31 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
   </div>
 </div>
+
+<!-- Load Candlestick Chart Script -->
+<script src="/static/js/candlestick_chart.js"></script>
+
+<!-- Scripts -->
+<script>
+    // Initialize candlestick chart when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ensure the modal is properly initialized
+        setTimeout(() => {
+            if (document.getElementById('candlestickModal')) {
+                console.log('Candlestick modal found in DOM');
+                // Initialize the chart instance
+                if (typeof CandlestickChart !== 'undefined') {
+                    window.candlestickChart = new CandlestickChart();
+                    console.log('CandlestickChart initialized successfully');
+                } else {
+                    console.error('CandlestickChart class not found');
+                }
+            } else {
+                console.error('Candlestick modal not found in DOM');
+            }
+        }, 100);
+    });
+</script>
+
+</body>
+</html>
