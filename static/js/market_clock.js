@@ -58,35 +58,6 @@ class MarketClock {
         
         // Update Markets button status
         this.updateMarketsButtonStatus();
-        this.updateBulkControlButtons();
-    }
-
-    updateBulkControlButtons() {
-        const globalNotificationsEnabled = this.isGlobalNotificationsEnabled();
-        const globalSoundEnabled = this.isGlobalSoundEnabled();
-        
-        // Update bulk control buttons state
-        const allNotificationsBtn = document.getElementById('selectAllNotifications');
-        const allSoundsBtn = document.getElementById('selectAllSounds');
-        const disableAllBtn = document.getElementById('deselectAll');
-        
-        if (allNotificationsBtn) {
-            allNotificationsBtn.disabled = !globalNotificationsEnabled;
-            allNotificationsBtn.className = globalNotificationsEnabled ? 
-                'btn btn-outline-success btn-sm' : 
-                'btn btn-outline-secondary btn-sm';
-        }
-        
-        if (allSoundsBtn) {
-            allSoundsBtn.disabled = !globalSoundEnabled;
-            allSoundsBtn.className = globalSoundEnabled ? 
-                'btn btn-outline-info btn-sm' : 
-                'btn btn-outline-secondary btn-sm';
-        }
-        
-        if (disableAllBtn) {
-            disableAllBtn.disabled = !globalNotificationsEnabled && !globalSoundEnabled;
-        }
     }
 
     createModalHTML() {
@@ -385,10 +356,6 @@ class MarketClock {
         // Update the Markets button indicator
         this.updateMarketsButtonStatus();
         
-        // Refresh the market table to show/hide disabled state
-        this.renderMarketTable();
-        this.updateBulkControlButtons();
-        
         // Show status message
         this.showNotification(
             `Market notifications ${enabled ? 'enabled' : 'disabled'}`,
@@ -408,10 +375,6 @@ class MarketClock {
         
         // Update the Markets button indicator
         this.updateMarketsButtonStatus();
-        
-        // Refresh the market table to show/hide disabled state
-        this.renderMarketTable();
-        this.updateBulkControlButtons();
         
         // Show status message
         this.showNotification(
@@ -885,9 +848,6 @@ class MarketClock {
         const tbody = document.querySelector('#marketTimesTable tbody');
         if (!tbody) return;
 
-        const globalNotificationsEnabled = this.isGlobalNotificationsEnabled();
-        const globalSoundEnabled = this.isGlobalSoundEnabled();
-
         tbody.innerHTML = this.markets.map(market => `
             <tr>
                 <td>
@@ -911,18 +871,16 @@ class MarketClock {
                             <div class="form-check form-switch form-check-inline">
                                 <input class="form-check-input" type="checkbox" id="notifyOpen_${market.id}" 
                                        ${market.notify_open ? 'checked' : ''} 
-                                       ${!globalNotificationsEnabled ? 'disabled' : ''}
                                        onchange="window.marketClock.toggleMarketNotification(${market.id}, 'open', this.checked)">
-                                <label class="form-check-label ${!globalNotificationsEnabled ? 'text-muted' : ''}" for="notifyOpen_${market.id}">
+                                <label class="form-check-label" for="notifyOpen_${market.id}">
                                     <i class="fas fa-bell-o me-1"></i>Open
                                 </label>
                             </div>
                             <div class="form-check form-switch form-check-inline">
                                 <input class="form-check-input" type="checkbox" id="notifyClose_${market.id}" 
                                        ${market.notify_close ? 'checked' : ''} 
-                                       ${!globalNotificationsEnabled ? 'disabled' : ''}
                                        onchange="window.marketClock.toggleMarketNotification(${market.id}, 'close', this.checked)">
-                                <label class="form-check-label ${!globalNotificationsEnabled ? 'text-muted' : ''}" for="notifyClose_${market.id}">
+                                <label class="form-check-label" for="notifyClose_${market.id}">
                                     <i class="fas fa-bell me-1"></i>Close
                                 </label>
                             </div>
@@ -931,20 +889,12 @@ class MarketClock {
                             <div class="form-check form-switch form-check-inline">
                                 <input class="form-check-input" type="checkbox" id="soundEnabled_${market.id}" 
                                        ${market.sound_enabled ? 'checked' : ''} 
-                                       ${!globalSoundEnabled ? 'disabled' : ''}
                                        onchange="window.marketClock.toggleMarketSound(${market.id}, this.checked)">
-                                <label class="form-check-label ${!globalSoundEnabled ? 'text-muted' : ''}" for="soundEnabled_${market.id}">
+                                <label class="form-check-label" for="soundEnabled_${market.id}">
                                     <i class="fas fa-volume-up me-1"></i>Sound
                                 </label>
                             </div>
                         </div>
-                        ${!globalNotificationsEnabled || !globalSoundEnabled ? 
-                            `<small class="text-muted">
-                                ${!globalNotificationsEnabled ? 'Notifications disabled globally' : ''}
-                                ${!globalNotificationsEnabled && !globalSoundEnabled ? ' • ' : ''}
-                                ${!globalSoundEnabled ? 'Sound disabled globally' : ''}
-                            </small>` : ''
-                        }
                     </div>
                 </td>
                 <td>
@@ -1014,18 +964,18 @@ class MarketClock {
         const now = new Date();
         const currentTime = now.toTimeString().substr(0, 5); // HH:MM format
         
-        // Check if market is opening (respect global notification setting)
-        if (market.notify_open && this.isGlobalNotificationsEnabled() && currentTime === market.local_open_time && market.is_trading_day) {
+        // Check if market is opening
+        if (market.notify_open && currentTime === market.local_open_time && market.is_trading_day) {
             this.showMarketNotification(market, 'opening');
-            if (market.sound_enabled && this.isGlobalSoundEnabled()) {
+            if (market.sound_enabled) {
                 this.playNotificationSound();
             }
         }
         
-        // Check if market is closing (respect global notification setting)
-        if (market.notify_close && this.isGlobalNotificationsEnabled() && currentTime === market.local_close_time && market.is_trading_day) {
+        // Check if market is closing
+        if (market.notify_close && currentTime === market.local_close_time && market.is_trading_day) {
             this.showMarketNotification(market, 'closing');
-            if (market.sound_enabled && this.isGlobalSoundEnabled()) {
+            if (market.sound_enabled) {
                 this.playNotificationSound();
             }
         }
