@@ -41,9 +41,9 @@ def get_option_history(symbol):
         if error:
             return jsonify({"error": error}), 500
         
-        # Get date range (last 24 hours with 5-minute intervals)
+        # Get date range (last 7 days to ensure we get weekday data)
         end_date = datetime.now()
-        start_date = end_date - timedelta(days=1)
+        start_date = end_date - timedelta(days=7)
         
         # Format dates for FYERS API
         from_date = start_date.strftime("%Y-%m-%d")
