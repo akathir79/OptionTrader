@@ -1633,7 +1633,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return div;
     }
     
-    // Handle button clicks - using attached code approach
+    // Handle button clicks - create payoff chart immediately on click
     function handleButtonClick(rowIndex, key, action) {
         if (action === 'add') {
             counters[rowIndex][key]++;
@@ -1643,7 +1643,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         updateButtonDisplay(rowIndex, key);
         closeAllDropdowns();
-        updatePayoffChart();
+        
+        // Immediately create and update payoff chart using loaded option chain data
+        createPayoffChartFromOptionChain();
         
         // Keep existing position table intact - just log the action
         console.log(`${action} ${key} for row ${rowIndex}, new count: ${counters[rowIndex][key]}`);
@@ -1818,6 +1820,158 @@ document.addEventListener('DOMContentLoaded', function() {
         updateMarginInfo(netCredit, maxProfit, maxLoss);
     }
     
+    // Create payoff chart from loaded option chain data - step by step on button click
+    function createPayoffChartFromOptionChain() {
+        if (!payoffChart) {
+            initPayoffChart();
+        }
+        
+        if (!payoffChart) return;
+        
+        const legs = [];
+        let totalPositions = 0;
+        
+        // Read directly from the loaded option chain table
+        const tableRows = document.querySelectorAll('#optionChainTable tbody tr');
+        
+        tableRows.forEach((row, rowIndex) => {
+            if (!counters[rowIndex]) return;
+            
+            // Get strike price from the table (column 19 = strike column)
+            const strikeTd = row.children[19];
+            if (!strikeTd) return;
+            
+            const strike = parseFloat(strikeTd.textContent.trim());
+            if (isNaN(strike) || strike === 0) return;
+            
+            // Get CE LTP (column 17) and PE LTP (column 21) from the loaded table
+            const ceLtpTd = row.children[17];
+            const peLtpTd = row.children[21];
+            
+            const ceLtp = ceLtpTd ? parseFloat(ceLtpTd.textContent.trim()) : 0;
+            const peLtp = peLtpTd ? parseFloat(peLtpTd.textContent.trim()) : 0;
+            
+            // CE Buy positions
+            if (counters[rowIndex].ceBuy > 0 && ceLtp > 0) {
+                legs.push({
+                    type: 'CE',
+                    action: 'Buy',
+                    strike: strike,
+                    premium: ceLtp,
+                    lots: counters[rowIndex].ceBuy,
+                    qty: counters[rowIndex].ceBuy * defaultLotSize
+                });
+                totalPositions += counters[rowIndex].ceBuy;
+                console.log(`Added CE Buy: Strike ${strike}, Premium ${ceLtp}, Lots ${counters[rowIndex].ceBuy}`);
+            }
+            
+            // CE Sell positions
+            if (counters[rowIndex].ceSell > 0 && ceLtp > 0) {
+                legs.push({
+                    type: 'CE',
+                    action: 'Sell',
+                    strike: strike,
+                    premium: ceLtp,
+                    lots: counters[rowIndex].ceSell,
+                    qty: counters[rowIndex].ceSell * defaultLotSize
+                });
+                totalPositions += counters[rowIndex].ceSell;
+                console.log(`Added CE Sell: Strike ${strike}, Premium ${ceLtp}, Lots ${counters[rowIndex].ceSell}`);
+            }
+            
+            // PE Buy positions
+            if (counters[rowIndex].peBuy > 0 && peLtp > 0) {
+                legs.push({
+                    type: 'PE',
+                    action: 'Buy',
+                    strike: strike,
+                    premium: peLtp,
+                    lots: counters[rowIndex].peBuy,
+                    qty: counters[rowIndex].peBuy * defaultLotSize
+                });
+                totalPositions += counters[rowIndex].peBuy;
+                console.log(`Added PE Buy: Strike ${strike}, Premium ${peLtp}, Lots ${counters[rowIndex].peBuy}`);
+            }
+            
+            // PE Sell positions
+            if (counters[rowIndex].peSell > 0 && peLtp > 0) {
+                legs.push({
+                    type: 'PE',
+                    action: 'Sell',
+                    strike: strike,
+                    premium: peLtp,
+                    lots: counters[rowIndex].peSell,
+                    qty: counters[rowIndex].peSell * defaultLotSize
+                });
+                totalPositions += counters[rowIndex].peSell;
+                console.log(`Added PE Sell: Strike ${strike}, Premium ${peLtp}, Lots ${counters[rowIndex].peSell}`);
+            }
+        });
+        
+        console.log(`Total legs created: ${legs.length}, Total positions: ${totalPositions}`);
+        
+        if (legs.length === 0) {
+            // Clear chart if no positions
+            payoffChart.series[0].setData([], true);
+            updateMarginInfo(0, 0, 0);
+            console.log('No positions found, chart cleared');
+            return;
+        }
+        
+        // Calculate payoff curve using real option chain data
+        const allStrikes = legs.map(leg => leg.strike);
+        const minStrike = Math.min(...allStrikes) - 500;
+        const maxStrike = Math.max(...allStrikes) + 500;
+        const step = Math.max(5, Math.floor((maxStrike - minStrike) / 200));
+        
+        const payoffData = [];
+        let netCredit = 0;
+        let maxProfit = -Infinity;
+        let maxLoss = Infinity;
+        
+        // Calculate net credit/debit from real premiums
+        legs.forEach(leg => {
+            const credit = leg.action === 'Sell' ? leg.premium * leg.qty : -leg.premium * leg.qty;
+            netCredit += credit;
+        });
+        
+        console.log(`Net Credit/Debit: ₹${netCredit.toFixed(2)}`);
+        
+        // Generate payoff curve points
+        for (let spotPrice = minStrike; spotPrice <= maxStrike; spotPrice += step) {
+            let totalPayoff = netCredit; // Start with net credit/debit
+            
+            legs.forEach(leg => {
+                let optionValue = 0;
+                
+                // Calculate intrinsic value
+                if (leg.type === 'CE') {
+                    optionValue = Math.max(0, spotPrice - leg.strike);
+                } else { // PE
+                    optionValue = Math.max(0, leg.strike - spotPrice);
+                }
+                
+                // Calculate payoff based on position
+                if (leg.action === 'Buy') {
+                    totalPayoff += (optionValue - leg.premium) * leg.qty;
+                } else { // Sell
+                    totalPayoff += (leg.premium - optionValue) * leg.qty;
+                }
+            });
+            
+            payoffData.push([spotPrice, totalPayoff]);
+            maxProfit = Math.max(maxProfit, totalPayoff);
+            maxLoss = Math.min(maxLoss, totalPayoff);
+        }
+        
+        // Update chart with real data
+        payoffChart.series[0].setData(payoffData, true);
+        updateMarginInfo(netCredit, maxProfit, maxLoss);
+        
+        console.log(`Payoff chart updated with ${payoffData.length} data points`);
+        console.log(`Max Profit: ₹${maxProfit.toFixed(2)}, Max Loss: ₹${maxLoss.toFixed(2)}`);
+    }
+    
     // Update margin info display
     function updateMarginInfo(netCredit, maxProfit, maxLoss) {
         const netCreditEl = document.getElementById('netCreditValue');
@@ -1871,6 +2025,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.handleButtonClick = handleButtonClick;
     window.updateButtonDisplay = updateButtonDisplay;
     window.updatePayoffChart = updatePayoffChart;
+    window.createPayoffChartFromOptionChain = createPayoffChartFromOptionChain;
     window.initPayoffChart = initPayoffChart;
     window.counters = counters;
     window.firstClickFlags = firstClickFlags;
