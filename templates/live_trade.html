@@ -1462,6 +1462,23 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Chart icon clicked, detected symbol:', currentSymbol);
         
         if (currentSymbol) {
+            // Check if modal exists before proceeding
+            const modalElement = document.getElementById('candlestickModal');
+            if (!modalElement) {
+                console.error('Modal element not found in DOM');
+                // Try to wait and retry
+                setTimeout(() => {
+                    const retryModal = document.getElementById('candlestickModal');
+                    if (retryModal) {
+                        console.log('Modal found on retry');
+                        window.openCandlestickChart();
+                    } else {
+                        alert('Chart feature is loading, please try again in a moment');
+                    }
+                }, 500);
+                return;
+            }
+            
             if (window.candlestickChart) {
                 window.candlestickChart.show(currentSymbol);
             } else {
@@ -1469,9 +1486,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 const script = document.createElement('script');
                 script.src = '/static/js/candlestick_chart.js';
                 script.onload = function() {
-                    if (window.candlestickChart) {
-                        window.candlestickChart.show(currentSymbol);
-                    }
+                    // Wait a bit for the script to initialize
+                    setTimeout(() => {
+                        if (window.candlestickChart) {
+                            window.candlestickChart.show(currentSymbol);
+                        } else {
+                            console.error('Candlestick chart failed to initialize');
+                        }
+                    }, 200);
+                };
+                script.onerror = function() {
+                    console.error('Failed to load candlestick chart script');
+                    alert('Failed to load chart. Please refresh the page and try again.');
                 };
                 document.head.appendChild(script);
             }

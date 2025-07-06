@@ -13,22 +13,35 @@ class CandlestickChart {
     }
 
     async show(symbol) {
+        console.log('Opening candlestick chart for symbol:', symbol);
         this.currentSymbol = symbol;
         
-        // Update title
-        document.getElementById('chartSymbolTitle').textContent = `${symbol} - Chart Analysis`;
+        // Wait for DOM elements to be available
+        const modalElement = document.getElementById('candlestickModal');
+        const titleElement = document.getElementById('chartSymbolTitle');
+        
+        if (!modalElement) {
+            console.error('Candlestick modal element not found - modal may not be loaded yet');
+            return;
+        }
+        
+        // Update title if element exists
+        if (titleElement) {
+            titleElement.textContent = `${symbol} - Chart Analysis`;
+        }
         
         // Setup event listeners first
         this.setupEventListeners();
         
         // Show modal with proper initialization
-        const modalElement = document.getElementById('candlestickModal');
-        if (modalElement) {
+        try {
             // Check if bootstrap is available
             if (typeof bootstrap !== 'undefined') {
+                console.log('Using Bootstrap modal');
                 this.modal = new bootstrap.Modal(modalElement);
                 this.modal.show();
             } else {
+                console.log('Using manual modal display');
                 // Fallback: manually show modal
                 modalElement.classList.add('show');
                 modalElement.style.display = 'block';
@@ -42,10 +55,13 @@ class CandlestickChart {
             }
             this.isVisible = true;
             
-            // Load initial chart
-            await this.loadChart();
-        } else {
-            console.error('Candlestick modal element not found');
+            // Load initial chart with delay to ensure modal is visible
+            setTimeout(async () => {
+                await this.loadChart();
+            }, 100);
+            
+        } catch (error) {
+            console.error('Error showing modal:', error);
         }
     }
 
