@@ -2127,14 +2127,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     text: 'Current Spot: ₹' + currentSpotPrice.toFixed(2),
                     align: 'center',
                     rotation: 0,
-                    textAlign: 'center',
-                    y: -10,
+                    verticalAlign: 'top',
+                    y: 15,
                     style: {
-                        color: '#007BFF',
+                        color: '#ffffff',
                         fontSize: '11px',
                         fontWeight: 'bold',
                         fontFamily: 'Arial, sans-serif',
-                        textShadow: '1px 1px 1px rgba(255,255,255,0.8)'
+                        backgroundColor: '#007BFF',
+                        padding: '2px 6px',
+                        borderRadius: '3px'
                     }
                 }
             });
@@ -2153,14 +2155,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     text: 'BE: ₹' + point.toFixed(0),
                     align: 'center',
                     rotation: 0,
-                    textAlign: 'center',
-                    y: -10,
+                    verticalAlign: 'top',
+                    y: 15,
                     style: {
-                        color: '#FF6B35',
+                        color: '#ffffff',
                         fontSize: '11px',
                         fontWeight: 'bold',
                         fontFamily: 'Arial, sans-serif',
-                        textShadow: '1px 1px 1px rgba(255,255,255,0.8)'
+                        backgroundColor: '#FF6B35',
+                        padding: '2px 6px',
+                        borderRadius: '3px'
                     }
                 }
             });
