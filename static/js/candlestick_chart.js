@@ -328,13 +328,13 @@ class CandlestickChart {
     calculateSupportResistance(prices) {
         if (prices.length < 10) return { support: [], resistance: [] };
         
-        const levels = [];
         const minPrice = Math.min(...prices);
         const maxPrice = Math.max(...prices);
+        const currentPrice = prices[prices.length - 1];
         const priceRange = maxPrice - minPrice;
         
-        // Simple approach: find price levels where price bounced multiple times
-        const bucketSize = priceRange / 20; // Divide range into 20 buckets
+        // More aggressive approach to find both support and resistance
+        const bucketSize = priceRange / 50; // More granular buckets
         const buckets = {};
         
         prices.forEach(price => {
@@ -342,23 +342,38 @@ class CandlestickChart {
             buckets[bucket] = (buckets[bucket] || 0) + 1;
         });
         
-        // Find significant levels (appeared more than 5% of the time)
-        const threshold = prices.length * 0.05;
+        // Lower threshold to catch more levels
+        const threshold = Math.max(2, prices.length * 0.02); // At least 2% or minimum 2 occurrences
+        const allLevels = [];
+        
+        Object.entries(buckets).forEach(([bucket, count]) => {
+            if (count >= threshold) {
+                const level = minPrice + (parseInt(bucket) * bucketSize) + (bucketSize / 2);
+                allLevels.push({ level, count, bucket: parseInt(bucket) });
+            }
+        });
+        
+        // Sort by significance (count) and separate into support/resistance
+        allLevels.sort((a, b) => b.count - a.count);
+        
         const supportLevels = [];
         const resistanceLevels = [];
         
-        Object.entries(buckets).forEach(([bucket, count]) => {
-            if (count > threshold) {
-                const level = minPrice + (parseInt(bucket) * bucketSize) + (bucketSize / 2);
-                const currentPrice = prices[prices.length - 1];
-                
-                if (level < currentPrice) {
-                    supportLevels.push(level);
-                } else {
-                    resistanceLevels.push(level);
-                }
+        allLevels.forEach(item => {
+            if (item.level < currentPrice * 0.999) { // Support levels below current price
+                supportLevels.push(item.level);
+            } else if (item.level > currentPrice * 1.001) { // Resistance levels above current price
+                resistanceLevels.push(item.level);
             }
         });
+        
+        // Ensure we have at least some levels by adding psychological levels
+        if (supportLevels.length === 0) {
+            supportLevels.push(currentPrice * 0.98, currentPrice * 0.95);
+        }
+        if (resistanceLevels.length === 0) {
+            resistanceLevels.push(currentPrice * 1.02, currentPrice * 1.05);
+        }
         
         return {
             support: supportLevels.slice(0, 3), // Top 3 support levels
