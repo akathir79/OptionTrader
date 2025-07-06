@@ -2171,7 +2171,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Add support and resistance levels
-        await addSupportResistanceLevels(payoffChart, currentSpotPrice);
+        addSupportResistanceLevels(payoffChart, currentSpotPrice);
         
         // Create profit/loss background areas
         const { profitArea, lossArea } = createProfitLossAreas(combinedPayoffData, breakevenPoints);
@@ -2297,7 +2297,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Function to add support and resistance levels
-    async function addSupportResistanceLevels(chart, currentSpotPrice) {
+    function addSupportResistanceLevels(chart, currentSpotPrice) {
         try {
             // Get current index/symbol information
             const indexSelect = document.getElementById('indexSelect');
