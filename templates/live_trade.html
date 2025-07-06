@@ -1432,16 +1432,45 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add candlestick chart function
     window.openCandlestickChart = function() {
+        // Try multiple ways to get the current symbol
+        let currentSymbol = null;
+        
+        // Method 1: Check websocket handler
         if (window.websocketHandler && window.websocketHandler.currentSymbol) {
+            currentSymbol = window.websocketHandler.currentSymbol;
+        }
+        
+        // Method 2: Check the fyersSymbolDisplay element
+        if (!currentSymbol) {
+            const symbolDisplay = document.getElementById('fyersSymbolDisplay');
+            if (symbolDisplay && symbolDisplay.textContent.trim()) {
+                const symbolMatch = symbolDisplay.textContent.match(/([A-Z]+:[A-Z0-9-]+)/);
+                if (symbolMatch) {
+                    currentSymbol = symbolMatch[1];
+                }
+            }
+        }
+        
+        // Method 3: Check if NSE:NIFTY50-INDEX is showing in the interface
+        if (!currentSymbol) {
+            const allText = document.body.textContent;
+            if (allText.includes('NSE:NIFTY50-INDEX')) {
+                currentSymbol = 'NSE:NIFTY50-INDEX';
+            }
+        }
+        
+        console.log('Chart icon clicked, detected symbol:', currentSymbol);
+        
+        if (currentSymbol) {
             if (window.candlestickChart) {
-                window.candlestickChart.show(window.websocketHandler.currentSymbol);
+                window.candlestickChart.show(currentSymbol);
             } else {
                 // Load candlestick chart script if not already loaded
                 const script = document.createElement('script');
                 script.src = '/static/js/candlestick_chart.js';
                 script.onload = function() {
                     if (window.candlestickChart) {
-                        window.candlestickChart.show(window.websocketHandler.currentSymbol);
+                        window.candlestickChart.show(currentSymbol);
                     }
                 };
                 document.head.appendChild(script);
