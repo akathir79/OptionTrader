@@ -33,8 +33,13 @@ class OptionMicroChart {
         this.showLoading();
         
         try {
-            const response = await fetch(`/api/option_history/${encodeURIComponent(this.symbol)}`);
+            const url = `/api/option_history/${encodeURIComponent(this.symbol)}`;
+            console.log(`Making request to: ${url}`);
+            
+            const response = await fetch(url);
             const result = await response.json();
+            
+            console.log(`Response for ${this.symbol}:`, result);
             
             if (response.ok) {
                 this.data = result.prices || [];
@@ -43,17 +48,21 @@ class OptionMicroChart {
                 
                 // Check if we have valid data
                 if (this.data.length > 0) {
+                    console.log(`Rendering chart for ${this.symbol} with ${this.data.length} data points`);
                     this.renderChart();
                 } else {
                     // No data available, show appropriate indicator
+                    console.log(`No data available for ${this.symbol}, showing fallback`);
                     this.showNoData();
                 }
             } else {
                 this.hasError = true;
+                console.log(`Error loading data for ${this.symbol}:`, result.error);
                 this.showError(result.error || 'Failed to load data');
             }
         } catch (error) {
             this.hasError = true;
+            console.log(`Network error for ${this.symbol}:`, error);
             this.showError('Network error');
             console.error('Microchart error:', error);
         } finally {

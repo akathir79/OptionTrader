@@ -66,7 +66,15 @@ def get_option_history(symbol):
         
         print(f"FYERS HISTORY RESPONSE: {response}")
         
-        if response.get('s') != 'ok':
+        if response.get('s') == 'no_data':
+            print(f"FYERS HISTORY: No data available for {symbol}")
+            return jsonify({
+                "symbol": symbol,
+                "prices": [],
+                "timestamps": [],
+                "message": "No historical data available"
+            })
+        elif response.get('s') != 'ok':
             print(f"FYERS HISTORY ERROR: {response}")
             return jsonify({"error": f"FYERS API Error: {response.get('message', 'Unknown error')}"}), 500
             
