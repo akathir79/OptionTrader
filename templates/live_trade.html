@@ -2126,10 +2126,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 label: {
                     text: 'Current Spot: ₹' + currentSpotPrice.toFixed(2),
                     align: 'center',
+                    rotation: 0,
+                    textAlign: 'center',
+                    y: -10,
                     style: {
                         color: '#007BFF',
-                        fontSize: '10px',
-                        fontWeight: 'bold'
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        fontFamily: 'Arial, sans-serif',
+                        textShadow: '1px 1px 1px rgba(255,255,255,0.8)'
                     }
                 }
             });
@@ -2147,10 +2152,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 label: {
                     text: 'BE: ₹' + point.toFixed(0),
                     align: 'center',
+                    rotation: 0,
+                    textAlign: 'center',
+                    y: -10,
                     style: {
                         color: '#FF6B35',
-                        fontSize: '10px',
-                        fontWeight: 'bold'
+                        fontSize: '11px',
+                        fontWeight: 'bold',
+                        fontFamily: 'Arial, sans-serif',
+                        textShadow: '1px 1px 1px rgba(255,255,255,0.8)'
                     }
                 }
             });
