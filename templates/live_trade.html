@@ -1507,6 +1507,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 {% endblock %}
+
 <!-- Candlestick Chart Modal -->
 <div class="modal fade" id="candlestickModal" tabindex="-1" aria-labelledby="candlestickModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-fullscreen">
@@ -1554,13 +1555,13 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="form-check form-switch">
               <input class="form-check-input" type="checkbox" id="supportResistanceToggle" checked>
               <label class="form-check-label" for="supportResistanceToggle">
-                <small>Support/Resistance</small>
+                Support/Resistance
               </label>
             </div>
             
             <!-- Refresh Button -->
-            <button class="btn btn-outline-secondary btn-sm" onclick="refreshCandlestickChart()">
-              <i class="fas fa-refresh"></i>
+            <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshCandlestickChart()">
+              <i class="fas fa-sync-alt me-1"></i> Refresh
             </button>
           </div>
         </div>
@@ -1579,30 +1580,3 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 </div>
 
-<!-- Load Candlestick Chart Script -->
-<script src="/static/js/candlestick_chart.js"></script>
-
-<!-- Scripts -->
-<script>
-    // Initialize candlestick chart when DOM is ready
-    document.addEventListener('DOMContentLoaded', function() {
-        // Ensure the modal is properly initialized
-        setTimeout(() => {
-            if (document.getElementById('candlestickModal')) {
-                console.log('Candlestick modal found in DOM');
-                // Initialize the chart instance
-                if (typeof CandlestickChart !== 'undefined') {
-                    window.candlestickChart = new CandlestickChart();
-                    console.log('CandlestickChart initialized successfully');
-                } else {
-                    console.error('CandlestickChart class not found');
-                }
-            } else {
-                console.error('Candlestick modal not found in DOM');
-            }
-        }, 100);
-    });
-</script>
-
-</body>
-</html>
