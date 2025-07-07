@@ -30,6 +30,9 @@ class WebSocketHandler {
         // Initialize microchart manager
         this.microchartManager = new MicroChartManager();
         
+        // Setup real-time WebSocket data listening
+        this.setupRealTimeDataListener();
+        
         console.log('WebSocket handler initialized');
     }
     
@@ -185,6 +188,9 @@ class WebSocketHandler {
         
         // Update ITM highlighting in existing option chain
         this.updateITMHighlighting();
+        
+        // Update payoff chart spot price line if chart exists
+        this.updatePayoffChartSpotPrice();
     }
 
     getCurrentSpotPrice() {
@@ -524,6 +530,11 @@ class WebSocketHandler {
             this.updateInterval = null;
         }
         
+        if (this.realTimeInterval) {
+            clearInterval(this.realTimeInterval);
+            this.realTimeInterval = null;
+        }
+        
         // Stop WebSocket connection
         fetch('/stop_websocket', { method: 'POST' })
             .then(response => response.json())
@@ -545,6 +556,67 @@ class WebSocketHandler {
             expiry: this.currentExpiry,
             strikeCount: this.strikeCount
         };
+    }
+    
+    setupRealTimeDataListener() {
+        // Setup periodic polling for real-time data (Server-sent events alternative)
+        this.realTimeInterval = setInterval(() => {
+            this.checkForRealTimeUpdates();
+        }, 1000); // Check every second for real-time updates
+    }
+    
+    async checkForRealTimeUpdates() {
+        if (!this.currentSymbol) return;
+        
+        try {
+            // Get real-time spot price data
+            const response = await fetch(`/get_spot_price?symbol=${encodeURIComponent(this.currentSymbol)}`);
+            const data = await response.json();
+            
+            if (data.success && data.spot_price !== this.currentSpotPrice) {
+                // Spot price has changed, update everything
+                this.updateSpotPriceDisplay(data.spot_price);
+                this.updateATMDisplay(data.spot_price);
+                console.log(`Real-time spot price update: ${data.spot_price} for ${this.currentSymbol}`);
+            }
+        } catch (error) {
+            // Silently handle errors to avoid spam in console
+        }
+    }
+    
+    updatePayoffChartSpotPrice() {
+        // Check if payoff chart exists (global variable from live_trade.html)
+        if (typeof payoffChart !== 'undefined' && payoffChart && this.currentSpotPrice) {
+            // Remove existing spot price line
+            payoffChart.xAxis[0].removePlotLine('currentSpot');
+            
+            // Add updated spot price line
+            payoffChart.xAxis[0].addPlotLine({
+                id: 'currentSpot',
+                value: this.currentSpotPrice,
+                color: '#007BFF',
+                width: 2,
+                zIndex: 7,
+                label: {
+                    text: 'Spot: ₹' + this.currentSpotPrice.toFixed(0),
+                    align: 'center',
+                    rotation: 0,
+                    verticalAlign: 'bottom',
+                    y: -5,
+                    x: 0,
+                    useHTML: true,
+                    style: {
+                        color: '#007BFF',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        fontFamily: 'Arial, sans-serif',
+                        zIndex: 1000
+                    }
+                }
+            });
+            
+            console.log(`Updated payoff chart spot price to: ${this.currentSpotPrice}`);
+        }
     }
 }
 
