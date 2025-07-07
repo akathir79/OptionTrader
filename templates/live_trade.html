@@ -1480,7 +1480,31 @@
 
 <!-- *** NEW: symbol / expiry logic *** -->
 <script src="{{ url_for('static', filename='js/symbol_selector_fixed.js') }}"></script>
-<script src="{{ url_for('static', filename='js/websocket_handler.js') }}"></script>
+<script src="{{ url_for('static', filename='js/websocket_handler.js') }}?v=2.0&t=1751872760"></script>
+<script>
+// Auto-load NIFTY option chain for live data updates
+window.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        const indexSelect = document.getElementById('indexSelect');
+        const expirySelect = document.getElementById('expirySelect');
+        
+        if (indexSelect && !indexSelect.value) {
+            console.log('Auto-loading NIFTY 50 for live updates...');
+            indexSelect.value = 'NIFTY 50';
+            indexSelect.dispatchEvent(new Event('change'));
+            
+            // Wait for expiry options to load
+            setTimeout(function() {
+                if (expirySelect && expirySelect.options.length > 1) {
+                    expirySelect.selectedIndex = 1; // First actual expiry
+                    expirySelect.dispatchEvent(new Event('change'));
+                    console.log('Auto-loaded option chain for live streaming');
+                }
+            }, 2000);
+        }
+    }, 3000);
+});
+</script>
 <script src="{{ url_for('static', filename='js/option_microchart.js') }}"></script>
 <script src="{{ url_for('static', filename='js/chart_popup.js') }}"></script>
 <script src="{{ url_for('static', filename='js/candlestick_chart.js') }}"></script>

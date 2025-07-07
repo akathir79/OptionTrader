@@ -1,6 +1,7 @@
 /*
- * WebSocket handler for live option chain data
+ * WebSocket handler for live option chain data - v2.0
  * Manages real-time updates for spot price and option chain LTP data
+ * CACHE BUSTER: Updated live streaming implementation
  */
 
 class WebSocketHandler {
@@ -686,11 +687,14 @@ class WebSocketHandler {
 
     updateTableWithLiveData(liveData) {
         // Update option chain table with live streaming data
-        const table = document.getElementById('option-chain-table');
+        const table = document.getElementById('optionChainTable');
         if (!table) {
-            console.log('Table not found');
+            console.log('Table not found - will auto-load default option chain');
+            this.autoLoadDefaultOptionChain();
             return;
         }
+        
+        console.log('Table found! Processing live updates for', Object.keys(liveData).length, 'symbols');
         
         const rows = table.querySelectorAll('tbody tr');
         console.log('Found', rows.length, 'table rows');
@@ -731,6 +735,33 @@ class WebSocketHandler {
         });
         
         console.log('Updated', updatesCount, 'symbols in table');
+    }
+
+    autoLoadDefaultOptionChain() {
+        // Auto-load NIFTY option chain to enable live updates
+        if (this.autoLoadAttempted) return; // Prevent multiple attempts
+        this.autoLoadAttempted = true;
+        
+        console.log('Auto-loading NIFTY option chain for live updates...');
+        
+        // Set default values
+        const indexSelect = document.getElementById('indexSelect');
+        const expirySelect = document.getElementById('expirySelect');
+        
+        if (indexSelect) {
+            indexSelect.value = 'NIFTY 50';
+            indexSelect.dispatchEvent(new Event('change'));
+            
+            // Wait for expiry to load, then select first option
+            setTimeout(() => {
+                if (expirySelect && expirySelect.options.length > 1) {
+                    expirySelect.selectedIndex = 1; // Select first actual expiry (not placeholder)
+                    expirySelect.dispatchEvent(new Event('change'));
+                    
+                    console.log('Default option chain loaded for live updates');
+                }
+            }, 1000);
+        }
     }
 
     updateCellValue(row, selector, value) {
