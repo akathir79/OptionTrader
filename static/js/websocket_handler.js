@@ -323,6 +323,93 @@ class WebSocketHandler {
         this.loadMicroCharts(strikes);
     }
     
+    updateLiveTableData(message) {
+        // Update option chain table with live WebSocket data
+        const symbol = message.symbol;
+        if (!symbol) return;
+        
+        // Find the table row for this symbol
+        const tableBody = document.querySelector('#optionChainTable tbody');
+        if (!tableBody) return;
+        
+        const rows = tableBody.querySelectorAll('tr');
+        rows.forEach(row => {
+            // Check if this row contains the symbol for call option
+            const callSymbolInput = row.querySelector('input[data-symbol-call]');
+            const putSymbolInput = row.querySelector('input[data-symbol-put]');
+            
+            if (callSymbolInput && callSymbolInput.dataset.symbolCall === symbol) {
+                // Update call option data
+                this.updateCallOptionData(row, message);
+            }
+            
+            if (putSymbolInput && putSymbolInput.dataset.symbolPut === symbol) {
+                // Update put option data  
+                this.updatePutOptionData(row, message);
+            }
+        });
+    }
+    
+    updateCallOptionData(row, data) {
+        // Update call option columns with live data
+        const ltpCell = row.querySelector('td:nth-child(7)'); // Call LTP
+        const oiCell = row.querySelector('td:nth-child(6)'); // Call OI
+        const volCell = row.querySelector('td:nth-child(5)'); // Call Volume
+        const chngCell = row.querySelector('td:nth-child(4)'); // Call Change
+        const bidCell = row.querySelector('td:nth-child(2)'); // Call Bid
+        const askCell = row.querySelector('td:nth-child(3)'); // Call Ask
+        
+        if (ltpCell && data.ltp) {
+            ltpCell.textContent = this.formatPrice(data.ltp);
+        }
+        if (oiCell && data.tot_buy_qty) {
+            oiCell.textContent = data.tot_buy_qty.toLocaleString();
+        }
+        if (volCell && data.vol_traded_today) {
+            volCell.textContent = data.vol_traded_today.toLocaleString();
+        }
+        if (chngCell && data.ch !== undefined) {
+            chngCell.textContent = data.ch.toFixed(2);
+            chngCell.className = data.ch >= 0 ? 'text-success' : 'text-danger';
+        }
+        if (bidCell && data.bid_price) {
+            bidCell.textContent = this.formatPrice(data.bid_price);
+        }
+        if (askCell && data.ask_price) {
+            askCell.textContent = this.formatPrice(data.ask_price);
+        }
+    }
+    
+    updatePutOptionData(row, data) {
+        // Update put option columns with live data
+        const ltpCell = row.querySelector('td:nth-child(13)'); // Put LTP
+        const oiCell = row.querySelector('td:nth-child(14)'); // Put OI  
+        const volCell = row.querySelector('td:nth-child(15)'); // Put Volume
+        const chngCell = row.querySelector('td:nth-child(16)'); // Put Change
+        const bidCell = row.querySelector('td:nth-child(17)'); // Put Bid
+        const askCell = row.querySelector('td:nth-child(18)'); // Put Ask
+        
+        if (ltpCell && data.ltp) {
+            ltpCell.textContent = this.formatPrice(data.ltp);
+        }
+        if (oiCell && data.tot_buy_qty) {
+            oiCell.textContent = data.tot_buy_qty.toLocaleString();
+        }
+        if (volCell && data.vol_traded_today) {
+            volCell.textContent = data.vol_traded_today.toLocaleString();
+        }
+        if (chngCell && data.ch !== undefined) {
+            chngCell.textContent = data.ch.toFixed(2);
+            chngCell.className = data.ch >= 0 ? 'text-success' : 'text-danger';
+        }
+        if (bidCell && data.bid_price) {
+            bidCell.textContent = this.formatPrice(data.bid_price);
+        }
+        if (askCell && data.ask_price) {
+            askCell.textContent = this.formatPrice(data.ask_price);
+        }
+    }
+    
     createOptionChainRow(strike) {
         const row = document.createElement('tr');
         row.dataset.strike = strike.strike;
@@ -571,22 +658,73 @@ class WebSocketHandler {
         if (!this.currentSymbol) return;
         
         try {
-            // Get real-time spot price data
-            const response = await fetch(`/get_spot_price?symbol=${encodeURIComponent(this.currentSymbol)}`);
-            const data = await response.json();
+            // Get all live market data from WebSocket bridge
+            const response = await fetch('/live_market_data');
+            const result = await response.json();
             
-            if (data.success && data.spot_price !== this.currentSpotPrice) {
-                // Spot price has changed, update everything
-                this.updateSpotPriceDisplay(data.spot_price);
-                this.updateATMDisplay(data.spot_price);
+            if (result.success && result.data) {
+                // Update option chain table with live data
+                this.updateTableWithLiveData(result.data);
                 
-                // Update payoff chart with new spot price
-                this.updatePayoffChartSpotPrice();
-                
-                console.log(`Real-time spot price update: ${data.spot_price} for ${this.currentSymbol}`);
+                // Update spot price if available
+                if (result.data['NSE:NIFTY50-INDEX']) {
+                    const newSpotPrice = result.data['NSE:NIFTY50-INDEX'].ltp;
+                    if (newSpotPrice !== this.currentSpotPrice) {
+                        this.updateSpotPriceDisplay(newSpotPrice);
+                        this.updateATMDisplay(newSpotPrice);
+                        this.updatePayoffChartSpotPrice();
+                    }
+                }
             }
         } catch (error) {
             // Silently handle errors to avoid spam in console
+        }
+    }
+
+    updateTableWithLiveData(liveData) {
+        // Update option chain table with live streaming data
+        const table = document.getElementById('option-chain-table');
+        if (!table) return;
+        
+        const rows = table.querySelectorAll('tbody tr');
+        
+        rows.forEach(row => {
+            const ceSymbol = row.querySelector('.ce-ltp')?.getAttribute('data-symbol');
+            const peSymbol = row.querySelector('.pe-ltp')?.getAttribute('data-symbol');
+            
+            // Update CE (Call) data
+            if (ceSymbol && liveData[ceSymbol]) {
+                const ceData = liveData[ceSymbol];
+                this.updateCellValue(row, '.ce-ltp', ceData.ltp);
+                this.updateCellValue(row, '.ce-volume', ceData.volume);
+                this.updateCellValue(row, '.ce-oi', ceData.oi);
+                this.updateCellValue(row, '.ce-change', ceData.change);
+                this.updateCellValue(row, '.ce-bid', ceData.bid);
+                this.updateCellValue(row, '.ce-ask', ceData.ask);
+            }
+            
+            // Update PE (Put) data
+            if (peSymbol && liveData[peSymbol]) {
+                const peData = liveData[peSymbol];
+                this.updateCellValue(row, '.pe-ltp', peData.ltp);
+                this.updateCellValue(row, '.pe-volume', peData.volume);
+                this.updateCellValue(row, '.pe-oi', peData.oi);
+                this.updateCellValue(row, '.pe-change', peData.change);
+                this.updateCellValue(row, '.pe-bid', peData.bid);
+                this.updateCellValue(row, '.pe-ask', peData.ask);
+            }
+        });
+    }
+
+    updateCellValue(row, selector, value) {
+        const cell = row.querySelector(selector);
+        if (cell && value !== undefined) {
+            const formattedValue = typeof value === 'number' ? this.formatPrice(value) : value;
+            cell.textContent = formattedValue;
+            
+            // Add visual feedback for live updates
+            cell.classList.add('live-updated');
+            setTimeout(() => cell.classList.remove('live-updated'), 1000);
         }
     }
     

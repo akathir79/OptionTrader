@@ -17,6 +17,7 @@ websocket_bp = Blueprint('websocket', __name__)
 # Global WebSocket instance
 fyers_ws = None
 current_subscriptions = []
+live_market_data = {}
 
 def get_fyers_client():
     """Get FYERS client with access token"""
@@ -298,8 +299,20 @@ def start_websocket_subscription(symbols):
             """Handle WebSocket messages"""
             try:
                 # Process incoming tick data
-                # This will be handled by the frontend via Server-Sent Events or polling
                 print(f"WebSocket message: {message}")
+                
+                # Store live data in global variable for frontend polling
+                global live_market_data
+                if message and 'symbol' in message:
+                    live_market_data[message['symbol']] = {
+                        'ltp': message.get('ltp', 0),
+                        'volume': message.get('vol_traded_today', 0),
+                        'oi': message.get('tot_buy_qty', 0),
+                        'change': message.get('ch', 0),
+                        'bid': message.get('bid_price', 0),
+                        'ask': message.get('ask_price', 0),
+                        'timestamp': datetime.now().isoformat()
+                    }
             except Exception as e:
                 print(f"WebSocket message error: {str(e)}")
 
@@ -368,4 +381,16 @@ def websocket_status():
         "connected": fyers_ws is not None,
         "subscriptions": len(current_subscriptions),
         "symbols": current_subscriptions
+    })
+
+@websocket_bp.route('/live_market_data', methods=['GET'])
+def get_live_market_data():
+    """Get live market data for frontend polling"""
+    global live_market_data
+    
+    return jsonify({
+        "success": True,
+        "data": live_market_data,
+        "count": len(live_market_data),
+        "timestamp": datetime.now().isoformat()
     })
