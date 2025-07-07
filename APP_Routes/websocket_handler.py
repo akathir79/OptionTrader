@@ -373,6 +373,44 @@ def websocket_status():
         "symbols": current_subscriptions
     })
 
+@websocket_bp.route('/start_websocket_subscription', methods=['POST'])
+def start_websocket_subscription():
+    """Auto-start WebSocket subscription for option chain"""
+    try:
+        data = request.get_json()
+        symbol = data.get('symbol')
+        expiry = data.get('expiry')
+        strikes = data.get('strikes', [])
+        
+        if not symbol or not expiry or not strikes:
+            return jsonify({"success": False, "error": "Missing required parameters"}), 400
+        
+        # Extract option symbols from strikes data
+        symbols = []
+        for strike in strikes:
+            if 'ce_symbol' in strike and strike['ce_symbol']:
+                symbols.append(strike['ce_symbol'])
+            if 'pe_symbol' in strike and strike['pe_symbol']:
+                symbols.append(strike['pe_symbol'])
+        
+        # Add underlying symbol for spot price
+        symbols.append(symbol)
+        
+        if not symbols:
+            return jsonify({"success": False, "error": "No valid symbols found"}), 400
+        
+        # Start WebSocket with extracted symbols
+        start_websocket_with_symbols(symbols)
+        
+        return jsonify({
+            "success": True, 
+            "message": f"WebSocket started for {len(symbols)} symbols",
+            "symbols_count": len(symbols)
+        })
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 # Global variable to store latest option data
 latest_option_data = {}
 

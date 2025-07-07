@@ -305,6 +305,9 @@ class WebSocketHandler {
                 }
                 this.setupRealTimeDataListener();
                 
+                // AUTO-START: Automatically begin WebSocket streaming for live data
+                await this.autoStartWebSocketStreaming(data.strikes);
+                
                 console.log(`Option chain loaded: ${data.strikes.length} strikes for ${this.currentSymbol}`);
                 console.log('Real-time polling started for option chain updates');
             } else {
@@ -570,6 +573,46 @@ class WebSocketHandler {
             expiry: this.currentExpiry,
             strikeCount: this.strikeCount
         };
+    }
+    
+    async autoStartWebSocketStreaming(strikes) {
+        try {
+            // Automatically start WebSocket streaming for the loaded option chain
+            console.log('Auto-starting WebSocket streaming for live data...');
+            
+            // Start the WebSocket connection with option symbols
+            const response = await fetch('/start_websocket_subscription', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    symbol: this.currentSymbol,
+                    expiry: this.currentExpiry,
+                    strikes: strikes
+                })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                this.isConnected = true;
+                console.log('✅ WebSocket streaming started automatically');
+                console.log(`🔴 Live data streaming for ${strikes.length} options`);
+                
+                // Update UI to show streaming is active
+                this.updateStreamingStatus(true);
+            } else {
+                console.error('❌ Failed to auto-start WebSocket:', data.error);
+            }
+        } catch (error) {
+            console.error('Error auto-starting WebSocket streaming:', error);
+        }
+    }
+    
+    updateStreamingStatus(isActive) {
+        // Update any UI indicators to show streaming status
+        const statusIndicator = document.querySelector('.live-data-indicator');
+        if (statusIndicator) {
+            statusIndicator.style.display = isActive ? 'block' : 'none';
+        }
     }
     
     setupRealTimeDataListener() {
