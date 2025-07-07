@@ -297,8 +297,12 @@ def start_websocket_subscription(symbols):
         def on_message(message):
             """Handle WebSocket messages"""
             try:
-                # Process incoming tick data
-                # This will be handled by the frontend via Server-Sent Events or polling
+                global latest_option_data
+                # Process incoming tick data and store in global variable
+                if isinstance(message, dict) and 'symbol' in message:
+                    # Store the latest data for this symbol
+                    latest_option_data[message['symbol']] = message
+                    
                 print(f"WebSocket message: {message}")
             except Exception as e:
                 print(f"WebSocket message error: {str(e)}")
@@ -369,3 +373,42 @@ def websocket_status():
         "subscriptions": len(current_subscriptions),
         "symbols": current_subscriptions
     })
+
+# Global variable to store latest option data
+latest_option_data = {}
+
+@websocket_bp.route('/get_realtime_option_data', methods=['GET'])
+def get_realtime_option_data():
+    """Get real-time option data updates from WebSocket messages"""
+    try:
+        symbol = request.args.get('symbol', '')
+        expiry = request.args.get('expiry', '')
+        
+        if not symbol or not expiry:
+            return jsonify({"success": False, "error": "Symbol and expiry parameters required"}), 400
+            
+        # Extract option updates from latest_option_data
+        option_updates = []
+        for ws_symbol, data in latest_option_data.items():
+            # Check if this symbol matches the current expiry and underlying
+            if expiry in ws_symbol and ('CE' in ws_symbol or 'PE' in ws_symbol):
+                option_updates.append({
+                    'symbol': ws_symbol,
+                    'ltp': data.get('ltp', 0),
+                    'vol_traded_today': data.get('vol_traded_today', 0),
+                    'bid_price': data.get('bid_price', 0),
+                    'ask_price': data.get('ask_price', 0),
+                    'bid_size': data.get('bid_size', 0),
+                    'ask_size': data.get('ask_size', 0),
+                    'ch': data.get('ch', 0),
+                    'chp': data.get('chp', 0)
+                })
+        
+        return jsonify({
+            "success": True,
+            "option_updates": option_updates,
+            "timestamp": datetime.now(pytz.timezone('Asia/Kolkata')).isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
