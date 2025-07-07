@@ -7,7 +7,6 @@ from flask import Blueprint, request, jsonify
 import logging
 import json
 import threading
-import time
 from datetime import datetime
 import pytz
 from APP_Extensions.db import db
@@ -372,23 +371,14 @@ def update_subscriptions():
         
         # Unsubscribe from old symbols if any
         if current_subscriptions:
-            print(f"🛑 UNSUBSCRIBING from {len(current_subscriptions)} old symbols: {current_subscriptions[:5]}...")
+            print(f"Unsubscribing from {len(current_subscriptions)} old symbols")
             fyers_ws.unsubscribe(symbols=current_subscriptions)
-            time.sleep(0.5)  # Give time for unsubscribe to take effect
             
-        # Clear and reset subscription tracking
-        current_subscriptions = []
-        
         # Subscribe to new symbols
         if new_symbols:
-            print(f"🔄 SUBSCRIBING to {len(new_symbols)} new symbols: {new_symbols[:5]}...")
+            print(f"Subscribing to {len(new_symbols)} new symbols")
             fyers_ws.subscribe(symbols=new_symbols)
             current_subscriptions = new_symbols
-            
-            # Force cache clear after subscription change
-            time.sleep(0.2)
-            market_data_cache.clear()
-            print(f"✅ SUBSCRIPTION UPDATED: Now tracking {len(current_subscriptions)} symbols")
             
             return jsonify({
                 "success": True, 

@@ -22,7 +22,7 @@ app.register_blueprint(bp)                          # ← same symbol as above
 
 # Import and register WebSocket blueprint
 from APP_Routes.websocket_handler import websocket_bp
-app.register_blueprint(websocket_bp, url_prefix='/websocket')
+app.register_blueprint(websocket_bp)
 
 # Import and register Historical Data blueprint
 from APP_Routes.historical_data import historical_bp
