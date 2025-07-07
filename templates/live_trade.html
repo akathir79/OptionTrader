@@ -1745,6 +1745,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Immediately create and update payoff chart using loaded option chain data
         createPayoffChartFromOptionChain();
         
+        // Update real-time payoff chart lines if WebSocket handler exists
+        if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
+            window.webSocketHandler.updatePayoffChartSpotPrice();
+        }
+        
         // Keep existing position table intact - just log the action
         console.log(`${action} ${key} for row ${rowIndex}, new count: ${counters[rowIndex][key]}`);
     }
@@ -2423,6 +2428,106 @@ document.addEventListener('DOMContentLoaded', function() {
     // Global click handler to close dropdowns
     document.addEventListener('click', closeAllDropdowns);
     
+    // Calculate breakeven points for current positions
+    function calculateBreakevens() {
+        const positions = [];
+        
+        // Collect all current positions from the table
+        const positionTable = document.getElementById('currentPositionsTable');
+        if (!positionTable) return [];
+        
+        const rows = positionTable.querySelectorAll('tbody tr');
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 5) {
+                const action = cells[0].textContent.trim();
+                const strike = parseFloat(cells[1].textContent) || 0;
+                const quantity = parseInt(cells[2].textContent) || 0;
+                const premium = parseFloat(cells[3].textContent) || 0;
+                
+                if (strike > 0 && quantity > 0 && premium > 0) {
+                    positions.push({ action, strike, quantity, premium });
+                }
+            }
+        });
+        
+        if (positions.length === 0) return [];
+        
+        // Calculate breakeven points based on position types
+        const breakevens = [];
+        
+        // For simple strategies, calculate breakevens
+        if (positions.length === 1) {
+            const pos = positions[0];
+            if (pos.action === 'CE Buy') {
+                breakevens.push(pos.strike + pos.premium);
+            } else if (pos.action === 'PE Buy') {
+                breakevens.push(pos.strike - pos.premium);
+            } else if (pos.action === 'CE Sell') {
+                breakevens.push(pos.strike + pos.premium);
+            } else if (pos.action === 'PE Sell') {
+                breakevens.push(pos.strike - pos.premium);
+            }
+        } else {
+            // For complex strategies, find zero crossings
+            const spotRange = [];
+            const minStrike = Math.min(...positions.map(p => p.strike));
+            const maxStrike = Math.max(...positions.map(p => p.strike));
+            const range = maxStrike - minStrike;
+            
+            // Create a wider range for calculation
+            const startPrice = Math.max(0, minStrike - range * 0.5);
+            const endPrice = maxStrike + range * 0.5;
+            
+            // Sample points to find zero crossings
+            for (let price = startPrice; price <= endPrice; price += 5) {
+                let totalPayoff = 0;
+                
+                positions.forEach(pos => {
+                    const lotSize = defaultLotSize;
+                    let payoff = 0;
+                    
+                    switch (pos.action) {
+                        case 'CE Buy':
+                            payoff = Math.max(price - pos.strike, 0) - pos.premium;
+                            break;
+                        case 'CE Sell':
+                            payoff = pos.premium - Math.max(price - pos.strike, 0);
+                            break;
+                        case 'PE Buy':
+                            payoff = Math.max(pos.strike - price, 0) - pos.premium;
+                            break;
+                        case 'PE Sell':
+                            payoff = pos.premium - Math.max(pos.strike - price, 0);
+                            break;
+                    }
+                    
+                    totalPayoff += payoff * pos.quantity * lotSize;
+                });
+                
+                spotRange.push({ price, payoff: totalPayoff });
+            }
+            
+            // Find zero crossings
+            for (let i = 1; i < spotRange.length; i++) {
+                const prev = spotRange[i - 1];
+                const curr = spotRange[i];
+                
+                if ((prev.payoff <= 0 && curr.payoff > 0) || (prev.payoff > 0 && curr.payoff <= 0)) {
+                    // Linear interpolation to find exact breakeven
+                    const slope = (curr.payoff - prev.payoff) / (curr.price - prev.price);
+                    const breakeven = prev.price - (prev.payoff / slope);
+                    
+                    if (breakeven > 0 && breakeven >= startPrice && breakeven <= endPrice) {
+                        breakevens.push(Math.round(breakeven * 100) / 100);
+                    }
+                }
+            }
+        }
+        
+        return [...new Set(breakevens)].sort((a, b) => a - b);
+    }
+    
     // Make functions globally available
     window.createOptionButton = createOptionButton;
     window.handleButtonClick = handleButtonClick;
@@ -2430,6 +2535,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.updatePayoffChart = updatePayoffChart;
     window.createPayoffChartFromOptionChain = createPayoffChartFromOptionChain;
     window.initPayoffChart = initPayoffChart;
+    window.calculateBreakevens = calculateBreakevens;
     window.counters = counters;
     window.firstClickFlags = firstClickFlags;
     

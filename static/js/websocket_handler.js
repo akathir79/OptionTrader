@@ -577,6 +577,10 @@ class WebSocketHandler {
                 // Spot price has changed, update everything
                 this.updateSpotPriceDisplay(data.spot_price);
                 this.updateATMDisplay(data.spot_price);
+                
+                // Update payoff chart with new spot price
+                this.updatePayoffChartSpotPrice();
+                
                 console.log(`Real-time spot price update: ${data.spot_price} for ${this.currentSymbol}`);
             }
         } catch (error) {
@@ -615,7 +619,51 @@ class WebSocketHandler {
                 }
             });
             
+            // Update breakeven lines dynamically
+            this.updateBreakevenLines();
+            
             console.log(`Updated payoff chart spot price to: ${this.currentSpotPrice}`);
+        }
+    }
+    
+    updateBreakevenLines() {
+        // Calculate and update breakeven lines based on current positions
+        if (typeof payoffChart !== 'undefined' && payoffChart && typeof window.calculateBreakevens === 'function') {
+            const breakevens = window.calculateBreakevens();
+            
+            // Remove existing breakeven lines
+            payoffChart.xAxis[0].removePlotLine('breakeven1');
+            payoffChart.xAxis[0].removePlotLine('breakeven2');
+            
+            // Add new breakeven lines
+            breakevens.forEach((breakeven, index) => {
+                if (breakeven && !isNaN(breakeven) && breakeven > 0) {
+                    payoffChart.xAxis[0].addPlotLine({
+                        id: `breakeven${index + 1}`,
+                        value: breakeven,
+                        color: '#FF6B6B',
+                        width: 2,
+                        dashStyle: 'dash',
+                        zIndex: 6,
+                        label: {
+                            text: 'BE: ₹' + breakeven.toFixed(0),
+                            align: 'center',
+                            rotation: 0,
+                            verticalAlign: 'top',
+                            y: 15,
+                            x: 0,
+                            useHTML: true,
+                            style: {
+                                color: '#FF6B6B',
+                                fontSize: '12px',
+                                fontWeight: 'bold',
+                                fontFamily: 'Arial, sans-serif',
+                                zIndex: 1000
+                            }
+                        }
+                    });
+                }
+            });
         }
     }
 }
