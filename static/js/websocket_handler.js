@@ -297,7 +297,16 @@ class WebSocketHandler {
                 this.updateOptionChainTable(data.strikes);
                 this.updateATMDisplay(data.spot_price);
                 this.hideOptionChainLoading();
+                
+                // CRITICAL: Stop any existing polling and start fresh real-time polling
+                if (this.realTimeInterval) {
+                    clearInterval(this.realTimeInterval);
+                    this.realTimeInterval = null;
+                }
+                this.setupRealTimeDataListener();
+                
                 console.log(`Option chain loaded: ${data.strikes.length} strikes for ${this.currentSymbol}`);
+                console.log('Real-time polling started for option chain updates');
             } else {
                 console.error('Option chain update failed:', data.error);
                 this.hideOptionChainLoading();
