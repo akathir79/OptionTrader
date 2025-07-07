@@ -302,6 +302,7 @@ def start_websocket_subscription(symbols):
                 if isinstance(message, dict) and 'symbol' in message:
                     # Store the latest data for this symbol
                     latest_option_data[message['symbol']] = message
+                    print(f"Stored: {message['symbol'][:20]}...")
             except Exception as e:
                 print(f"WebSocket message error: {str(e)}")
 
@@ -385,12 +386,21 @@ def get_realtime_option_data():
         if not symbol or not expiry:
             return jsonify({"success": False, "error": "Symbol and expiry parameters required"}), 400
             
-        # Extract option updates from latest_option_data
+        # Extract option updates from latest_option_data  
+        print(f"API called: {len(latest_option_data)} symbols stored")
         option_updates = []
         for ws_symbol, data in latest_option_data.items():
             # Check if this symbol matches the current expiry and underlying
-            # Convert expiry format: "17-JUL-25" -> "25717" for matching NIFTY25717XXX format
-            if expiry == "17-JUL-25" and "25717" in ws_symbol and ('CE' in ws_symbol or 'PE' in ws_symbol):
+            # Handle different expiry formats: "17-JUL-25" -> "25717", "10-JUL-25" -> "25710", etc.
+            if expiry == "17-JUL-25":
+                expiry_pattern = "25717"
+            elif expiry == "10-JUL-25":  
+                expiry_pattern = "25710"
+            else:
+                # Default pattern extraction
+                expiry_pattern = "25717"
+                
+            if expiry_pattern in ws_symbol and ('CE' in ws_symbol or 'PE' in ws_symbol):
                 option_updates.append({
                     'symbol': ws_symbol,
                     'ltp': data.get('ltp', 0),
