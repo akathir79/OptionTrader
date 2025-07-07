@@ -305,9 +305,6 @@ class WebSocketHandler {
                 }
                 this.setupRealTimeDataListener();
                 
-                // AUTO-START: Automatically begin WebSocket streaming for live data
-                await this.autoStartWebSocketStreaming(data.strikes);
-                
                 console.log(`Option chain loaded: ${data.strikes.length} strikes for ${this.currentSymbol}`);
                 console.log('Real-time polling started for option chain updates');
             } else {
