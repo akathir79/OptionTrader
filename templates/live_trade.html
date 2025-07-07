@@ -1746,13 +1746,78 @@ document.addEventListener('DOMContentLoaded', function() {
         createPayoffChartFromOptionChain();
         
         // Update real-time payoff chart lines if WebSocket handler exists
+        console.log(`[BUTTON CLICK] Checking WebSocket handler: exists=${!!window.webSocketHandler}, updateFunction=${window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function'}`);
         if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
+            console.log(`[BUTTON CLICK] Calling WebSocket handler updatePayoffChartSpotPrice`);
             window.webSocketHandler.updatePayoffChartSpotPrice();
+        } else {
+            console.log(`[BUTTON CLICK] WebSocket handler not available or updatePayoffChartSpotPrice not found`);
         }
         
         // Keep existing position table intact - just log the action
         console.log(`${action} ${key} for row ${rowIndex}, new count: ${counters[rowIndex][key]}`);
     }
+    
+    // Global function to force payoff chart update with live spot price - called by WebSocket handler
+    window.forcePayoffChartUpdate = function(spotPrice) {
+        console.log(`[FORCE UPDATE] forcePayoffChartUpdate called with spot: ${spotPrice}`);
+        
+        if (!payoffChart) {
+            console.log('[FORCE UPDATE] No payoff chart available - deferring until chart is created');
+            // Store the pending spot price for when chart is created
+            window.pendingSpotPrice = spotPrice;
+            return false;
+        }
+        
+        if (!spotPrice && window.webSocketHandler && window.webSocketHandler.currentSpotPrice) {
+            spotPrice = window.webSocketHandler.currentSpotPrice;
+        }
+        
+        if (!spotPrice) {
+            console.log('[FORCE UPDATE] No spot price available');
+            return false;
+        }
+        
+        console.log(`[FORCE UPDATE] Updating payoff chart with spot price: ${spotPrice}`);
+        
+        // Remove existing spot price line
+        payoffChart.xAxis[0].removePlotLine('currentSpot');
+        
+        // Add updated spot price line
+        payoffChart.xAxis[0].addPlotLine({
+            id: 'currentSpot',
+            value: spotPrice,
+            color: '#007BFF',
+            width: 2,
+            zIndex: 7,
+            label: {
+                text: 'Spot: ₹' + spotPrice.toFixed(0),
+                align: 'center',
+                rotation: 0,
+                verticalAlign: 'bottom',
+                y: -5,
+                x: 0,
+                useHTML: true,
+                style: {
+                    color: '#007BFF',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    fontFamily: 'Arial, sans-serif',
+                    zIndex: 1000
+                }
+            }
+        });
+        
+        // Recalculate and update breakeven lines
+        if (typeof updateBreakevenLinesFromPositions === 'function') {
+            updateBreakevenLinesFromPositions();
+        } else {
+            console.log('[FORCE UPDATE] updateBreakevenLinesFromPositions not available, chart updated without breakeven lines');
+        }
+        
+        console.log(`[FORCE UPDATE] Successfully updated payoff chart spot line to: ${spotPrice}`);
+        return true;
+    };
     
     // Update button display - using attached code approach
     function updateButtonDisplay(rowIndex, key) {

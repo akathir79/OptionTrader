@@ -185,11 +185,13 @@ class WebSocketHandler {
         
         // Store current spot price for ITM calculations
         this.currentSpotPrice = spotPrice;
+        console.log(`[SPOT UPDATE] Set currentSpotPrice to: ${this.currentSpotPrice}`);
         
         // Update ITM highlighting in existing option chain
         this.updateITMHighlighting();
         
         // Update payoff chart spot price line if chart exists
+        console.log(`[SPOT UPDATE] About to call updatePayoffChartSpotPrice with spot: ${this.currentSpotPrice}`);
         this.updatePayoffChartSpotPrice();
     }
 
@@ -590,7 +592,11 @@ class WebSocketHandler {
     
     updatePayoffChartSpotPrice() {
         // Check if payoff chart exists (global variable from live_trade.html)
+        console.log(`[PAYOFF UPDATE] Checking payoff chart update - payoffChart exists: ${typeof payoffChart !== 'undefined' && payoffChart}, currentSpotPrice: ${this.currentSpotPrice}`);
+        
         if (typeof payoffChart !== 'undefined' && payoffChart && this.currentSpotPrice) {
+            console.log(`[PAYOFF UPDATE] Updating spot price line from ${payoffChart.xAxis[0].plotLinesAndBands.length > 0 ? 'existing' : 'new'} to ${this.currentSpotPrice}`);
+            
             // Remove existing spot price line
             payoffChart.xAxis[0].removePlotLine('currentSpot');
             
@@ -622,7 +628,15 @@ class WebSocketHandler {
             // Update breakeven lines dynamically
             this.updateBreakevenLines();
             
-            console.log(`Updated payoff chart spot price to: ${this.currentSpotPrice}`);
+            console.log(`[PAYOFF UPDATE] Successfully updated payoff chart spot price to: ${this.currentSpotPrice}`);
+        } else {
+            console.log(`[PAYOFF UPDATE] Cannot update - Missing requirements: payoffChart=${typeof payoffChart !== 'undefined' && payoffChart}, currentSpotPrice=${this.currentSpotPrice}`);
+            
+            // Try fallback global function
+            if (typeof window.forcePayoffChartUpdate === 'function' && this.currentSpotPrice) {
+                console.log(`[PAYOFF UPDATE] Attempting fallback via global forcePayoffChartUpdate`);
+                window.forcePayoffChartUpdate(this.currentSpotPrice);
+            }
         }
     }
     
