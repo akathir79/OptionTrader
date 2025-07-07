@@ -100,6 +100,7 @@ Preferred communication style: Simple, everyday language.
 ## Changelog
 
 Changelog:
+- July 07, 2025. Achieved complete real-time option chain system with dynamic symbol and expiry matching - WebSocket streams live data for any symbol/expiry combination, automatically converts expiry formats (e.g., "17-JUL-25" → "25717"), and updates table cells with authentic LTP, volume, bid/ask prices in real-time. System works universally for all indices and expiry dates without hardcoding.
 - July 07, 2025. Implemented comprehensive real-time payoff chart updates with dynamic spot price and breakeven line synchronization - the system now polls WebSocket data every 1 second to update the blue spot price vertical line and automatically recalculates red dashed breakeven lines based on current positions, with immediate updates triggered by Buy/Sell button clicks and support for both single and complex multi-leg option strategies
 - July 06, 2025. Enhanced payoff chart with interactive features: zoom/pan functionality (drag to zoom, Shift+drag to pan), crosshairs with value labels, reset zoom button, simplified tooltip, removed title and legend for maximum space utilization, and improved horizontal label display for Breakeven and Spot price indicators with professional font styling
 - July 06, 2025. Enhanced historical data system with 4-day range and 1-minute resolution - providing 1125 granular price points for real-time market analysis, added tick data endpoint for high-frequency data access, and optimized date ranges to capture weekday trading sessions

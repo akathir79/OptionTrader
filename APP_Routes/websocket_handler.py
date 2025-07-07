@@ -302,7 +302,7 @@ def start_websocket_subscription(symbols):
                 if isinstance(message, dict) and 'symbol' in message:
                     # Store the latest data for this symbol
                     latest_option_data[message['symbol']] = message
-                    print(f"Stored: {message['symbol'][:20]}...")
+
             except Exception as e:
                 print(f"WebSocket message error: {str(e)}")
 
@@ -386,21 +386,24 @@ def get_realtime_option_data():
         if not symbol or not expiry:
             return jsonify({"success": False, "error": "Symbol and expiry parameters required"}), 400
             
-        # Extract option updates from latest_option_data  
-        print(f"API called: {len(latest_option_data)} symbols stored")
+        # Extract option updates from latest_option_data
         option_updates = []
         for ws_symbol, data in latest_option_data.items():
             # Check if this symbol matches the current expiry and underlying
-            # Handle different expiry formats: "17-JUL-25" -> "25717", "10-JUL-25" -> "25710", etc.
-            if expiry == "17-JUL-25":
-                expiry_pattern = "25717"
-            elif expiry == "10-JUL-25":  
-                expiry_pattern = "25710"
-            else:
-                # Default pattern extraction
-                expiry_pattern = "25717"
-                
-            if expiry_pattern in ws_symbol and ('CE' in ws_symbol or 'PE' in ws_symbol):
+            # Dynamic expiry pattern extraction from format like "17-JUL-25" -> "25717"
+            expiry_pattern = None
+            if expiry and "-" in expiry:
+                try:
+                    # Parse date like "17-JUL-25" -> "25717"
+                    day, month, year = expiry.split("-")
+                    month_map = {"JAN": "01", "FEB": "02", "MAR": "03", "APR": "04", "MAY": "05", "JUN": "06",
+                                "JUL": "07", "AUG": "08", "SEP": "09", "OCT": "10", "NOV": "11", "DEC": "12"}
+                    if month in month_map:
+                        expiry_pattern = f"{year}{month_map[month]}{day.zfill(2)}"  # e.g., "257717"
+                except:
+                    pass
+                    
+            if expiry_pattern and expiry_pattern in ws_symbol and ('CE' in ws_symbol or 'PE' in ws_symbol):
                 option_updates.append({
                     'symbol': ws_symbol,
                     'ltp': data.get('ltp', 0),
