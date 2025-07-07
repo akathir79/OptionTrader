@@ -30,10 +30,10 @@ class WebSocketHandler {
         // Initialize microchart manager
         this.microchartManager = new MicroChartManager();
         
-        // Setup real-time WebSocket data listening
-        this.setupRealTimeDataListener();
-        
         console.log('WebSocket handler initialized');
+        
+        // Start live data polling immediately
+        this.setupRealTimeDataListener();
     }
     
     setupEventListeners() {
@@ -649,13 +649,14 @@ class WebSocketHandler {
     
     setupRealTimeDataListener() {
         // Setup periodic polling for real-time data (Server-sent events alternative)
+        console.log('Setting up real-time data listener with 1-second polling');
         this.realTimeInterval = setInterval(() => {
             this.checkForRealTimeUpdates();
         }, 1000); // Check every second for real-time updates
     }
     
     async checkForRealTimeUpdates() {
-        if (!this.currentSymbol) return;
+        // Allow updates regardless of current symbol
         
         try {
             // Get all live market data from WebSocket bridge
@@ -663,6 +664,8 @@ class WebSocketHandler {
             const result = await response.json();
             
             if (result.success && result.data) {
+                console.log('Live data received:', Object.keys(result.data).length, 'symbols');
+                
                 // Update option chain table with live data
                 this.updateTableWithLiveData(result.data);
                 
@@ -677,18 +680,23 @@ class WebSocketHandler {
                 }
             }
         } catch (error) {
-            // Silently handle errors to avoid spam in console
+            console.error('Error fetching live data:', error);
         }
     }
 
     updateTableWithLiveData(liveData) {
         // Update option chain table with live streaming data
         const table = document.getElementById('option-chain-table');
-        if (!table) return;
+        if (!table) {
+            console.log('Table not found');
+            return;
+        }
         
         const rows = table.querySelectorAll('tbody tr');
+        console.log('Found', rows.length, 'table rows');
         
-        rows.forEach(row => {
+        let updatesCount = 0;
+        rows.forEach((row, index) => {
             const ceSymbol = row.querySelector('.ce-ltp')?.getAttribute('data-symbol');
             const peSymbol = row.querySelector('.pe-ltp')?.getAttribute('data-symbol');
             
@@ -701,6 +709,7 @@ class WebSocketHandler {
                 this.updateCellValue(row, '.ce-change', ceData.change);
                 this.updateCellValue(row, '.ce-bid', ceData.bid);
                 this.updateCellValue(row, '.ce-ask', ceData.ask);
+                updatesCount++;
             }
             
             // Update PE (Put) data
@@ -712,8 +721,16 @@ class WebSocketHandler {
                 this.updateCellValue(row, '.pe-change', peData.change);
                 this.updateCellValue(row, '.pe-bid', peData.bid);
                 this.updateCellValue(row, '.pe-ask', peData.ask);
+                updatesCount++;
+            }
+            
+            if (index === 0) {
+                console.log('Row 0 symbols - CE:', ceSymbol, 'PE:', peSymbol);
+                console.log('Live data available for CE:', !!liveData[ceSymbol], 'PE:', !!liveData[peSymbol]);
             }
         });
+        
+        console.log('Updated', updatesCount, 'symbols in table');
     }
 
     updateCellValue(row, selector, value) {
