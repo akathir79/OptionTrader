@@ -190,9 +190,6 @@ class WebSocketHandler {
         // Update ITM highlighting in existing option chain
         this.updateITMHighlighting();
         
-        // Update ATM highlighting based on new spot price
-        this.updateATMDisplay(spotPrice);
-        
         // Update payoff chart spot price line if chart exists
         console.log(`[SPOT UPDATE] About to call updatePayoffChartSpotPrice with spot: ${this.currentSpotPrice}`);
         this.updatePayoffChartSpotPrice();
@@ -297,16 +294,7 @@ class WebSocketHandler {
                 this.updateOptionChainTable(data.strikes);
                 this.updateATMDisplay(data.spot_price);
                 this.hideOptionChainLoading();
-                
-                // CRITICAL: Stop any existing polling and start fresh real-time polling
-                if (this.realTimeInterval) {
-                    clearInterval(this.realTimeInterval);
-                    this.realTimeInterval = null;
-                }
-                this.setupRealTimeDataListener();
-                
                 console.log(`Option chain loaded: ${data.strikes.length} strikes for ${this.currentSymbol}`);
-                console.log('Real-time polling started for option chain updates');
             } else {
                 console.error('Option chain update failed:', data.error);
                 this.hideOptionChainLoading();
@@ -572,46 +560,6 @@ class WebSocketHandler {
         };
     }
     
-    async autoStartWebSocketStreaming(strikes) {
-        try {
-            // Automatically start WebSocket streaming for the loaded option chain
-            console.log('Auto-starting WebSocket streaming for live data...');
-            
-            // Start the WebSocket connection with option symbols
-            const response = await fetch('/start_websocket_subscription', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    symbol: this.currentSymbol,
-                    expiry: this.currentExpiry,
-                    strikes: strikes
-                })
-            });
-            
-            const data = await response.json();
-            if (data.success) {
-                this.isConnected = true;
-                console.log('✅ WebSocket streaming started automatically');
-                console.log(`🔴 Live data streaming for ${strikes.length} options`);
-                
-                // Update UI to show streaming is active
-                this.updateStreamingStatus(true);
-            } else {
-                console.error('❌ Failed to auto-start WebSocket:', data.error);
-            }
-        } catch (error) {
-            console.error('Error auto-starting WebSocket streaming:', error);
-        }
-    }
-    
-    updateStreamingStatus(isActive) {
-        // Update any UI indicators to show streaming status
-        const statusIndicator = document.querySelector('.live-data-indicator');
-        if (statusIndicator) {
-            statusIndicator.style.display = isActive ? 'block' : 'none';
-        }
-    }
-    
     setupRealTimeDataListener() {
         // Setup periodic polling for real-time data (Server-sent events alternative)
         this.realTimeInterval = setInterval(() => {
@@ -636,29 +584,6 @@ class WebSocketHandler {
                 this.updatePayoffChartSpotPrice();
                 
                 console.log(`Real-time spot price update: ${data.spot_price} for ${this.currentSymbol}`);
-            }
-            
-            // NEW: Check for real-time option data updates
-            if (this.currentExpiry) {
-                const optionResponse = await fetch(`/get_realtime_option_data?symbol=${encodeURIComponent(this.currentSymbol)}&expiry=${encodeURIComponent(this.currentExpiry)}`);
-                const optionData = await optionResponse.json();
-                
-                if (optionData.success && optionData.option_updates) {
-                    // Process option updates and call updateOptionRowData
-                    optionData.option_updates.forEach(update => {
-                        console.log('Processing real-time option update:', update.symbol, 'LTP:', update.ltp);
-                        this.updateOptionRowData(update.symbol, {
-                            ltp: update.ltp,
-                            vol_traded_today: update.vol_traded_today,
-                            bid_price: update.bid_price,
-                            ask_price: update.ask_price,
-                            bid_size: update.bid_size,
-                            ask_size: update.ask_size,
-                            ch: update.ch,
-                            chp: update.chp
-                        });
-                    });
-                }
             }
         } catch (error) {
             // Silently handle errors to avoid spam in console
@@ -754,88 +679,6 @@ class WebSocketHandler {
                 }
             });
         }
-    }
-    
-    updateOptionRowData(symbol, data) {
-        console.log('Updating option row data for symbol:', symbol, 'with LTP:', data.ltp);
-        
-        // Find the cell with this symbol in the option chain table
-        const ltpCells = document.querySelectorAll(`[data-symbol="${symbol}"]`);
-        
-        ltpCells.forEach(cell => {
-            // Update LTP
-            if (cell.classList.contains('ce-ltp') || cell.classList.contains('pe-ltp')) {
-                const oldLTP = parseFloat(cell.textContent);
-                const newLTP = parseFloat(data.ltp);
-                
-                cell.textContent = this.formatPrice(newLTP);
-                
-                // Add flash effect for price change
-                if (oldLTP !== newLTP) {
-                    cell.classList.add(newLTP > oldLTP ? 'price-up' : 'price-down');
-                    setTimeout(() => {
-                        cell.classList.remove('price-up', 'price-down');
-                    }, 1000);
-                }
-                
-                console.log(`Updated LTP for ${symbol}: ${oldLTP} → ${newLTP}`);
-            }
-        });
-        
-        // Update related cells in the same row
-        const row = ltpCells[0]?.closest('tr');
-        if (row) {
-            // Update volume, bid, ask, etc.
-            if (data.vol_traded_today) {
-                const volumeCell = symbol.includes('CE') ? 
-                    row.querySelector('.ce-volume') : 
-                    row.querySelector('.pe-volume');
-                if (volumeCell) volumeCell.textContent = data.vol_traded_today.toLocaleString();
-            }
-            
-            if (data.bid_price) {
-                const bidCell = symbol.includes('CE') ? 
-                    row.querySelector('.ce-bid') : 
-                    row.querySelector('.pe-bid');
-                if (bidCell) bidCell.textContent = this.formatPrice(data.bid_price);
-            }
-            
-            if (data.ask_price) {
-                const askCell = symbol.includes('CE') ? 
-                    row.querySelector('.ce-ask') : 
-                    row.querySelector('.pe-ask');
-                if (askCell) askCell.textContent = this.formatPrice(data.ask_price);
-            }
-            
-            if (data.bid_size) {
-                const bidQtyCell = symbol.includes('CE') ? 
-                    row.querySelector('.ce-bid-qty') : 
-                    row.querySelector('.pe-bid-qty');
-                if (bidQtyCell) bidQtyCell.textContent = data.bid_size;
-            }
-            
-            if (data.ask_size) {
-                const askQtyCell = symbol.includes('CE') ? 
-                    row.querySelector('.ce-ask-qty') : 
-                    row.querySelector('.pe-ask-qty');
-                if (askQtyCell) askQtyCell.textContent = data.ask_size;
-            }
-            
-            // Update change percentage if available
-            if (data.ch !== undefined) {
-                const changeCell = symbol.includes('CE') ? 
-                    row.querySelector('.ce-change') : 
-                    row.querySelector('.pe-change');
-                if (changeCell) {
-                    changeCell.textContent = data.ch.toFixed(2);
-                    changeCell.className = changeCell.className.replace(/text-(success|danger)/, '');
-                    changeCell.classList.add(data.ch >= 0 ? 'text-success' : 'text-danger');
-                }
-            }
-        }
-        
-        // Re-calculate ITM/OTM highlighting for this update
-        this.updateITMHighlighting();
     }
 }
 

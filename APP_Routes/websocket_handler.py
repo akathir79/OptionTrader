@@ -297,22 +297,19 @@ def start_websocket_subscription(symbols):
         def on_message(message):
             """Handle WebSocket messages"""
             try:
-                global latest_option_data
-                # Process incoming tick data and store in global variable
-                if isinstance(message, dict) and 'symbol' in message:
-                    # Store the latest data for this symbol
-                    latest_option_data[message['symbol']] = message
-
+                # Process incoming tick data
+                # This will be handled by the frontend via Server-Sent Events or polling
+                print(f"WebSocket message: {message}")
             except Exception as e:
                 print(f"WebSocket message error: {str(e)}")
 
         def on_error(error):
             print(f"WebSocket error: {str(error)}")
 
-        def on_close(ws):
+        def on_close():
             print("WebSocket connection closed")
 
-        def on_open(ws):
+        def on_open():
             print("WebSocket connection opened")
             try:
                 fyers_ws.subscribe(symbols=symbols)
@@ -372,93 +369,3 @@ def websocket_status():
         "subscriptions": len(current_subscriptions),
         "symbols": current_subscriptions
     })
-
-@websocket_bp.route('/start_websocket_subscription', methods=['POST'])
-def start_websocket_subscription():
-    """Auto-start WebSocket subscription for option chain"""
-    try:
-        data = request.get_json()
-        symbol = data.get('symbol')
-        expiry = data.get('expiry')
-        strikes = data.get('strikes', [])
-        
-        if not symbol or not expiry or not strikes:
-            return jsonify({"success": False, "error": "Missing required parameters"}), 400
-        
-        # Extract option symbols from strikes data
-        symbols = []
-        for strike in strikes:
-            if 'ce_symbol' in strike and strike['ce_symbol']:
-                symbols.append(strike['ce_symbol'])
-            if 'pe_symbol' in strike and strike['pe_symbol']:
-                symbols.append(strike['pe_symbol'])
-        
-        # Add underlying symbol for spot price
-        symbols.append(symbol)
-        
-        if not symbols:
-            return jsonify({"success": False, "error": "No valid symbols found"}), 400
-        
-        # Start WebSocket with extracted symbols
-        start_websocket_with_symbols(symbols)
-        
-        return jsonify({
-            "success": True, 
-            "message": f"WebSocket started for {len(symbols)} symbols",
-            "symbols_count": len(symbols)
-        })
-        
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
-# Global variable to store latest option data
-latest_option_data = {}
-
-@websocket_bp.route('/get_realtime_option_data', methods=['GET'])
-def get_realtime_option_data():
-    """Get real-time option data updates from WebSocket messages"""
-    try:
-        symbol = request.args.get('symbol', '')
-        expiry = request.args.get('expiry', '')
-        
-        if not symbol or not expiry:
-            return jsonify({"success": False, "error": "Symbol and expiry parameters required"}), 400
-            
-        # Extract option updates from latest_option_data
-        option_updates = []
-        for ws_symbol, data in latest_option_data.items():
-            # Check if this symbol matches the current expiry and underlying
-            # Dynamic expiry pattern extraction from format like "17-JUL-25" -> "25717"
-            expiry_pattern = None
-            if expiry and "-" in expiry:
-                try:
-                    # Parse date like "17-JUL-25" -> "25717"
-                    day, month, year = expiry.split("-")
-                    month_map = {"JAN": "01", "FEB": "02", "MAR": "03", "APR": "04", "MAY": "05", "JUN": "06",
-                                "JUL": "07", "AUG": "08", "SEP": "09", "OCT": "10", "NOV": "11", "DEC": "12"}
-                    if month in month_map:
-                        expiry_pattern = f"{year}{month_map[month]}{day.zfill(2)}"  # e.g., "257717"
-                except:
-                    pass
-                    
-            if expiry_pattern and expiry_pattern in ws_symbol and ('CE' in ws_symbol or 'PE' in ws_symbol):
-                option_updates.append({
-                    'symbol': ws_symbol,
-                    'ltp': data.get('ltp', 0),
-                    'vol_traded_today': data.get('vol_traded_today', 0),
-                    'bid_price': data.get('bid_price', 0),
-                    'ask_price': data.get('ask_price', 0),
-                    'bid_size': data.get('bid_size', 0),
-                    'ask_size': data.get('ask_size', 0),
-                    'ch': data.get('ch', 0),
-                    'chp': data.get('chp', 0)
-                })
-        
-        return jsonify({
-            "success": True,
-            "option_updates": option_updates,
-            "timestamp": datetime.now(pytz.timezone('Asia/Kolkata')).isoformat()
-        })
-        
-    except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
