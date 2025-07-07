@@ -465,4 +465,56 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Function to update WebSocket subscriptions with new symbols
+  async function updateWebSocketSubscriptions(optionChainData) {
+    if (!optionChainData || !optionChainData.data) {
+      console.log('No option chain data available for subscription update');
+      return;
+    }
+
+    try {
+      // Extract all symbols from option chain data
+      const symbols = [];
+      
+      // Add spot symbol
+      if (optionChainData.data.underlying) {
+        symbols.push(optionChainData.data.underlying.symbol);
+      }
+      
+      // Add all option symbols
+      optionChainData.data.optionsChain.forEach(strike => {
+        if (strike.call_options && strike.call_options.symbol) {
+          symbols.push(strike.call_options.symbol);
+        }
+        if (strike.put_options && strike.put_options.symbol) {
+          symbols.push(strike.put_options.symbol);
+        }
+      });
+
+      console.log(`Updating WebSocket subscriptions for ${symbols.length} symbols`);
+      
+      // Call backend to update subscriptions
+      const response = await fetch('/websocket/update_subscriptions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ symbols: symbols })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log(`✓ Subscription update successful:`, result.message);
+      } else {
+        const error = await response.json();
+        console.error('Subscription update failed:', error.error);
+      }
+    } catch (error) {
+      console.error('Error updating subscriptions:', error);
+    }
+  }
+
+  // Export for global access
+  window.updateWebSocketSubscriptions = updateWebSocketSubscriptions;
+
 });

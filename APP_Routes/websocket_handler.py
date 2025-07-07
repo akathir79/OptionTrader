@@ -354,10 +354,52 @@ def start_websocket_subscription(symbols):
     except Exception as e:
         print(f"WebSocket start error: {str(e)}")
 
+@websocket_bp.route('/update_subscriptions', methods=['POST'])
+def update_subscriptions():
+    """Update WebSocket subscriptions with new symbols"""
+    global fyers_ws, current_subscriptions, market_data_cache
+    
+    try:
+        data = request.get_json()
+        new_symbols = data.get('symbols', [])
+        
+        if not fyers_ws:
+            return jsonify({"error": "No active WebSocket connection"}), 400
+            
+        # Clear cache for clean data
+        market_data_cache.clear()
+        
+        # Unsubscribe from old symbols if any
+        if current_subscriptions:
+            print(f"Unsubscribing from {len(current_subscriptions)} old symbols")
+            fyers_ws.unsubscribe(symbols=current_subscriptions)
+            
+        # Subscribe to new symbols
+        if new_symbols:
+            print(f"Subscribing to {len(new_symbols)} new symbols")
+            fyers_ws.subscribe(symbols=new_symbols)
+            current_subscriptions = new_symbols
+            
+            return jsonify({
+                "success": True, 
+                "message": f"Updated subscriptions to {len(new_symbols)} symbols",
+                "symbols": new_symbols
+            })
+        else:
+            current_subscriptions = []
+            return jsonify({
+                "success": True, 
+                "message": "Cleared all subscriptions"
+            })
+            
+    except Exception as e:
+        print(f"Subscription update error: {str(e)}")
+        return jsonify({"error": f"Failed to update subscriptions: {str(e)}"}), 500
+
 @websocket_bp.route('/stop_websocket', methods=['POST'])
 def stop_websocket():
     """Stop WebSocket subscription"""
-    global fyers_ws, current_subscriptions
+    global fyers_ws, current_subscriptions, market_data_cache
     
     try:
         if fyers_ws:
@@ -365,6 +407,7 @@ def stop_websocket():
             fyers_ws.close_connection()
             fyers_ws = None
             current_subscriptions = []
+            market_data_cache.clear()
             return jsonify({"success": True, "message": "WebSocket stopped"})
         else:
             return jsonify({"success": True, "message": "No active WebSocket connection"})
