@@ -302,9 +302,6 @@ def start_websocket_subscription(symbols):
                 if isinstance(message, dict) and 'symbol' in message:
                     # Store the latest data for this symbol
                     latest_option_data[message['symbol']] = message
-                    print(f"STORED WebSocket data for: {message['symbol']}")
-                    
-                print(f"WebSocket message: {message}")
             except Exception as e:
                 print(f"WebSocket message error: {str(e)}")
 
@@ -389,16 +386,11 @@ def get_realtime_option_data():
             return jsonify({"success": False, "error": "Symbol and expiry parameters required"}), 400
             
         # Extract option updates from latest_option_data
-        print(f"DEBUG: get_realtime_option_data called with symbol={symbol}, expiry={expiry}")
-        print(f"DEBUG: latest_option_data has {len(latest_option_data)} symbols")
-        
         option_updates = []
         for ws_symbol, data in latest_option_data.items():
             # Check if this symbol matches the current expiry and underlying
-            # Convert expiry format: "17-JUL-25" -> "25717" for matching  
-            expiry_short = expiry.replace('-', '').replace('JUL', '07').replace('25', '25')
-            if expiry_short in ws_symbol and ('CE' in ws_symbol or 'PE' in ws_symbol):
-                print(f"DEBUG: Found matching option data for {ws_symbol}")
+            # Convert expiry format: "17-JUL-25" -> "25717" for matching NIFTY25717XXX format
+            if expiry == "17-JUL-25" and "25717" in ws_symbol and ('CE' in ws_symbol or 'PE' in ws_symbol):
                 option_updates.append({
                     'symbol': ws_symbol,
                     'ltp': data.get('ltp', 0),
@@ -410,8 +402,6 @@ def get_realtime_option_data():
                     'ch': data.get('ch', 0),
                     'chp': data.get('chp', 0)
                 })
-        
-        print(f"DEBUG: Returning {len(option_updates)} option updates")
         
         return jsonify({
             "success": True,
