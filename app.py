@@ -1,20 +1,42 @@
-from flask import Flask, render_template
-from APP_Extensions.db import db
-from APP_Routes.symbol_selector import symbol_selector_bp
-from APP_Routes.broker_settings import bp           #  ← just “bp”, not bp_broker
-from flask import jsonify, request
-from models import BrokerSettings
 import os
+from flask import Flask, render_template, jsonify, request
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import DeclarativeBase
+from werkzeug.middleware.proxy_fix import ProxyFix
 
+class Base(DeclarativeBase):
+    pass
+
+db = SQLAlchemy(model_class=Base)
+
+# create the app
 app = Flask(__name__)
-app.config.update(
-    SQLALCHEMY_DATABASE_URI=os.environ.get("DATABASE_URL"),
-    SQLALCHEMY_TRACK_MODIFICATIONS=False,
-    DEBUG=True,
-)
+app.secret_key = os.environ.get("SESSION_SECRET", "dev-key-change-in-production")
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1) # needed for url_for to generate with https
 
+# configure the database, relative to the app instance folder
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 300,
+    "pool_pre_ping": True,
+}
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["DEBUG"] = True
+
+# initialize the app with the extension
 db.init_app(app)
-import models                                       # registers BrokerSettings
+
+with app.app_context():
+    # Make sure to import the models here or their tables won't be created
+    import models  # noqa: F401
+    db.create_all()
+
+# Import models after db is initialized
+from models import BrokerSettings
+
+# Import and register blueprints
+from APP_Routes.symbol_selector import symbol_selector_bp
+from APP_Routes.broker_settings import bp           #  ← just "bp", not bp_broker
 
 # register blueprints
 app.register_blueprint(symbol_selector_bp)
@@ -64,4 +86,4 @@ def get_access_token():
         return jsonify({"error": "Token not found"}), 404
 
 if __name__ == "__main__":
-    app.run(port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)

@@ -1,5 +1,5 @@
 from datetime import datetime
-from APP_Extensions.db import db
+from app import db
 
 
 class BrokerSettings(db.Model):
