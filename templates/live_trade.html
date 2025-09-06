@@ -1782,42 +1782,42 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Create Buy/Sell button with badge - using attached code approach
+    // Global position tracking system
+    window.globalPositions = window.globalPositions || {};
+    
+    // Create Buy/Sell button with position management card - using attached code approach
     function createOptionButton(rowIndex, key, label, extraClass) {
         const div = document.createElement('div');
         div.className = `option_button ${extraClass}`;
         div.id = `${key}Btn_${rowIndex}`;
         div.textContent = label + ' ';
         
-        // The numeric badge that shows how many lots
+        // Position management card (initially hidden)
+        const positionCard = document.createElement('div');
+        positionCard.className = 'position-management-card';
+        positionCard.id = `${key}Card_${rowIndex}`;
+        positionCard.style.display = 'none';
+        
+        // Card header
+        const cardHeader = document.createElement('div');
+        cardHeader.className = 'position-card-header';
+        cardHeader.innerHTML = '<i class="fas fa-cog"></i> Position Management';
+        
+        // Card content container
+        const cardContent = document.createElement('div');
+        cardContent.className = 'position-card-content';
+        cardContent.id = `${key}CardContent_${rowIndex}`;
+        
+        positionCard.appendChild(cardHeader);
+        positionCard.appendChild(cardContent);
+        div.appendChild(positionCard);
+        
+        // The numeric badge that shows how many lots (kept for initial display)
         const badge = document.createElement('span');
         badge.className = 'count_badge';
         badge.id = `${key}Badge_${rowIndex}`;
         badge.textContent = '0';
         div.appendChild(badge);
-        
-        // Dropdown menu
-        const dropdown = document.createElement('div');
-        dropdown.className = 'dropdown_menu';
-        dropdown.id = `${key}Menu_${rowIndex}`;
-        
-        const addBtn = document.createElement('button');
-        addBtn.textContent = '+ Add';
-        addBtn.onclick = (e) => {
-            e.stopPropagation();
-            handleButtonClick(rowIndex, key, 'add');
-        };
-        
-        const removeBtn = document.createElement('button');
-        removeBtn.textContent = '- Remove';
-        removeBtn.onclick = (e) => {
-            e.stopPropagation();
-            handleButtonClick(rowIndex, key, 'remove');
-        };
-        
-        dropdown.appendChild(addBtn);
-        dropdown.appendChild(removeBtn);
-        div.appendChild(dropdown);
         
         // Main click handler
         div.onclick = (e) => {
@@ -1826,7 +1826,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 handleButtonClick(rowIndex, key, 'add');
                 firstClickFlags[rowIndex][key] = false;
             } else {
-                toggleDropdown(rowIndex, key);
+                togglePositionCard(rowIndex, key);
             }
         };
         
