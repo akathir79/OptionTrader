@@ -3,9 +3,52 @@ from flask import Flask, render_template, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
+import psycopg2
+from psycopg2 import sql
+from sqlalchemy import create_engine, text
 
 class Base(DeclarativeBase):
     pass
+
+def create_database_if_not_exists(db_url, db_name):
+    """Create PostgreSQL database if it doesn't exist (for local development)"""
+    try:
+        # Parse the database URL to get connection params
+        from urllib.parse import urlparse
+        parsed = urlparse(db_url)
+        
+        # Connection params without database name
+        conn_params = {
+            'host': parsed.hostname or 'localhost',
+            'port': parsed.port or 5432,
+            'user': parsed.username or 'postgres',
+            'password': parsed.password or 'password'
+        }
+        
+        # Connect to PostgreSQL server (to 'postgres' database)
+        conn = psycopg2.connect(database='postgres', **conn_params)
+        conn.autocommit = True
+        cur = conn.cursor()
+        
+        # Check if database exists
+        cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (db_name,))
+        exists = cur.fetchone()
+        
+        if not exists:
+            # Create database if it doesn't exist
+            cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(db_name)))
+            print(f"✅ Created database '{db_name}' successfully!")
+        else:
+            print(f"✅ Database '{db_name}' already exists.")
+            
+        cur.close()
+        conn.close()
+        
+    except psycopg2.Error as e:
+        print(f"⚠️ Could not create database automatically: {e}")
+        print("Please ensure PostgreSQL is running and create the database manually.")
+    except Exception as e:
+        print(f"⚠️ Database creation check failed: {e}")
 
 db = SQLAlchemy(model_class=Base)
 
@@ -27,7 +70,12 @@ if is_replit:
 else:
     # Local development configuration - use local PostgreSQL
     # Default local PostgreSQL connection (adjust these if your setup is different)
-    local_db_url = os.environ.get("DATABASE_URL", "postgresql://postgres:password@localhost:5432/trading_platform")
+    db_name = "trading_platform"
+    local_db_url = os.environ.get("DATABASE_URL", f"postgresql://postgres:password@localhost:5432/{db_name}")
+    
+    # Automatically create database if it doesn't exist
+    create_database_if_not_exists(local_db_url, db_name)
+    
     app.config["SQLALCHEMY_DATABASE_URI"] = local_db_url
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "pool_pre_ping": True,
@@ -42,7 +90,15 @@ db.init_app(app)
 with app.app_context():
     # Make sure to import the models here or their tables won't be created
     import models  # noqa: F401
-    db.create_all()
+    
+    try:
+        db.create_all()
+        if not is_replit:
+            print("✅ Database tables created/verified successfully!")
+    except Exception as e:
+        print(f"⚠️ Error creating database tables: {e}")
+        if not is_replit:
+            print("Please check your PostgreSQL connection settings.")
 
 # Import models after db is initialized
 from models import BrokerSettings
