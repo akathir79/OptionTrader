@@ -1974,6 +1974,67 @@ document.addEventListener('DOMContentLoaded', function() {
         return div;
     }
     
+    // Handle expiry-specific position changes from position cards
+    function handleExpirySpecificPositionChange(rowIndex, key, action, targetExpiry) {
+        // Get current strike information
+        const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
+        let strike = 0;
+        if (row) {
+            const strikeTd = row.children[19]; // Strike column
+            strike = parseFloat(strikeTd?.textContent || 0);
+        }
+        
+        // Create position key for global tracking with target expiry
+        const positionKey = `${strike}-${targetExpiry}-${key}`;
+        
+        if (action === 'add') {
+            // Store in global positions
+            if (!window.globalPositions[positionKey]) {
+                window.globalPositions[positionKey] = {
+                    strike: strike,
+                    expiry: targetExpiry,
+                    optionType: key.includes('ce') ? 'CE' : 'PE',
+                    action: key.includes('Buy') ? 'Buy' : 'Sell',
+                    lots: 0,
+                    rowIndex: rowIndex,
+                    key: key
+                };
+            }
+            window.globalPositions[positionKey].lots++;
+        } else if (action === 'remove') {
+            // Update global positions
+            if (window.globalPositions[positionKey] && window.globalPositions[positionKey].lots > 0) {
+                window.globalPositions[positionKey].lots--;
+                if (window.globalPositions[positionKey].lots <= 0) {
+                    delete window.globalPositions[positionKey];
+                }
+            }
+        }
+        
+        // Update current expiry counter if this matches current expiry
+        const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
+        if (targetExpiry === currentExpiry) {
+            if (action === 'add') {
+                counters[rowIndex][key]++;
+            } else if (action === 'remove' && counters[rowIndex][key] > 0) {
+                counters[rowIndex][key]--;
+            }
+        }
+        
+        updateButtonDisplay(rowIndex, key);
+        updatePositionCard(rowIndex, key);
+        
+        // Immediately create and update payoff chart using loaded option chain data
+        createPayoffChartFromOptionChain();
+        
+        // Update real-time payoff chart lines if WebSocket handler exists
+        if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
+            window.webSocketHandler.updatePayoffChartSpotPrice();
+        }
+        
+        console.log(`${action} ${key} for row ${rowIndex}, expiry ${targetExpiry}`);
+    }
+
     // Handle button clicks - create payoff chart immediately on click
     function handleButtonClick(rowIndex, key, action) {
         // Get current expiry and strike information
@@ -2146,29 +2207,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 const rowStrike = parseFloat(strikeTd?.textContent || 0);
                 
                 if (rowStrike === strike) {
-                    // Determine the key based on option type and action
-                    let key = '';
-                    if (optionType === 'CE' && action === 'Buy') key = 'ceBuy';
-                    else if (optionType === 'CE' && action === 'Sell') key = 'ceSell';
-                    else if (optionType === 'PE' && action === 'Buy') key = 'peBuy';
-                    else if (optionType === 'PE' && action === 'Sell') key = 'peSell';
+                    // Determine all keys (option types and actions) for this strike
+                    const keys = ['ceBuy', 'ceSell', 'peBuy', 'peSell'];
                     
-                    if (key && window.counters[rowIndex]) {
-                        // For current expiry, add to row counter
-                        if (expiry === currentExpiry) {
-                            window.counters[rowIndex][key] = lots;
+                    keys.forEach(key => {
+                        if (window.counters[rowIndex] && window.counters[rowIndex][key] !== undefined) {
+                            const keyOptionType = key.includes('ce') ? 'CE' : 'PE';
+                            const keyAction = key.includes('Buy') ? 'Buy' : 'Sell';
+                            
+                            // Calculate total lots for current expiry for this specific key
+                            const currentExpiryLots = Object.values(window.globalPositions)
+                                .filter(pos => pos.strike === strike && pos.optionType === keyOptionType && 
+                                       pos.action === keyAction && pos.expiry === currentExpiry)
+                                .reduce((sum, pos) => sum + pos.lots, 0);
+                            
+                            // Check if there are cross-expiry positions
+                            const crossExpiryPositions = Object.values(window.globalPositions)
+                                .some(pos => pos.strike === strike && pos.optionType === keyOptionType && 
+                                     pos.action === keyAction && pos.expiry !== currentExpiry && pos.lots > 0);
+                            
+                            // Set the counter based on current expiry lots
+                            if (currentExpiryLots > 0) {
+                                window.counters[rowIndex][key] = currentExpiryLots;
+                            } else if (crossExpiryPositions) {
+                                window.counters[rowIndex][key] = 1; // Indicator for cross-expiry positions
+                            } else {
+                                window.counters[rowIndex][key] = 0;
+                            }
+                            
+                            updateButtonDisplay(rowIndex, key);
                         }
-                        // Update button display to show any positions exist for this strike/type
-                        const anyPositions = Object.values(window.globalPositions).some(pos => 
-                            pos.strike === strike && pos.optionType === optionType && pos.action === action && pos.lots > 0
-                        );
-                        
-                        if (anyPositions) {
-                            window.counters[rowIndex][key] = Math.max(window.counters[rowIndex][key], 1);
-                        }
-                        
-                        updateButtonDisplay(rowIndex, key);
-                    }
+                    });
                 }
             });
         });
@@ -2217,11 +2286,13 @@ document.addEventListener('DOMContentLoaded', function() {
         cardContent.innerHTML = '';
         
         if (strikePositions.length === 0) {
-            const addButton = document.createElement('button');
-            addButton.className = 'position-add-btn';
-            addButton.innerHTML = '<i class="fas fa-plus"></i> Add Position';
-            addButton.onclick = () => handleButtonClick(rowIndex, key, 'add');
-            cardContent.appendChild(addButton);
+            const noPositionMsg = document.createElement('div');
+            noPositionMsg.className = 'no-position-message';
+            noPositionMsg.innerHTML = '<i class="fas fa-info-circle"></i> No positions found';
+            noPositionMsg.style.textAlign = 'center';
+            noPositionMsg.style.color = '#6c757d';
+            noPositionMsg.style.padding = '10px';
+            cardContent.appendChild(noPositionMsg);
             return;
         }
         
@@ -2257,12 +2328,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 const decreaseBtn = document.createElement('button');
                 decreaseBtn.className = 'position-btn-decrease';
                 decreaseBtn.innerHTML = '<i class="fas fa-minus"></i>';
-                decreaseBtn.onclick = () => handleButtonClick(rowIndex, key, 'remove');
+                decreaseBtn.onclick = () => handleExpirySpecificPositionChange(rowIndex, key, 'remove', pos.expiry);
                 
                 const increaseBtn = document.createElement('button');
                 increaseBtn.className = 'position-btn-increase';
                 increaseBtn.innerHTML = '<i class="fas fa-plus"></i>';
-                increaseBtn.onclick = () => handleButtonClick(rowIndex, key, 'add');
+                increaseBtn.onclick = () => handleExpirySpecificPositionChange(rowIndex, key, 'add', pos.expiry);
                 
                 controlButtons.appendChild(decreaseBtn);
                 controlButtons.appendChild(increaseBtn);
@@ -3049,6 +3120,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.togglePositionCard = togglePositionCard;
     window.closeAllPositionCards = closeAllPositionCards;
     window.updatePositionCard = updatePositionCard;
+    window.handleExpirySpecificPositionChange = handleExpirySpecificPositionChange;
     window.calculateBreakevens = calculateBreakevens;
     window.counters = counters;
     window.firstClickFlags = firstClickFlags;
