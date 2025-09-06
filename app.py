@@ -17,7 +17,7 @@ app.secret_key = os.environ.get("SESSION_SECRET", "dev-key-change-in-production"
 is_replit = bool(os.environ.get("DATABASE_URL"))
 
 if is_replit:
-    # Replit configuration - use PostgreSQL and ProxyFix
+    # Replit configuration - use Replit's PostgreSQL and ProxyFix
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)  # needed for url_for to generate with https
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
@@ -25,8 +25,10 @@ if is_replit:
         "pool_pre_ping": True,
     }
 else:
-    # Local development configuration - use SQLite
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///trading_platform.db"
+    # Local development configuration - use local PostgreSQL
+    # Default local PostgreSQL connection (adjust these if your setup is different)
+    local_db_url = os.environ.get("DATABASE_URL", "postgresql://postgres:password@localhost:5432/trading_platform")
+    app.config["SQLALCHEMY_DATABASE_URI"] = local_db_url
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "pool_pre_ping": True,
     }
