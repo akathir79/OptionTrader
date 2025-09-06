@@ -9,7 +9,7 @@ import json
 import threading
 from datetime import datetime
 import pytz
-from APP_Extensions.db import db
+from app import db
 from models import BrokerSettings
 
 websocket_bp = Blueprint('websocket', __name__)

@@ -1,7 +1,7 @@
 from flask import request, jsonify
 from datetime import datetime, time
 import pytz
-from APP_Extensions.db import db
+from app import db
 from models import MarketTime
 
 
