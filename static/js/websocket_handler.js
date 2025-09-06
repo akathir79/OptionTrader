@@ -322,6 +322,13 @@ class WebSocketHandler {
         
         // Load microcharts for all option symbols
         this.loadMicroCharts(strikes);
+        
+        // Restore button states from global positions after table is rebuilt
+        setTimeout(() => {
+            if (typeof window.restoreButtonStatesFromGlobalPositions === 'function') {
+                window.restoreButtonStatesFromGlobalPositions();
+            }
+        }, 100);
     }
     
     updateLiveTableData(message) {

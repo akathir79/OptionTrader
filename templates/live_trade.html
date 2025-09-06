@@ -2114,6 +2114,66 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Restore button states from global positions when option chain is rebuilt
+    function restoreButtonStatesFromGlobalPositions() {
+        if (!window.globalPositions) return;
+        
+        const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
+        if (!currentExpiry) return;
+        
+        // Reset counters for current table
+        if (window.counters) {
+            window.counters.forEach((rowCounters, rowIndex) => {
+                if (rowCounters) {
+                    Object.keys(rowCounters).forEach(key => {
+                        rowCounters[key] = 0;
+                    });
+                }
+            });
+        }
+        
+        // Restore positions for current expiry and any cross-expiry positions
+        Object.values(window.globalPositions).forEach(position => {
+            const { strike, optionType, action, lots, expiry } = position;
+            
+            // Find the row index for this strike
+            const table = document.getElementById('optionChainTable');
+            if (!table) return;
+            
+            const rows = table.querySelectorAll('tbody tr');
+            rows.forEach((row, rowIndex) => {
+                const strikeTd = row.children[19]; // Strike column
+                const rowStrike = parseFloat(strikeTd?.textContent || 0);
+                
+                if (rowStrike === strike) {
+                    // Determine the key based on option type and action
+                    let key = '';
+                    if (optionType === 'CE' && action === 'Buy') key = 'ceBuy';
+                    else if (optionType === 'CE' && action === 'Sell') key = 'ceSell';
+                    else if (optionType === 'PE' && action === 'Buy') key = 'peBuy';
+                    else if (optionType === 'PE' && action === 'Sell') key = 'peSell';
+                    
+                    if (key && window.counters[rowIndex]) {
+                        // For current expiry, add to row counter
+                        if (expiry === currentExpiry) {
+                            window.counters[rowIndex][key] = lots;
+                        }
+                        // Update button display to show any positions exist for this strike/type
+                        const anyPositions = Object.values(window.globalPositions).some(pos => 
+                            pos.strike === strike && pos.optionType === optionType && pos.action === action && pos.lots > 0
+                        );
+                        
+                        if (anyPositions) {
+                            window.counters[rowIndex][key] = Math.max(window.counters[rowIndex][key], 1);
+                        }
+                        
+                        updateButtonDisplay(rowIndex, key);
+                    }
+                }
+            });
+        });
+    }
+    
     // Toggle position card - using attached code approach
     function togglePositionCard(rowIndex, key) {
         closeAllPositionCards();
@@ -2875,8 +2935,8 @@ document.addEventListener('DOMContentLoaded', function() {
         return payoff * count * lotSize;
     }
     
-    // Global click handler to close dropdowns
-    document.addEventListener('click', closeAllDropdowns);
+    // Global click handler to close position cards
+    document.addEventListener('click', closeAllPositionCards);
     
     // Calculate breakeven points for current positions
     function calculateBreakevens() {
@@ -2985,6 +3045,10 @@ document.addEventListener('DOMContentLoaded', function() {
     window.updatePayoffChart = updatePayoffChart;
     window.createPayoffChartFromOptionChain = createPayoffChartFromOptionChain;
     window.initPayoffChart = initPayoffChart;
+    window.restoreButtonStatesFromGlobalPositions = restoreButtonStatesFromGlobalPositions;
+    window.togglePositionCard = togglePositionCard;
+    window.closeAllPositionCards = closeAllPositionCards;
+    window.updatePositionCard = updatePositionCard;
     window.calculateBreakevens = calculateBreakevens;
     window.counters = counters;
     window.firstClickFlags = firstClickFlags;
