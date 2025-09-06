@@ -521,6 +521,147 @@
   transition: 0.3s;
 }
 
+/* Position Management Card Styles */
+.position-management-card {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  min-width: 280px;
+  z-index: 10000;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.position-card-header {
+  background: #f8f9fa;
+  padding: 12px 16px;
+  border-bottom: 1px solid #dee2e6;
+  border-radius: 8px 8px 0 0;
+  font-weight: 600;
+  font-size: 14px;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.position-card-header i {
+  color: #6c757d;
+}
+
+.position-card-content {
+  padding: 16px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.position-entry {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.position-entry:last-child {
+  margin-bottom: 8px;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.position-expiry-tag {
+  background: #007bff;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 12px;
+  letter-spacing: 0.5px;
+}
+
+.position-lot-control {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.position-lot-label {
+  font-size: 13px;
+  color: #495057;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.position-lot-label i {
+  color: #6c757d;
+}
+
+.position-control-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.position-btn-decrease,
+.position-btn-increase {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  transition: all 0.2s;
+}
+
+.position-btn-decrease {
+  background: #dc3545;
+  color: white;
+}
+
+.position-btn-decrease:hover {
+  background: #c82333;
+  transform: scale(1.05);
+}
+
+.position-btn-increase {
+  background: #28a745;
+  color: white;
+}
+
+.position-btn-increase:hover {
+  background: #218838;
+  transform: scale(1.05);
+}
+
+.position-add-btn {
+  width: 100%;
+  padding: 10px;
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
+  border-radius: 6px;
+  color: #6c757d;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.position-add-btn:hover {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  color: #495057;
+}
+
 .option_button:hover {
   box-shadow: 0 0 5px -1px rgba(0, 0, 0, 0.5);
 }
@@ -1835,14 +1976,47 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle button clicks - create payoff chart immediately on click
     function handleButtonClick(rowIndex, key, action) {
+        // Get current expiry and strike information
+        const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
+        const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
+        let strike = 0;
+        if (row) {
+            const strikeTd = row.children[19]; // Strike column
+            strike = parseFloat(strikeTd?.textContent || 0);
+        }
+        
+        // Create position key for global tracking
+        const positionKey = `${strike}-${currentExpiry}-${key}`;
+        
         if (action === 'add') {
             counters[rowIndex][key]++;
+            // Store in global positions
+            if (!window.globalPositions[positionKey]) {
+                window.globalPositions[positionKey] = {
+                    strike: strike,
+                    expiry: currentExpiry,
+                    optionType: key.includes('ce') ? 'CE' : 'PE',
+                    action: key.includes('Buy') ? 'Buy' : 'Sell',
+                    lots: 0,
+                    rowIndex: rowIndex,
+                    key: key
+                };
+            }
+            window.globalPositions[positionKey].lots++;
         } else if (action === 'remove' && counters[rowIndex][key] > 0) {
             counters[rowIndex][key]--;
+            // Update global positions
+            if (window.globalPositions[positionKey]) {
+                window.globalPositions[positionKey].lots--;
+                if (window.globalPositions[positionKey].lots <= 0) {
+                    delete window.globalPositions[positionKey];
+                }
+            }
         }
         
         updateButtonDisplay(rowIndex, key);
-        closeAllDropdowns();
+        updatePositionCard(rowIndex, key);
+        closeAllPositionCards();
         
         // Immediately create and update payoff chart using loaded option chain data
         createPayoffChartFromOptionChain();
@@ -1940,20 +2114,129 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Toggle dropdown - using attached code approach
-    function toggleDropdown(rowIndex, key) {
-        closeAllDropdowns();
-        const menu = document.getElementById(`${key}Menu_${rowIndex}`);
-        if (menu) {
-            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    // Toggle position card - using attached code approach
+    function togglePositionCard(rowIndex, key) {
+        closeAllPositionCards();
+        const card = document.getElementById(`${key}Card_${rowIndex}`);
+        if (card) {
+            card.style.display = card.style.display === 'block' ? 'none' : 'block';
+            if (card.style.display === 'block') {
+                updatePositionCard(rowIndex, key);
+            }
         }
     }
     
-    // Close all dropdowns
-    function closeAllDropdowns() {
-        document.querySelectorAll('.dropdown_menu').forEach(menu => {
-            menu.style.display = 'none';
+    // Close all position cards
+    function closeAllPositionCards() {
+        document.querySelectorAll('.position-management-card').forEach(card => {
+            card.style.display = 'none';
         });
+    }
+    
+    // Update position card content
+    function updatePositionCard(rowIndex, key) {
+        const cardContent = document.getElementById(`${key}CardContent_${rowIndex}`);
+        if (!cardContent) return;
+        
+        // Get current expiry and strike information
+        const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
+        const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
+        let strike = 0;
+        if (row) {
+            const strikeTd = row.children[19]; // Strike column
+            strike = parseFloat(strikeTd?.textContent || 0);
+        }
+        
+        // Find all positions for this strike (across all expiries)
+        const strikePositions = Object.values(window.globalPositions).filter(pos => 
+            pos.strike === strike && pos.optionType === (key.includes('ce') ? 'CE' : 'PE') && 
+            pos.action === (key.includes('Buy') ? 'Buy' : 'Sell')
+        );
+        
+        // Clear existing content
+        cardContent.innerHTML = '';
+        
+        if (strikePositions.length === 0) {
+            const addButton = document.createElement('button');
+            addButton.className = 'position-add-btn';
+            addButton.innerHTML = '<i class="fas fa-plus"></i> Add Position';
+            addButton.onclick = () => handleButtonClick(rowIndex, key, 'add');
+            cardContent.appendChild(addButton);
+            return;
+        }
+        
+        // Group positions by expiry
+        const positionsByExpiry = {};
+        strikePositions.forEach(pos => {
+            if (!positionsByExpiry[pos.expiry]) {
+                positionsByExpiry[pos.expiry] = [];
+            }
+            positionsByExpiry[pos.expiry].push(pos);
+        });
+        
+        // Create position entries for each expiry
+        Object.entries(positionsByExpiry).forEach(([expiry, positions]) => {
+            positions.forEach(pos => {
+                const positionEntry = document.createElement('div');
+                positionEntry.className = 'position-entry';
+                
+                const expiryTag = document.createElement('div');
+                expiryTag.className = 'position-expiry-tag';
+                expiryTag.textContent = formatExpiryDisplay(expiry);
+                
+                const lotControl = document.createElement('div');
+                lotControl.className = 'position-lot-control';
+                
+                const lotLabel = document.createElement('span');
+                lotLabel.className = 'position-lot-label';
+                lotLabel.innerHTML = `<i class="fas fa-layer-group"></i> ${pos.lots} lots`;
+                
+                const controlButtons = document.createElement('div');
+                controlButtons.className = 'position-control-buttons';
+                
+                const decreaseBtn = document.createElement('button');
+                decreaseBtn.className = 'position-btn-decrease';
+                decreaseBtn.innerHTML = '<i class="fas fa-minus"></i>';
+                decreaseBtn.onclick = () => handleButtonClick(rowIndex, key, 'remove');
+                
+                const increaseBtn = document.createElement('button');
+                increaseBtn.className = 'position-btn-increase';
+                increaseBtn.innerHTML = '<i class="fas fa-plus"></i>';
+                increaseBtn.onclick = () => handleButtonClick(rowIndex, key, 'add');
+                
+                controlButtons.appendChild(decreaseBtn);
+                controlButtons.appendChild(increaseBtn);
+                
+                lotControl.appendChild(lotLabel);
+                lotControl.appendChild(controlButtons);
+                
+                positionEntry.appendChild(expiryTag);
+                positionEntry.appendChild(lotControl);
+                
+                cardContent.appendChild(positionEntry);
+            });
+        });
+        
+        // Add "Add Position" button for new expiry
+        const addButton = document.createElement('button');
+        addButton.className = 'position-add-btn';
+        addButton.innerHTML = '<i class="fas fa-plus"></i> Add Position';
+        addButton.onclick = () => handleButtonClick(rowIndex, key, 'add');
+        cardContent.appendChild(addButton);
+    }
+    
+    // Format expiry for display (convert from YYYY-MM-DD to DD-MMM-YY)
+    function formatExpiryDisplay(expiry) {
+        if (!expiry) return 'N/A';
+        try {
+            const date = new Date(expiry);
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = date.toLocaleString('en-US', { month: 'short' }).toUpperCase();
+            const year = date.getFullYear().toString().slice(-2);
+            return `${day}-${month}-${year}`;
+        } catch (e) {
+            return expiry;
+        }
     }
     
     // Update payoff chart - using attached code approach
