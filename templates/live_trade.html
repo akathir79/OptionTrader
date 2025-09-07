@@ -2021,15 +2021,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        updateButtonDisplay(rowIndex, key);
-        updatePositionCard(rowIndex, key);
-        
         // Close position card if no positions remain for this strike/option type/action combination
         const currentStrike = strike;
         const currentOptionType = key.includes('ce') ? 'CE' : 'PE';
         const currentAction = key.includes('Buy') ? 'Buy' : 'Sell';
         
-        const remainingPositions = Object.values(window.globalPositions).filter(pos => 
+        const remainingPositions = Object.values(window.globalPositions || {}).filter(pos => 
             pos.strike === currentStrike && pos.optionType === currentOptionType && 
             pos.action === currentAction && pos.lots > 0
         );
@@ -2037,6 +2034,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (remainingPositions.length === 0) {
             closeAllPositionCards();
         }
+        
+        // Force update of button displays for all buttons to ensure proper synchronization
+        restoreButtonStatesFromGlobalPositions();
+        updatePositionCard(rowIndex, key);
         
         // Update current positions table
         updateCurrentPositionsTable();
@@ -2242,7 +2243,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 .reduce((sum, pos) => sum + pos.lots, 0);
                             
                             // Calculate total lots across all expiries to check if any positions exist
-                            const totalPositionLots = Object.values(window.globalPositions)
+                            const totalPositionLots = Object.values(window.globalPositions || {})
                                 .filter(pos => pos.strike === strike && pos.optionType === keyOptionType && 
                                        pos.action === keyAction && pos.lots > 0)
                                 .reduce((sum, pos) => sum + pos.lots, 0);
@@ -2255,7 +2256,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 // Show cross-expiry indicator only if there are actually positions in other expiries
                                 window.counters[rowIndex][key] = 1; 
                             } else {
-                                // No positions anywhere - clear the button
+                                // No positions anywhere - clear the button completely
                                 window.counters[rowIndex][key] = 0;
                             }
                             
