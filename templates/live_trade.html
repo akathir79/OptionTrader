@@ -2227,16 +2227,43 @@ document.addEventListener('DOMContentLoaded', function() {
         const positionKey = `${strike}-${currentExpiry}-${key}`;
         
         if (action === 'add') {
+            // Check for automatic netting before creating position
+            const optionType = key.includes('ce') ? 'CE' : 'PE';
+            const currentAction = key.includes('Buy') ? 'Buy' : 'Sell';
+            const oppositeAction = currentAction === 'Buy' ? 'Sell' : 'Buy';
+            
+            // Find opposite position key
+            const oppositeKeyPrefix = key.includes('ce') ? 
+                (currentAction === 'Buy' ? 'ceSell' : 'ceBuy') : 
+                (currentAction === 'Buy' ? 'peSell' : 'peBuy');
+            const oppositePositionKey = `${strike}-${currentExpiry}-${oppositeKeyPrefix}`;
+            
+            // Check if opposite position exists
+            const oppositePosition = window.globalPositions[oppositePositionKey];
+            
+            if (oppositePosition && oppositePosition.lots > 0) {
+                // Show netting confirmation
+                const oppositeActionText = oppositeAction.toLowerCase();
+                const currentActionText = currentAction.toLowerCase();
+                const confirmMessage = `Found ${oppositePosition.lots} lot${oppositePosition.lots > 1 ? 's' : ''} of ${oppositeActionText} position in ${strike} ${optionType}.\n\nDo you want to net/square off against this position?\n\n• 1 lot will be automatically exited\n• Remaining lots will stay active`;
+                
+                if (confirm(confirmMessage)) {
+                    // Execute automatic netting
+                    executeAutomaticNetting(oppositePosition, strike, optionType, currentExpiry, currentAction, rowIndex, key);
+                    return; // Exit early after netting
+                }
+            }
+            
+            // Normal position creation (no netting or user declined netting)
             counters[rowIndex][key]++;
             // Store in global positions
             if (!window.globalPositions[positionKey]) {
-                const optionType = key.includes('ce') ? 'CE' : 'PE';
                 const entryPrice = getCurrentLTP(strike, optionType, currentExpiry);
                 window.globalPositions[positionKey] = {
                     strike: strike,
                     expiry: currentExpiry,
                     optionType: optionType,
-                    action: key.includes('Buy') ? 'Buy' : 'Sell',
+                    action: currentAction,
                     lots: 0,
                     rowIndex: rowIndex,
                     key: key,
@@ -2799,6 +2826,115 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(() => pnlCell.classList.remove('live-updated'), 1000);
             }
         });
+    };
+    
+    // Execute automatic netting when opposite positions are detected
+    window.executeAutomaticNetting = function executeAutomaticNetting(oppositePosition, strike, optionType, expiry, newAction, rowIndex, key) {
+        console.log(`[AUTOMATIC NETTING] Starting netting process for ${strike} ${optionType}`);
+        
+        const oppositeAction = oppositePosition.action;
+        const oppositeLots = oppositePosition.lots;
+        const oppositeKey = oppositePosition.key;
+        const oppositeRowIndex = oppositePosition.rowIndex;
+        
+        // Get current LTP for exit price
+        const exitPrice = getCurrentLTP(strike, optionType, expiry);
+        
+        if (exitPrice <= 0) {
+            alert('Unable to get current market price for netting. Please try again.');
+            return;
+        }
+        
+        // Create exited position entry for the opposite position (1 lot gets netted)
+        const exitedPositionKey = `NETTED_${strike}-${expiry}-${optionType.toLowerCase()}${oppositeAction}_${Date.now()}`;
+        const exitedPosition = {
+            strike: strike,
+            expiry: expiry,
+            optionType: optionType,
+            action: oppositeAction,
+            lots: 1, // Always net 1 lot
+            entryPrice: oppositePosition.entryPrice,
+            exitPrice: exitPrice,
+            exitTime: new Date(),
+            isExited: true,
+            exitReason: 'Auto-netted'
+        };
+        
+        // Add to exited positions tracking
+        if (!window.exitedPositions) window.exitedPositions = {};
+        window.exitedPositions[exitedPositionKey] = exitedPosition;
+        
+        // Create exited position entry for the new position (1 lot gets netted)
+        const newExitedPositionKey = `NETTED_${strike}-${expiry}-${optionType.toLowerCase()}${newAction}_${Date.now()}_NEW`;
+        const newExitedPosition = {
+            strike: strike,
+            expiry: expiry,
+            optionType: optionType,
+            action: newAction,
+            lots: 1, // Always net 1 lot
+            entryPrice: exitPrice, // Current LTP becomes entry price for new position
+            exitPrice: exitPrice, // Same price for immediate netting
+            exitTime: new Date(),
+            isExited: true,
+            exitReason: 'Auto-netted'
+        };
+        
+        window.exitedPositions[newExitedPositionKey] = newExitedPosition;
+        
+        // Reduce opposite position by 1 lot
+        const oppositePositionKey = `${strike}-${expiry}-${oppositeKey}`;
+        window.globalPositions[oppositePositionKey].lots--;
+        
+        // Update opposite position button counter
+        counters[oppositeRowIndex][oppositeKey]--;
+        
+        // If opposite position still has lots, keep it; otherwise remove it
+        if (window.globalPositions[oppositePositionKey].lots <= 0) {
+            delete window.globalPositions[oppositePositionKey];
+        }
+        
+        // Check if user wants to add more lots beyond the netted amount
+        if (oppositeLots > 1) {
+            const remainingOppositeLots = oppositeLots - 1;
+            const addMoreMessage = `Netting completed! 1 lot automatically exited.\n\nOpposite position still has ${remainingOppositeLots} lot${remainingOppositeLots > 1 ? 's' : ''} remaining.\n\nDo you want to add your ${newAction.toLowerCase()} position (this will create a new active position)?`;
+            
+            if (confirm(addMoreMessage)) {
+                // Create new position with 1 lot
+                const newPositionKey = `${strike}-${expiry}-${key}`;
+                const entryPrice = getCurrentLTP(strike, optionType, expiry);
+                
+                window.globalPositions[newPositionKey] = {
+                    strike: strike,
+                    expiry: expiry,
+                    optionType: optionType,
+                    action: newAction,
+                    lots: 1,
+                    rowIndex: rowIndex,
+                    key: key,
+                    entryPrice: entryPrice
+                };
+                
+                // Update button counter
+                counters[rowIndex][key] = 1;
+                
+                console.log(`[AUTOMATIC NETTING] New position created after netting: ${newPositionKey}`);
+            }
+        } else {
+            // All opposite lots were netted, no additional position to create
+            console.log(`[AUTOMATIC NETTING] Complete netting - no remaining positions`);
+        }
+        
+        // Update all UI components
+        updateButtonDisplay(oppositeRowIndex, oppositeKey);
+        updateButtonDisplay(rowIndex, key);
+        updateCurrentPositionsTable();
+        restoreButtonStatesFromGlobalPositions();
+        createPayoffChartFromOptionChain();
+        
+        console.log(`[AUTOMATIC NETTING] Netting completed successfully. 1 lot of each position netted at ₹${exitPrice.toFixed(2)}`);
+        
+        // Show confirmation message
+        alert(`Netting completed!\n\n• 1 lot ${oppositeAction.toLowerCase()} netted at ₹${exitPrice.toFixed(2)}\n• 1 lot ${newAction.toLowerCase()} netted at ₹${exitPrice.toFixed(2)}\n• Both positions moved to exited rows`);
     };
     
     // Generate exit options for dropdown based on lot count
@@ -3844,6 +3980,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.updateCurrentPositionsTable = updateCurrentPositionsTable;
     window.removePosition = removePosition;
     window.calculateBreakevens = calculateBreakevens;
+    window.executeAutomaticNetting = executeAutomaticNetting;
     window.counters = counters;
     window.firstClickFlags = firstClickFlags;
     
