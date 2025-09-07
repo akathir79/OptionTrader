@@ -1622,35 +1622,29 @@
   /* Lots Hover Controls */
   .lots-container {
     position: relative;
-    display: inline-block;
-    min-width: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 60px;
+    gap: 2px;
   }
   
   .lots-value {
     display: inline-block;
     font-size: 11px;
+    font-weight: 500;
+    min-width: 20px;
+    text-align: center;
   }
   
   .lots-controls {
     display: none;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid #ddd;
-    border-radius: 3px;
-    padding: 2px;
-    z-index: 10;
-    white-space: nowrap;
-  }
-  
-  .lots-cell:hover .lots-value {
-    opacity: 0.3;
+    align-items: center;
+    gap: 1px;
   }
   
   .lots-cell:hover .lots-controls {
-    display: inline-block;
+    display: inline-flex;
   }
   
   .lots-btn {
@@ -2531,14 +2525,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td style="text-align: center;">${actionBadge}</td>
                 <td style="text-align: center; position: relative;" class="lots-cell">
                     <div class="lots-container" data-position-key="${strike}-${expiry}-${optionType.toLowerCase()}${action}">
-                        <span class="lots-value">${lots}</span>
                         <div class="lots-controls">
                             <button class="lots-btn lots-minus" onclick="adjustLots('${strike}-${expiry}-${optionType.toLowerCase()}${action}', -1, event)">−</button>
+                        </div>
+                        <span class="lots-value">${lots}</span>
+                        <div class="lots-controls">
                             <button class="lots-btn lots-plus" onclick="adjustLots('${strike}-${expiry}-${optionType.toLowerCase()}${action}', 1, event)">+</button>
                         </div>
                     </div>
                 </td>
-                <td style="text-align: center;">${lots * 75}</td>
+                <td style="text-align: center;" class="qty-cell" data-position-key="${strike}-${expiry}-${optionType.toLowerCase()}${action}">${lots * 75}</td>
                 <td style="text-align: center; font-size: 10px; max-width: 140px; overflow: hidden; text-overflow: ellipsis;">${symbol}</td>
                 <td style="text-align: center; font-size: 10px;">${new Date().toLocaleDateString('en-IN')} ${new Date().toLocaleTimeString('en-IN', {hour12: true, hour: '2-digit', minute: '2-digit'}).toLowerCase()}</td>
                 <td style="text-align: center;">${strike}</td>
@@ -2640,6 +2636,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 delete window.globalPositions[positionKey];
                 console.log(`[ADJUST LOTS] Removed position with 0 lots: ${positionKey}`);
             }
+        }
+        
+        // Immediately update the current row's displays for instant feedback
+        const lotsValueElement = document.querySelector(`[data-position-key="${positionKey}"] .lots-value`);
+        const qtyElement = document.querySelector(`.qty-cell[data-position-key="${positionKey}"]`);
+        
+        if (lotsValueElement && window.globalPositions[positionKey]) {
+            lotsValueElement.textContent = window.globalPositions[positionKey].lots;
+        }
+        
+        if (qtyElement && window.globalPositions[positionKey]) {
+            qtyElement.textContent = window.globalPositions[positionKey].lots * 75;
         }
         
         // Update all three components to maintain synchronization
