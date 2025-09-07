@@ -2007,6 +2007,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.globalPositions[positionKey].lots--;
                 if (window.globalPositions[positionKey].lots <= 0) {
                     delete window.globalPositions[positionKey];
+                    console.log(`[POSITION REMOVE] Deleted position key: ${positionKey}, remaining positions:`, Object.keys(window.globalPositions).length);
                 }
             }
         }
@@ -2036,6 +2037,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Force update of button displays for all buttons to ensure proper synchronization
+        console.log(`[SYNC UPDATE] Before restore - Global positions count: ${Object.keys(window.globalPositions || {}).length}`);
         restoreButtonStatesFromGlobalPositions();
         updatePositionCard(rowIndex, key);
         
@@ -2198,20 +2200,26 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Restore button states from global positions when option chain is rebuilt
     function restoreButtonStatesFromGlobalPositions() {
-        if (!window.globalPositions) return;
-        
         const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
         if (!currentExpiry) return;
         
-        // Reset counters for current table
+        // Reset ALL counters for current table to 0 first
         if (window.counters) {
             window.counters.forEach((rowCounters, rowIndex) => {
                 if (rowCounters) {
                     Object.keys(rowCounters).forEach(key => {
                         rowCounters[key] = 0;
+                        // Immediately update button display to clear badges
+                        updateButtonDisplay(rowIndex, key);
                     });
                 }
             });
+        }
+        
+        // If no global positions exist at all, we're done - all badges should be hidden
+        if (!window.globalPositions || Object.keys(window.globalPositions).length === 0) {
+            console.log('[RESTORE BUTTONS] No global positions exist - all badges cleared');
+            return;
         }
         
         // Restore positions for current expiry and any cross-expiry positions
