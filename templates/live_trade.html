@@ -2038,6 +2038,9 @@ document.addEventListener('DOMContentLoaded', function() {
             closeAllPositionCards();
         }
         
+        // Update current positions table
+        updateCurrentPositionsTable();
+        
         // Immediately create and update payoff chart using loaded option chain data
         createPayoffChartFromOptionChain();
         
@@ -2092,6 +2095,9 @@ document.addEventListener('DOMContentLoaded', function() {
         updateButtonDisplay(rowIndex, key);
         updatePositionCard(rowIndex, key);
         closeAllPositionCards();
+        
+        // Update current positions table
+        updateCurrentPositionsTable();
         
         // Immediately create and update payoff chart using loaded option chain data
         createPayoffChartFromOptionChain();
@@ -2235,17 +2241,21 @@ document.addEventListener('DOMContentLoaded', function() {
                                        pos.action === keyAction && pos.expiry === currentExpiry)
                                 .reduce((sum, pos) => sum + pos.lots, 0);
                             
-                            // Check if there are cross-expiry positions
-                            const crossExpiryPositions = Object.values(window.globalPositions)
-                                .some(pos => pos.strike === strike && pos.optionType === keyOptionType && 
-                                     pos.action === keyAction && pos.expiry !== currentExpiry && pos.lots > 0);
+                            // Calculate total lots across all expiries to check if any positions exist
+                            const totalPositionLots = Object.values(window.globalPositions)
+                                .filter(pos => pos.strike === strike && pos.optionType === keyOptionType && 
+                                       pos.action === keyAction && pos.lots > 0)
+                                .reduce((sum, pos) => sum + pos.lots, 0);
                             
-                            // Set the counter based on current expiry lots
+                            // Set the counter based on current expiry lots only
                             if (currentExpiryLots > 0) {
+                                // Show actual current expiry lots
                                 window.counters[rowIndex][key] = currentExpiryLots;
-                            } else if (crossExpiryPositions) {
-                                window.counters[rowIndex][key] = 1; // Indicator for cross-expiry positions
+                            } else if (totalPositionLots > 0) {
+                                // Show cross-expiry indicator only if there are actually positions in other expiries
+                                window.counters[rowIndex][key] = 1; 
                             } else {
+                                // No positions anywhere - clear the button
                                 window.counters[rowIndex][key] = 0;
                             }
                             
@@ -2363,6 +2373,124 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Update Current Positions Table - synchronize with global positions
+    function updateCurrentPositionsTable() {
+        const tableBody = document.getElementById('positionTableBody');
+        if (!tableBody) return;
+        
+        // Clear existing content
+        tableBody.innerHTML = '';
+        
+        // Get all positions from global positions
+        const allPositions = Object.values(window.globalPositions || {}).filter(pos => pos.lots > 0);
+        
+        if (allPositions.length === 0) {
+            // Show empty state
+            const emptyRow = document.createElement('tr');
+            emptyRow.innerHTML = `
+                <td colspan="15" class="text-center text-muted py-3">
+                    <i class="fas fa-plus-circle me-2"></i>No positions yet. Start trading!
+                </td>
+            `;
+            tableBody.appendChild(emptyRow);
+            return;
+        }
+        
+        // Sort positions by expiry, then by strike
+        allPositions.sort((a, b) => {
+            if (a.expiry !== b.expiry) {
+                return new Date(a.expiry) - new Date(b.expiry);
+            }
+            return a.strike - b.strike;
+        });
+        
+        // Create rows for each position
+        allPositions.forEach((position, index) => {
+            const { strike, expiry, optionType, action, lots } = position;
+            
+            // Build symbol name (approximation for display)
+            const expiryFormatted = formatExpiryForSymbol(expiry);
+            const symbol = `NSE:NIFTY${expiryFormatted}${strike}${optionType}`;
+            
+            // Determine row colors based on action
+            const typeClass = optionType === 'CE' ? 'text-success' : 'text-primary';
+            const actionClass = action === 'Buy' ? 'text-success' : 'text-danger';
+            const actionBadge = action === 'Buy' ? 
+                '<span class="badge bg-success text-white">BUY</span>' : 
+                '<span class="badge bg-danger text-white">SELL</span>';
+            
+            const row = document.createElement('tr');
+            row.className = 'position-row';
+            row.innerHTML = `
+                <td style="text-align: center;"><input type="checkbox"></td>
+                <td style="text-align: center;">
+                    <span class="badge bg-${optionType === 'CE' ? 'success' : 'primary'} text-white">${optionType}</span>
+                </td>
+                <td style="text-align: center;">${actionBadge}</td>
+                <td style="text-align: center;">${lots}</td>
+                <td style="text-align: center;">75</td>
+                <td style="text-align: center; font-size: 11px; max-width: 120px; overflow: hidden; text-overflow: ellipsis;">${symbol}</td>
+                <td style="text-align: center;">${new Date().toLocaleDateString('en-GB')} ${new Date().toLocaleTimeString('en-GB', {hour12: false}).slice(0, 5)}</td>
+                <td style="text-align: center;">${strike}</td>
+                <td style="text-align: center;">${formatExpiryDisplay(expiry)}</td>
+                <td style="text-align: center;">${formatExpiryDisplay(expiry)}</td>
+                <td style="text-align: center;">₹0.00</td>
+                <td style="text-align: center;">₹0.00</td>
+                <td style="text-align: center;">₹0.00</td>
+                <td style="text-align: center;">
+                    <button class="btn btn-outline-warning btn-sm" style="font-size: 10px; padding: 2px 6px;">Exit</button>
+                </td>
+                <td style="text-align: center;">
+                    <button class="btn btn-outline-secondary btn-sm" style="font-size: 10px; padding: 2px 6px;">
+                        <i class="fas fa-lock"></i>
+                    </button>
+                </td>
+                <td style="text-align: center;">
+                    <button class="btn btn-outline-danger btn-sm" style="font-size: 10px; padding: 2px 4px;" onclick="removePosition('${strike}-${expiry}-${optionType.toLowerCase()}${action}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            tableBody.appendChild(row);
+        });
+        
+        // Update positions count in header
+        const positionsCount = document.querySelector('.card-header h6');
+        if (positionsCount && positionsCount.textContent.includes('Current Positions')) {
+            const countText = allPositions.length === 1 ? '1 Position' : `${allPositions.length} Positions`;
+            positionsCount.innerHTML = `<i class="fas fa-briefcase me-2"></i>Current Positions <span class="badge bg-light text-dark ms-2">${countText}</span>`;
+        }
+    }
+    
+    // Helper function to format expiry for symbol name
+    function formatExpiryForSymbol(expiry) {
+        if (!expiry) return '';
+        try {
+            const date = new Date(expiry);
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear().toString().slice(-2);
+            return `${year}${month}${day}`;
+        } catch (e) {
+            return expiry.replace(/-/g, '');
+        }
+    }
+    
+    // Remove position function for delete button in current positions table
+    function removePosition(positionKey) {
+        if (window.globalPositions && window.globalPositions[positionKey]) {
+            delete window.globalPositions[positionKey];
+            
+            // Update all components
+            updateCurrentPositionsTable();
+            restoreButtonStatesFromGlobalPositions();
+            createPayoffChartFromOptionChain();
+            
+            console.log(`Removed position: ${positionKey}`);
+        }
+    }
+    
     // Format expiry for display (convert from YYYY-MM-DD to DD-MMM-YY)
     function formatExpiryDisplay(expiry) {
         if (!expiry) return 'N/A';
@@ -2382,6 +2510,23 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!payoffChart) return;
         
         const legs = [];
+        
+        // Check if there are any positions at all
+        const hasAnyPositions = Object.values(window.globalPositions || {}).some(pos => pos.lots > 0);
+        
+        if (!hasAnyPositions) {
+            // Clear the payoff chart when no positions exist
+            payoffChart.series[0].setData([]);
+            
+            // Remove all plot lines and bands
+            payoffChart.xAxis[0].removePlotLine('currentSpot');
+            payoffChart.yAxis[0].plotBands.forEach((band, index) => {
+                payoffChart.yAxis[0].removePlotBand(`breakeven-${index}`);
+            });
+            
+            console.log('[PAYOFF CHART] Cleared chart - no positions exist');
+            return;
+        }
         
         // Iterate through all rows and their counters
         counters.forEach((rowCounters, rowIndex) => {
@@ -3128,6 +3273,8 @@ document.addEventListener('DOMContentLoaded', function() {
     window.closeAllPositionCards = closeAllPositionCards;
     window.updatePositionCard = updatePositionCard;
     window.handleExpirySpecificPositionChange = handleExpirySpecificPositionChange;
+    window.updateCurrentPositionsTable = updateCurrentPositionsTable;
+    window.removePosition = removePosition;
     window.calculateBreakevens = calculateBreakevens;
     window.counters = counters;
     window.firstClickFlags = firstClickFlags;
