@@ -1976,6 +1976,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Handle expiry-specific position changes from position cards
     function handleExpirySpecificPositionChange(rowIndex, key, action, targetExpiry) {
+        console.log(`[EXPIRY POSITION CHANGE] START - Action: ${action}, rowIndex: ${rowIndex}, key: ${key}, targetExpiry: ${targetExpiry}`);
+        
         // Get current strike information
         const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
         let strike = 0;
@@ -1986,10 +1988,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Create position key for global tracking with target expiry
         const positionKey = `${strike}-${targetExpiry}-${key}`;
+        console.log(`[EXPIRY POSITION CHANGE] Position key: ${positionKey}`);
+        
+        // Log current position state before change
+        const currentPosition = window.globalPositions[positionKey];
+        console.log(`[EXPIRY POSITION CHANGE] Current position:`, currentPosition);
         
         if (action === 'add') {
             // Store in global positions
             if (!window.globalPositions[positionKey]) {
+                console.log(`[EXPIRY POSITION CHANGE] Creating new position for ${positionKey}`);
                 window.globalPositions[positionKey] = {
                     strike: strike,
                     expiry: targetExpiry,
@@ -2000,15 +2008,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     key: key
                 };
             }
+            const beforeLots = window.globalPositions[positionKey].lots;
             window.globalPositions[positionKey].lots++;
+            const afterLots = window.globalPositions[positionKey].lots;
+            console.log(`[EXPIRY POSITION CHANGE] ADD: ${beforeLots} -> ${afterLots}`);
         } else if (action === 'remove') {
             // Update global positions
             if (window.globalPositions[positionKey] && window.globalPositions[positionKey].lots > 0) {
+                const beforeLots = window.globalPositions[positionKey].lots;
                 window.globalPositions[positionKey].lots--;
+                const afterLots = window.globalPositions[positionKey].lots;
+                console.log(`[EXPIRY POSITION CHANGE] REMOVE: ${beforeLots} -> ${afterLots}`);
+                
                 if (window.globalPositions[positionKey].lots <= 0) {
                     delete window.globalPositions[positionKey];
                     console.log(`[POSITION REMOVE] Deleted position key: ${positionKey}, remaining positions:`, Object.keys(window.globalPositions).length);
                 }
+            } else {
+                console.log(`[EXPIRY POSITION CHANGE] Cannot remove - position not found or lots already 0`);
             }
         }
         
@@ -2361,12 +2378,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 const decreaseBtn = document.createElement('button');
                 decreaseBtn.className = 'position-btn-decrease';
                 decreaseBtn.innerHTML = '<i class="fas fa-minus"></i>';
-                decreaseBtn.onclick = () => handleExpirySpecificPositionChange(rowIndex, key, 'remove', pos.expiry);
+                decreaseBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    console.log(`[POSITION CARD] Decrease button clicked - rowIndex: ${rowIndex}, key: ${key}, expiry: ${pos.expiry}`);
+                    handleExpirySpecificPositionChange(rowIndex, key, 'remove', pos.expiry);
+                };
                 
                 const increaseBtn = document.createElement('button');
                 increaseBtn.className = 'position-btn-increase';
                 increaseBtn.innerHTML = '<i class="fas fa-plus"></i>';
-                increaseBtn.onclick = () => handleExpirySpecificPositionChange(rowIndex, key, 'add', pos.expiry);
+                increaseBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    console.log(`[POSITION CARD] Increase button clicked - rowIndex: ${rowIndex}, key: ${key}, expiry: ${pos.expiry}`);
+                    handleExpirySpecificPositionChange(rowIndex, key, 'add', pos.expiry);
+                };
                 
                 controlButtons.appendChild(decreaseBtn);
                 controlButtons.appendChild(increaseBtn);
