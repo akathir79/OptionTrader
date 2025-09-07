@@ -2772,7 +2772,73 @@ document.addEventListener('DOMContentLoaded', function() {
         restoreButtonStatesFromGlobalPositions();
         createPayoffChartFromOptionChain();
         
+        // Update any open position management cards
+        updateOpenPositionCards(positionKey);
+        
         console.log(`[ADJUST LOTS] Synchronization complete. Total positions: ${Object.keys(window.globalPositions || {}).length}`);
+    }
+    
+    // Update any open position management cards when lots are adjusted
+    function updateOpenPositionCards(adjustedPositionKey) {
+        // Find all visible position management cards
+        const openCards = document.querySelectorAll('.position-management-card[style*="display: block"]');
+        
+        if (openCards.length === 0) {
+            console.log(`[UPDATE CARDS] No open position cards found`);
+            return;
+        }
+        
+        console.log(`[UPDATE CARDS] Found ${openCards.length} open position cards, checking for position key: ${adjustedPositionKey}`);
+        
+        // Parse the adjusted position to get its details
+        const adjustedPosition = window.globalPositions[adjustedPositionKey];
+        if (!adjustedPosition) {
+            console.log(`[UPDATE CARDS] Adjusted position not found in global positions: ${adjustedPositionKey}`);
+            return;
+        }
+        
+        openCards.forEach(card => {
+            const cardId = card.id;
+            console.log(`[UPDATE CARDS] Checking card: ${cardId}`);
+            
+            // Extract row index and key from card ID (format: ${key}Card_${rowIndex})
+            const match = cardId.match(/^(.+)Card_(\d+)$/);
+            if (!match) {
+                console.log(`[UPDATE CARDS] Could not parse card ID: ${cardId}`);
+                return;
+            }
+            
+            const [, key, rowIndex] = match;
+            console.log(`[UPDATE CARDS] Card details - key: ${key}, rowIndex: ${rowIndex}`);
+            
+            // Check if this card should display the adjusted position
+            // We need to check if the adjusted position matches the card's strike and option type
+            const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${parseInt(rowIndex) + 1})`);
+            if (!row) {
+                console.log(`[UPDATE CARDS] Row not found for index: ${rowIndex}`);
+                return;
+            }
+            
+            const strikeTd = row.children[19]; // Strike column
+            const cardStrike = parseFloat(strikeTd?.textContent || 0);
+            const cardOptionType = key.includes('ce') ? 'CE' : 'PE';
+            const cardAction = key.includes('Buy') ? 'Buy' : 'Sell';
+            
+            console.log(`[UPDATE CARDS] Card represents - Strike: ${cardStrike}, Type: ${cardOptionType}, Action: ${cardAction}`);
+            console.log(`[UPDATE CARDS] Adjusted position - Strike: ${adjustedPosition.strike}, Type: ${adjustedPosition.optionType}, Action: ${adjustedPosition.action}`);
+            
+            // Check if the adjusted position matches this card's strike, option type, and action
+            if (cardStrike === adjustedPosition.strike && 
+                cardOptionType === adjustedPosition.optionType && 
+                cardAction === adjustedPosition.action) {
+                
+                console.log(`[UPDATE CARDS] Match found! Updating card: ${cardId}`);
+                // Update this card since it contains the adjusted position
+                updatePositionCard(parseInt(rowIndex), key);
+            } else {
+                console.log(`[UPDATE CARDS] No match for card: ${cardId}`);
+            }
+        });
     }
     
     // Format expiry for display (convert from YYYY-MM-DD to DD-MMM-YY)
