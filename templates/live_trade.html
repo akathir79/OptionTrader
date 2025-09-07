@@ -2604,7 +2604,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Adjust lots function for + and - buttons in current positions table
-    function adjustLots(positionKey, change, event) {
+    window.adjustLots = function adjustLots(positionKey, change, event) {
         // Prevent event bubbling
         if (event) {
             event.preventDefault();
