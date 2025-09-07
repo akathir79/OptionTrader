@@ -2618,11 +2618,28 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Create rows for each position
         allPositions.forEach((position, index) => {
-            const { strike, expiry, optionType, action, lots } = position;
+            const { strike, expiry, optionType, action, lots, entryPrice } = position;
             
             // Build symbol name (approximation for display)
             const expiryFormatted = formatExpiryForSymbol(expiry);
             const symbol = `NSE:NIFTY${expiryFormatted}${strike}${optionType}`;
+            
+            // Get current LTP for this position
+            const currentLTP = getCurrentLTP(strike, optionType, expiry);
+            
+            // Calculate P&L
+            const entry = entryPrice || 0;
+            const ltp = currentLTP || 0;
+            const quantity = lots * 75;
+            let pnl = 0;
+            
+            if (entry > 0 && ltp > 0) {
+                if (action === 'Buy') {
+                    pnl = (ltp - entry) * quantity;
+                } else { // Sell
+                    pnl = (entry - ltp) * quantity;
+                }
+            }
             
             // Determine row colors based on action
             const typeClass = optionType === 'CE' ? 'text-success' : 'text-primary';
@@ -2631,8 +2648,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 '<span class="badge bg-success text-white">BUY</span>' : 
                 '<span class="badge bg-danger text-white">SELL</span>';
             
+            // P&L color formatting
+            const pnlColor = pnl >= 0 ? 'text-success' : 'text-danger';
+            const pnlSign = pnl >= 0 ? '+' : '';
+            
+            const positionKey = `${strike}-${expiry}-${optionType.toLowerCase()}${action}`;
+            
             const row = document.createElement('tr');
             row.className = 'position-row';
+            row.setAttribute('data-position-key', positionKey);
             row.innerHTML = `
                 <td style="text-align: center;"><input type="checkbox"></td>
                 <td style="text-align: center;">
@@ -2640,25 +2664,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 </td>
                 <td style="text-align: center;">${actionBadge}</td>
                 <td style="text-align: center; position: relative;" class="lots-cell">
-                    <div class="lots-container" data-position-key="${strike}-${expiry}-${optionType.toLowerCase()}${action}">
+                    <div class="lots-container" data-position-key="${positionKey}">
                         <div class="lots-controls">
-                            <button class="lots-btn lots-minus" onclick="adjustLots('${strike}-${expiry}-${optionType.toLowerCase()}${action}', -1, event)">−</button>
+                            <button class="lots-btn lots-minus" onclick="adjustLots('${positionKey}', -1, event)">−</button>
                         </div>
                         <span class="lots-value">${lots}</span>
                         <div class="lots-controls">
-                            <button class="lots-btn lots-plus" onclick="adjustLots('${strike}-${expiry}-${optionType.toLowerCase()}${action}', 1, event)">+</button>
+                            <button class="lots-btn lots-plus" onclick="adjustLots('${positionKey}', 1, event)">+</button>
                         </div>
                     </div>
                 </td>
-                <td style="text-align: center;" class="qty-cell" data-position-key="${strike}-${expiry}-${optionType.toLowerCase()}${action}">${lots * 75}</td>
+                <td style="text-align: center;" class="qty-cell" data-position-key="${positionKey}">${lots * 75}</td>
                 <td style="text-align: center; font-size: 10px; max-width: 140px; overflow: hidden; text-overflow: ellipsis;">${symbol}</td>
                 <td style="text-align: center; font-size: 10px;">${new Date().toLocaleDateString('en-IN')} ${new Date().toLocaleTimeString('en-IN', {hour12: true, hour: '2-digit', minute: '2-digit'}).toLowerCase()}</td>
                 <td style="text-align: center;">${strike}</td>
                 <td style="text-align: center; font-size: 10px;">${formatExpiryDisplay(expiry)}</td>
-                <td style="text-align: center;">₹0.00</td>
-                <td style="text-align: center;">₹0.00</td>
+                <td style="text-align: center;" class="entry-price-cell" data-position-key="${positionKey}">₹${entry.toFixed(2)}</td>
+                <td style="text-align: center;" class="ltp-price-cell" data-position-key="${positionKey}">₹${ltp.toFixed(2)}</td>
                 <td style="text-align: center;">0.00</td>
-                <td style="text-align: center;">₹0.00</td>
+                <td style="text-align: center; ${pnlColor}" class="pnl-cell" data-position-key="${positionKey}">${pnlSign}₹${pnl.toFixed(2)}</td>
                 <td style="text-align: center;">
                     <div class="dropdown">
                         <button class="btn btn-outline-secondary btn-sm dropdown-toggle" style="font-size: 9px; padding: 1px 4px;" data-bs-toggle="dropdown">Exit</button>
@@ -2674,7 +2698,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </button>
                 </td>
                 <td style="text-align: center;">
-                    <button class="btn btn-outline-danger btn-sm" style="font-size: 10px; padding: 2px 4px;" onclick="removePosition('${strike}-${expiry}-${optionType.toLowerCase()}${action}')">
+                    <button class="btn btn-outline-danger btn-sm" style="font-size: 10px; padding: 2px 4px;" onclick="removePosition('${positionKey}')">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -2690,6 +2714,60 @@ document.addEventListener('DOMContentLoaded', function() {
             positionsCount.innerHTML = `<i class="fas fa-briefcase me-2"></i>Current Positions <span class="badge bg-light text-dark ms-2">${countText}</span>`;
         }
     }
+    
+    // Update live LTP and P&L in Current Positions table
+    window.updatePositionTableLivePrices = function updatePositionTableLivePrices() {
+        if (!window.globalPositions || Object.keys(window.globalPositions).length === 0) {
+            return;
+        }
+        
+        // Update LTP and P&L for each position in the table
+        Object.values(window.globalPositions).forEach(position => {
+            const { strike, expiry, optionType, action, lots, entryPrice } = position;
+            const positionKey = `${strike}-${expiry}-${optionType.toLowerCase()}${action}`;
+            
+            // Get current LTP
+            const currentLTP = getCurrentLTP(strike, optionType, expiry);
+            
+            // Update LTP cell
+            const ltpCell = document.querySelector(`.ltp-price-cell[data-position-key="${positionKey}"]`);
+            if (ltpCell && currentLTP > 0) {
+                ltpCell.textContent = `₹${currentLTP.toFixed(2)}`;
+                
+                // Add visual feedback for live updates
+                ltpCell.classList.add('live-updated');
+                setTimeout(() => ltpCell.classList.remove('live-updated'), 1000);
+            }
+            
+            // Calculate and update P&L
+            const entry = entryPrice || 0;
+            const ltp = currentLTP || 0;
+            const quantity = lots * 75;
+            let pnl = 0;
+            
+            if (entry > 0 && ltp > 0) {
+                if (action === 'Buy') {
+                    pnl = (ltp - entry) * quantity;
+                } else { // Sell
+                    pnl = (entry - ltp) * quantity;
+                }
+            }
+            
+            // Update P&L cell
+            const pnlCell = document.querySelector(`.pnl-cell[data-position-key="${positionKey}"]`);
+            if (pnlCell) {
+                const pnlColor = pnl >= 0 ? 'text-success' : 'text-danger';
+                const pnlSign = pnl >= 0 ? '+' : '';
+                
+                pnlCell.textContent = `${pnlSign}₹${pnl.toFixed(2)}`;
+                pnlCell.className = `pnl-cell ${pnlColor}`;
+                
+                // Add visual feedback for live updates
+                pnlCell.classList.add('live-updated');
+                setTimeout(() => pnlCell.classList.remove('live-updated'), 1000);
+            }
+        });
+    };
     
     // Helper function to format expiry for symbol name
     function formatExpiryForSymbol(expiry) {

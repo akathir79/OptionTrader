@@ -677,6 +677,11 @@ class WebSocketHandler {
                 // Update option chain table with live data
                 this.updateTableWithLiveData(result.data);
                 
+                // Update Current Positions table with live LTP and P&L
+                if (typeof window.updatePositionTableLivePrices === 'function') {
+                    window.updatePositionTableLivePrices();
+                }
+                
                 // Update spot price if available
                 if (result.data['NSE:NIFTY50-INDEX']) {
                     const newSpotPrice = result.data['NSE:NIFTY50-INDEX'].ltp;
