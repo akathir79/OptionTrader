@@ -2607,6 +2607,49 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Adjust lots function for + and - buttons in current positions table
+    function adjustLots(positionKey, change, event) {
+        // Prevent event bubbling
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        console.log(`[ADJUST LOTS] Position: ${positionKey}, Change: ${change}`);
+        
+        if (!window.globalPositions || !window.globalPositions[positionKey]) {
+            console.log(`[ADJUST LOTS] Position not found: ${positionKey}`);
+            return;
+        }
+        
+        const position = window.globalPositions[positionKey];
+        const oldLots = position.lots;
+        
+        // Apply the change
+        if (change > 0) {
+            // Increment lots
+            position.lots += Math.abs(change);
+            console.log(`[ADJUST LOTS] INCREMENT: ${oldLots} -> ${position.lots}`);
+        } else if (change < 0 && position.lots > 0) {
+            // Decrement lots (but don't go below 0)
+            position.lots = Math.max(0, position.lots - Math.abs(change));
+            console.log(`[ADJUST LOTS] DECREMENT: ${oldLots} -> ${position.lots}`);
+            
+            // If lots reach 0, remove the position
+            if (position.lots <= 0) {
+                delete window.globalPositions[positionKey];
+                console.log(`[ADJUST LOTS] Removed position with 0 lots: ${positionKey}`);
+            }
+        }
+        
+        // Update all three components to maintain synchronization
+        updateCurrentPositionsTable();
+        restoreButtonStatesFromGlobalPositions();
+        createPayoffChartFromOptionChain();
+        
+        console.log(`[ADJUST LOTS] Synchronization complete. Total positions: ${Object.keys(window.globalPositions || {}).length}`);
+    }
+    
     // Format expiry for display (convert from YYYY-MM-DD to DD-MMM-YY)
     function formatExpiryDisplay(expiry) {
         if (!expiry) return 'N/A';
