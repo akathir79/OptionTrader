@@ -564,6 +564,46 @@
   border-bottom: 1px solid #f0f0f0;
 }
 
+.position-strike-info {
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #333;
+  font-weight: 600;
+}
+
+.position-strike-info i {
+  color: #007bff;
+  margin-right: 6px;
+}
+
+.position-price-info {
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: #666;
+  display: flex;
+  justify-content: space-between;
+}
+
+.entry-price {
+  color: #28a745;
+}
+
+.ltp-price {
+  color: #007bff;
+}
+
+.position-pnl-info {
+  margin-bottom: 12px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.pnl-value {
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.05);
+}
+
 .position-entry:last-child {
   margin-bottom: 8px;
   padding-bottom: 0;
@@ -1986,6 +2026,42 @@ document.addEventListener('DOMContentLoaded', function() {
     // Global position tracking system
     window.globalPositions = window.globalPositions || {};
     
+    // Function to get current LTP for a specific strike and option type
+    function getCurrentLTP(strike, optionType, expiry) {
+        try {
+            const table = document.getElementById('optionChainTable');
+            if (!table) return 0;
+            
+            // Find the row for this strike
+            const rows = table.getElementsByTagName('tbody')[0]?.getElementsByTagName('tr');
+            if (!rows) return 0;
+            
+            for (let row of rows) {
+                const strikeCell = row.children[19]; // Strike column index
+                if (strikeCell && parseFloat(strikeCell.textContent) === strike) {
+                    // Found the right row, now get the LTP for the option type
+                    if (optionType === 'CE') {
+                        const ceLtpCell = row.querySelector('.ce-ltp');
+                        if (ceLtpCell) {
+                            const ltpText = ceLtpCell.textContent.replace(/[₹,]/g, '');
+                            return parseFloat(ltpText) || 0;
+                        }
+                    } else if (optionType === 'PE') {
+                        const peLtpCell = row.querySelector('.pe-ltp');
+                        if (peLtpCell) {
+                            const ltpText = peLtpCell.textContent.replace(/[₹,]/g, '');
+                            return parseFloat(ltpText) || 0;
+                        }
+                    }
+                    break;
+                }
+            }
+        } catch (error) {
+            console.log('Error getting LTP:', error);
+        }
+        return 0;
+    }
+    
     // Create Buy/Sell button with position management card - using attached code approach
     function createOptionButton(rowIndex, key, label, extraClass) {
         const div = document.createElement('div');
@@ -2058,15 +2134,19 @@ document.addEventListener('DOMContentLoaded', function() {
             // Store in global positions
             if (!window.globalPositions[positionKey]) {
                 console.log(`[EXPIRY POSITION CHANGE] Creating new position for ${positionKey}`);
+                const optionType = key.includes('ce') ? 'CE' : 'PE';
+                const entryPrice = getCurrentLTP(strike, optionType, targetExpiry);
                 window.globalPositions[positionKey] = {
                     strike: strike,
                     expiry: targetExpiry,
-                    optionType: key.includes('ce') ? 'CE' : 'PE',
+                    optionType: optionType,
                     action: key.includes('Buy') ? 'Buy' : 'Sell',
                     lots: 0,
                     rowIndex: rowIndex,
-                    key: key
+                    key: key,
+                    entryPrice: entryPrice
                 };
+                console.log(`[POSITION CREATION] Entry price captured: ₹${entryPrice} for ${positionKey}`);
             }
             const beforeLots = window.globalPositions[positionKey].lots;
             window.globalPositions[positionKey].lots++;
@@ -2150,15 +2230,19 @@ document.addEventListener('DOMContentLoaded', function() {
             counters[rowIndex][key]++;
             // Store in global positions
             if (!window.globalPositions[positionKey]) {
+                const optionType = key.includes('ce') ? 'CE' : 'PE';
+                const entryPrice = getCurrentLTP(strike, optionType, currentExpiry);
                 window.globalPositions[positionKey] = {
                     strike: strike,
                     expiry: currentExpiry,
-                    optionType: key.includes('ce') ? 'CE' : 'PE',
+                    optionType: optionType,
                     action: key.includes('Buy') ? 'Buy' : 'Sell',
                     lots: 0,
                     rowIndex: rowIndex,
-                    key: key
+                    key: key,
+                    entryPrice: entryPrice
                 };
+                console.log(`[POSITION CREATION] Entry price captured: ₹${entryPrice} for ${positionKey}`);
             }
             window.globalPositions[positionKey].lots++;
         } else if (action === 'remove' && counters[rowIndex][key] > 0) {
@@ -2428,9 +2512,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 const lotControl = document.createElement('div');
                 lotControl.className = 'position-lot-control';
                 
+                // Strike price display
+                const strikeInfo = document.createElement('div');
+                strikeInfo.className = 'position-strike-info';
+                strikeInfo.innerHTML = `<i class="fas fa-crosshairs"></i> Strike: ${pos.strike}`;
+                
+                // Entry and LTP info
+                const priceInfo = document.createElement('div');
+                priceInfo.className = 'position-price-info';
+                const entryPrice = pos.entryPrice || 0; // Default to 0 if not available
+                const ltp = getCurrentLTP(pos.strike, pos.optionType, pos.expiry) || 0;
+                priceInfo.innerHTML = `<span class="entry-price">Entry: ₹${entryPrice.toFixed(2)}</span> | <span class="ltp-price">LTP: ₹${ltp.toFixed(2)}</span>`;
+                
+                // Lots and Quantity display
                 const lotLabel = document.createElement('span');
                 lotLabel.className = 'position-lot-label';
-                lotLabel.innerHTML = `<i class="fas fa-layer-group"></i> ${pos.lots} lots`;
+                const quantity = pos.lots * 75; // Standard lot size
+                lotLabel.innerHTML = `<i class="fas fa-layer-group"></i> ${pos.lots} lots (${quantity} qty)`;
+                
+                // P&L calculation
+                const pnlInfo = document.createElement('div');
+                pnlInfo.className = 'position-pnl-info';
+                let pnl = 0;
+                if (entryPrice > 0 && ltp > 0) {
+                    if (pos.action === 'Buy') {
+                        pnl = (ltp - entryPrice) * quantity;
+                    } else { // Sell
+                        pnl = (entryPrice - ltp) * quantity;
+                    }
+                }
+                const pnlColor = pnl >= 0 ? 'green' : 'red';
+                const pnlSign = pnl >= 0 ? '+' : '';
+                pnlInfo.innerHTML = `<span class="pnl-value" style="color: ${pnlColor}; font-weight: bold;">P&L: ${pnlSign}₹${pnl.toFixed(2)}</span>`;
                 
                 const controlButtons = document.createElement('div');
                 controlButtons.className = 'position-control-buttons';
@@ -2462,6 +2575,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 lotControl.appendChild(controlButtons);
                 
                 positionEntry.appendChild(expiryTag);
+                positionEntry.appendChild(strikeInfo);
+                positionEntry.appendChild(priceInfo);
+                positionEntry.appendChild(pnlInfo);
                 positionEntry.appendChild(lotControl);
                 
                 cardContent.appendChild(positionEntry);
