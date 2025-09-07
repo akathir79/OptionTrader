@@ -2611,7 +2611,8 @@ document.addEventListener('DOMContentLoaded', function() {
             event.stopPropagation();
         }
         
-        console.log(`[ADJUST LOTS] Position: ${positionKey}, Change: ${change}`);
+        console.log(`[ADJUST LOTS] Called with Position: ${positionKey}, Change: ${change}`);
+        console.log(`[ADJUST LOTS] Available positions:`, Object.keys(window.globalPositions || {}));
         
         if (!window.globalPositions || !window.globalPositions[positionKey]) {
             console.log(`[ADJUST LOTS] Position not found: ${positionKey}`);
