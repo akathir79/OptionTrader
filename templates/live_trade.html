@@ -2024,6 +2024,20 @@ document.addEventListener('DOMContentLoaded', function() {
         updateButtonDisplay(rowIndex, key);
         updatePositionCard(rowIndex, key);
         
+        // Close position card if no positions remain for this strike/option type/action combination
+        const currentStrike = strike;
+        const currentOptionType = key.includes('ce') ? 'CE' : 'PE';
+        const currentAction = key.includes('Buy') ? 'Buy' : 'Sell';
+        
+        const remainingPositions = Object.values(window.globalPositions).filter(pos => 
+            pos.strike === currentStrike && pos.optionType === currentOptionType && 
+            pos.action === currentAction && pos.lots > 0
+        );
+        
+        if (remainingPositions.length === 0) {
+            closeAllPositionCards();
+        }
+        
         // Immediately create and update payoff chart using loaded option chain data
         createPayoffChartFromOptionChain();
         
@@ -2347,13 +2361,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 cardContent.appendChild(positionEntry);
             });
         });
-        
-        // Add "Add Position" button for new expiry
-        const addButton = document.createElement('button');
-        addButton.className = 'position-add-btn';
-        addButton.innerHTML = '<i class="fas fa-plus"></i> Add Position';
-        addButton.onclick = () => handleButtonClick(rowIndex, key, 'add');
-        cardContent.appendChild(addButton);
     }
     
     // Format expiry for display (convert from YYYY-MM-DD to DD-MMM-YY)
