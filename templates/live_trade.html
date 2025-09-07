@@ -1618,6 +1618,71 @@
     0% { background-color: #28a745; }
     100% { background-color: transparent; }
   }
+  
+  /* Lots Hover Controls */
+  .lots-container {
+    position: relative;
+    display: inline-block;
+    min-width: 40px;
+  }
+  
+  .lots-value {
+    display: inline-block;
+    font-size: 11px;
+  }
+  
+  .lots-controls {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    padding: 2px;
+    z-index: 10;
+    white-space: nowrap;
+  }
+  
+  .lots-cell:hover .lots-value {
+    opacity: 0.3;
+  }
+  
+  .lots-cell:hover .lots-controls {
+    display: inline-block;
+  }
+  
+  .lots-btn {
+    background: #fff;
+    border: 1px solid #ccc;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+    margin: 0 1px;
+    border-radius: 2px;
+    color: #333;
+  }
+  
+  .lots-btn:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+    color: #007bff;
+  }
+  
+  .lots-minus:hover {
+    background: #f8d7da;
+    border-color: #dc3545;
+    color: #dc3545;
+  }
+  
+  .lots-plus:hover {
+    background: #d4edda;
+    border-color: #28a745;
+    color: #28a745;
+  }
 </style>
 
 <!-- *** NEW: symbol / expiry logic *** -->
@@ -2464,7 +2529,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     <span class="badge bg-${optionType === 'CE' ? 'success' : 'primary'} text-white">${optionType}</span>
                 </td>
                 <td style="text-align: center;">${actionBadge}</td>
-                <td style="text-align: center;">${lots}</td>
+                <td style="text-align: center; position: relative;" class="lots-cell">
+                    <div class="lots-container" data-position-key="${strike}-${expiry}-${optionType.toLowerCase()}${action}">
+                        <span class="lots-value">${lots}</span>
+                        <div class="lots-controls">
+                            <button class="lots-btn lots-minus" onclick="adjustLots('${strike}-${expiry}-${optionType.toLowerCase()}${action}', -1, event)">−</button>
+                            <button class="lots-btn lots-plus" onclick="adjustLots('${strike}-${expiry}-${optionType.toLowerCase()}${action}', 1, event)">+</button>
+                        </div>
+                    </div>
+                </td>
                 <td style="text-align: center;">${lots * 75}</td>
                 <td style="text-align: center; font-size: 10px; max-width: 140px; overflow: hidden; text-overflow: ellipsis;">${symbol}</td>
                 <td style="text-align: center; font-size: 10px;">${new Date().toLocaleDateString('en-IN')} ${new Date().toLocaleTimeString('en-IN', {hour12: true, hour: '2-digit', minute: '2-digit'}).toLowerCase()}</td>
