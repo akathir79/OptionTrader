@@ -708,8 +708,27 @@ class WebSocketHandler {
         
         console.log('Table found! Processing live updates for', Object.keys(liveData).length, 'symbols');
         
-        const rows = table.querySelectorAll('tbody tr');
-        console.log('Found', rows.length, 'table rows');
+        // Try multiple selectors to find rows
+        let rows = table.querySelectorAll('tbody tr');
+        if (rows.length === 0) {
+            console.log('⚠️ No rows found with tbody tr, trying alternative selectors...');
+            rows = table.querySelectorAll('tr[data-strike]');
+            console.log('Found', rows.length, 'rows with data-strike attribute');
+        }
+        if (rows.length === 0) {
+            console.log('⚠️ Still no rows found, trying all tr in table...');
+            rows = table.querySelectorAll('tr');
+            console.log('Found', rows.length, 'total rows in table');
+            // Filter out header rows
+            rows = Array.from(rows).filter(row => !row.closest('thead'));
+            console.log('Found', rows.length, 'non-header rows');
+        }
+        
+        console.log('📊 Final row count:', rows.length);
+        if (rows.length === 0) {
+            console.log('❌ No table rows found for live data updates');
+            return;
+        }
         
         let updatesCount = 0;
         rows.forEach((row, index) => {
@@ -785,11 +804,19 @@ class WebSocketHandler {
         const cell = row.querySelector(selector);
         if (cell && value !== undefined) {
             const formattedValue = typeof value === 'number' ? this.formatPrice(value) : value;
+            
+            // Debug logging for specific columns we're interested in
+            if (selector.includes('volume') || selector.includes('oi')) {
+                console.log(`📊 Updating ${selector}: ${value} → ${formattedValue}`);
+            }
+            
             cell.textContent = formattedValue;
             
             // Add visual feedback for live updates
             cell.classList.add('live-updated');
             setTimeout(() => cell.classList.remove('live-updated'), 1000);
+        } else if (!cell) {
+            console.log(`⚠️ Cell not found for selector: ${selector}`);
         }
     }
     

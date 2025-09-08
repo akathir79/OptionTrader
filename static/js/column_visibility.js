@@ -295,8 +295,16 @@ class ColumnVisibilityController {
             }
         });
         
-        // Apply to body cells
-        const bodyRows = table.querySelectorAll('tbody tr');
+        // Apply to body cells - use improved row detection like WebSocket handler
+        let bodyRows = table.querySelectorAll('tbody tr');
+        if (bodyRows.length === 0) {
+            console.log('🔍 No tbody tr found, trying alternative row selectors...');
+            bodyRows = table.querySelectorAll('tr[data-strike]');
+            if (bodyRows.length === 0) {
+                bodyRows = Array.from(table.querySelectorAll('tr')).filter(row => !row.closest('thead'));
+            }
+        }
+        
         bodyRows.forEach(row => {
             const cells = row.querySelectorAll('td');
             cells.forEach((cell, index) => {
