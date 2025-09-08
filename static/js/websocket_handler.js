@@ -172,12 +172,32 @@ class WebSocketHandler {
                 // Update only VOL/OI/Change in OI columns (not LTP)
                 this.updateCellValue(matchingRow, '.ce-volume', strike.ce_volume);
                 this.updateCellValue(matchingRow, '.ce-oi', strike.ce_oi);
-                this.updateCellValue(matchingRow, '.ce-oich', strike.ce_oich);
+                this.updateCellValueWithColor(matchingRow, '.ce-oi-change', strike.ce_oich);
                 this.updateCellValue(matchingRow, '.pe-volume', strike.pe_volume);
                 this.updateCellValue(matchingRow, '.pe-oi', strike.pe_oi);
-                this.updateCellValue(matchingRow, '.pe-oich', strike.pe_oich);
+                this.updateCellValueWithColor(matchingRow, '.pe-oi-change', strike.pe_oich);
             }
         });
+    }
+    
+    updateCellValueWithColor(row, selector, value) {
+        const cell = row.querySelector(selector);
+        if (cell) {
+            cell.textContent = value || 0;
+            
+            // Apply color based on value (positive = green, negative = red)
+            cell.classList.remove('text-success', 'text-danger');
+            if (value >= 0) {
+                cell.classList.add('text-success');
+            } else {
+                cell.classList.add('text-danger');
+            }
+            
+            cell.classList.add('cell-updated');
+            setTimeout(() => {
+                cell.classList.remove('cell-updated');
+            }, 1000);
+        }
     }
     
     convertToFyersSymbol(symbol) {
