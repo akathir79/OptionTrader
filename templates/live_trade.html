@@ -44,9 +44,14 @@
   background-color: #ffffff !important; /* White for OTM puts */
 }
 
-/* Live update animation */
-.live-updated {
-  color: #007bff !important; /* Blue font color for updating values */
+/* Live update animation - dynamic colors based on value change */
+.value-increased {
+  color: #28a745 !important; /* Green for increasing values */
+  transition: color 0.3s ease;
+}
+
+.value-decreased {
+  color: #dc3545 !important; /* Red for decreasing values */
   transition: color 0.3s ease;
 }
 

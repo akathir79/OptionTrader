@@ -454,9 +454,22 @@ class WebSocketHandler {
         
         // Only update LTP - preserve all VOL/OI/Change values from timer updates
         if (ltpCell && data.ltp) {
+            // Get previous value for comparison
+            const previousText = ltpCell.textContent.replace(/,/g, '');
+            const previousValue = parseFloat(previousText) || 0;
+            const currentValue = parseFloat(data.ltp) || 0;
+            
             ltpCell.textContent = this.formatPrice(data.ltp);
-            ltpCell.classList.add('live-updated');
-            setTimeout(() => ltpCell.classList.remove('live-updated'), 1000);
+            
+            // Apply color based on LTP change
+            ltpCell.classList.remove('value-increased', 'value-decreased');
+            if (currentValue > previousValue) {
+                ltpCell.classList.add('value-increased');
+                setTimeout(() => ltpCell.classList.remove('value-increased'), 1000);
+            } else if (currentValue < previousValue) {
+                ltpCell.classList.add('value-decreased');
+                setTimeout(() => ltpCell.classList.remove('value-decreased'), 1000);
+            }
         }
     }
     
@@ -467,9 +480,22 @@ class WebSocketHandler {
         
         // Only update LTP - preserve all VOL/OI/Change values from timer updates
         if (ltpCell && data.ltp) {
+            // Get previous value for comparison
+            const previousText = ltpCell.textContent.replace(/,/g, '');
+            const previousValue = parseFloat(previousText) || 0;
+            const currentValue = parseFloat(data.ltp) || 0;
+            
             ltpCell.textContent = this.formatPrice(data.ltp);
-            ltpCell.classList.add('live-updated');
-            setTimeout(() => ltpCell.classList.remove('live-updated'), 1000);
+            
+            // Apply color based on LTP change
+            ltpCell.classList.remove('value-increased', 'value-decreased');
+            if (currentValue > previousValue) {
+                ltpCell.classList.add('value-increased');
+                setTimeout(() => ltpCell.classList.remove('value-increased'), 1000);
+            } else if (currentValue < previousValue) {
+                ltpCell.classList.add('value-decreased');
+                setTimeout(() => ltpCell.classList.remove('value-decreased'), 1000);
+            }
         }
     }
     
@@ -871,16 +897,27 @@ class WebSocketHandler {
         if (cell && value !== undefined) {
             const formattedValue = typeof value === 'number' ? this.formatPrice(value) : value;
             
+            // Get previous value for comparison
+            const previousText = cell.textContent.replace(/,/g, ''); // Remove commas for comparison
+            const previousValue = parseFloat(previousText) || 0;
+            const currentValue = typeof value === 'number' ? value : parseFloat(value) || 0;
+            
             // Debug logging for specific columns we're interested in
             if (selector.includes('volume') || selector.includes('oi')) {
-                console.log(`📊 Updating ${selector}: ${value} → ${formattedValue}`);
+                console.log(`📊 Updating ${selector}: ${previousValue} → ${currentValue}`);
             }
             
             cell.textContent = formattedValue;
             
-            // Add visual feedback for live updates
-            cell.classList.add('live-updated');
-            setTimeout(() => cell.classList.remove('live-updated'), 1000);
+            // Apply color based on value change
+            cell.classList.remove('value-increased', 'value-decreased');
+            if (currentValue > previousValue) {
+                cell.classList.add('value-increased');
+                setTimeout(() => cell.classList.remove('value-increased'), 1000);
+            } else if (currentValue < previousValue) {
+                cell.classList.add('value-decreased');
+                setTimeout(() => cell.classList.remove('value-decreased'), 1000);
+            }
         } else if (!cell) {
             console.log(`⚠️ Cell not found for selector: ${selector}`);
         }
