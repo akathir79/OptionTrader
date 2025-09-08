@@ -184,10 +184,6 @@ def get_option_chain():
         if not options_list:
             return jsonify({"error": "No option data found"}), 500
         
-        # Check if oich field exists in API response
-        sample_option = options_list[0] if options_list else {}
-        has_oich = 'oich' in sample_option
-        print(f"API Response: Has 'oich' field: {has_oich}, Sample OICH value: {sample_option.get('oich', 'N/A')}")
             
         # Calculate ATM strike
         atm_strike = min(options_list, key=lambda x: abs(x['strike_price'] - spot_price))['strike_price']
@@ -256,9 +252,6 @@ def get_option_chain():
         print(f"Total strikes processed: {len(strike_list)}")
         print(f"ATM Strike: {atm_strike}")
         print(f"Symbols to subscribe: {len(symbols_to_subscribe)}")
-        # Show only first few strikes with OICH values for debugging
-        for i, strike in enumerate(strike_list[:3]):
-            print(f"Strike {strike['strike']}: CE OICH={strike['ce_oich']}, PE OICH={strike['pe_oich']}")
         print(f"==============================\n")
         
         # Start WebSocket subscription
