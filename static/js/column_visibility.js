@@ -26,8 +26,8 @@ class ColumnVisibilityController {
     getDefaultColumnStates() {
         // Default visible columns for essential trading data only
         const defaults = {};
-        // Essential columns: CE B/S(0), Change in OI(13), Vol(15), LTP(17), Delta(18), Strike(19), Delta(20), LTP(21), Vol(23), Change in OI(25), PE B/S(38)
-        const essentialColumns = [0, 13, 15, 17, 18, 19, 20, 21, 23, 25, 38];
+        // Essential columns: CE B/S(0), Change in OI(13), OI(14), Vol(15), LTP(17), Delta(18), Strike(19), Delta(20), LTP(21), Vol(23), OI(24), Change in OI(25), PE B/S(38)
+        const essentialColumns = [0, 13, 14, 15, 17, 18, 19, 20, 21, 23, 24, 25, 38];
         
         for (let i = 0; i < 39; i++) {
             defaults[i] = essentialColumns.includes(i);
@@ -49,9 +49,9 @@ class ColumnVisibilityController {
             { name: 'Vol', columns: [15, 23], essential: true },
             { name: 'Delta (Δ)', columns: [18, 20], essential: true },
             { name: 'Change in OI', columns: [13, 25], essential: true },
+            { name: 'OI', columns: [14, 24], essential: true },
             { name: 'Strike', columns: [19], essential: true },
             { name: 'Chart', columns: [16, 22], essential: false },
-            { name: 'OI', columns: [14, 24], essential: false },
             { name: 'Bid', columns: [10, 28], essential: false },
             { name: 'Ask', columns: [11, 27], essential: false },
             { name: 'Bid Qty', columns: [9, 29], essential: false },
@@ -86,7 +86,7 @@ class ColumnVisibilityController {
         
         // Create advanced columns
         groupedControls.filter(group => !group.essential).forEach((group, index) => {
-            const realIndex = index + 6; // Offset for essential columns
+            const realIndex = index + 7; // Offset for essential columns
             const isChecked = group.columns.every(col => this.columnStates[col]) ? 'checked' : '';
             const checkboxHtml = `
                 <div class="form-check mb-1">
@@ -215,7 +215,7 @@ class ColumnVisibilityController {
     }
 
     loadSavedState() {
-        const currentVersion = '2.0'; // Version for new essential-only defaults
+        const currentVersion = '2.1'; // Version for new essential-only defaults with OI
         const savedVersion = localStorage.getItem('optionChainColumnVersion');
         const saved = localStorage.getItem('optionChainColumnStates');
         
