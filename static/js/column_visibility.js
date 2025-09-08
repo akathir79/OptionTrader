@@ -45,109 +45,116 @@ class ColumnVisibilityController {
         
         container.innerHTML = '';
         
-        // Grouped controls for better UX - one checkbox controls both CE and PE sides
-        const groupedControls = [
-            { name: 'Buy/Sell Buttons', columns: [0, 38], essential: true },
-            { name: 'Last Traded Price', columns: [17, 21], essential: true },
-            { name: 'Volume', columns: [15, 23], essential: true },
-            { name: 'Delta (Δ)', columns: [18, 20], essential: true },
-            { name: 'Change in OI', columns: [13, 25], essential: true },
-            { name: 'Open Interest', columns: [14, 24], essential: true },
-            { name: 'Strike Price', columns: [19], essential: true },
-            { name: 'Price Charts', columns: [16, 22], essential: false },
-            { name: 'Bid Price', columns: [10, 28], essential: false },
-            { name: 'Ask Price', columns: [11, 27], essential: false },
-            { name: 'Bid Quantity', columns: [9, 29], essential: false },
-            { name: 'Ask Quantity', columns: [12, 26], essential: false },
-            { name: 'Price Change', columns: [8, 30], essential: false },
-            { name: 'Gamma (Γ)', columns: [7, 31], essential: false },
-            { name: 'Theta (Θ)', columns: [6, 32], essential: false },
-            { name: 'Vega (ν)', columns: [5, 33], essential: false },
-            { name: 'Vanna', columns: [4, 34], essential: false },
-            { name: 'Charm', columns: [3, 35], essential: false },
-            { name: 'Volga', columns: [2, 36], essential: false },
-            { name: 'Veta', columns: [1, 37], essential: false }
+        // All column names exactly as they appear in the table header
+        const columnNames = [
+            'CE B/S',           // 0
+            'Veta',             // 1  
+            'Volga',            // 2
+            'Charm',            // 3
+            'Vanna',            // 4
+            'Vega',             // 5
+            'Theta',            // 6
+            'Gamma',            // 7
+            'Chng',             // 8
+            'Bid Qty',          // 9
+            'Bid',              // 10
+            'Ask',              // 11
+            'Ask Qty',          // 12
+            'Chng in OI',       // 13
+            'OI',               // 14
+            'Vol',              // 15
+            'Chart',            // 16
+            'LTP',              // 17
+            'Δ (CE)',           // 18
+            'Strike',           // 19
+            'Δ (PE)',           // 20
+            'LTP',              // 21
+            'Chart',            // 22
+            'Vol',              // 23
+            'OI',               // 24
+            'Chng in OI',       // 25
+            'Ask Qty',          // 26
+            'Ask',              // 27
+            'Bid',              // 28
+            'Bid Qty',          // 29
+            'Chng',             // 30
+            'Gamma',            // 31
+            'Theta',            // 32
+            'Vega',             // 33
+            'Vanna',            // 34
+            'Charm',            // 35
+            'Volga',            // 36
+            'Veta',             // 37
+            'PE B/S'            // 38
         ];
         
-        // Add professional header with controls
+        // Add header with control buttons
         container.innerHTML = `
             <div style="border-bottom: 1px solid #e9ecef; padding-bottom: 10px; margin-bottom: 12px;">
-                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                    <button id="selectAllColumns" class="btn btn-success btn-sm" style="font-size: 10px; padding: 4px 8px;">
-                        <i class="fas fa-check"></i> All
+                <div style="display: flex; gap: 6px; margin-bottom: 8px;">
+                    <button id="selectAllColumns" class="btn btn-success btn-sm" style="font-size: 9px; padding: 3px 6px;">
+                        Select All
                     </button>
-                    <button id="deselectAllColumns" class="btn btn-secondary btn-sm" style="font-size: 10px; padding: 4px 8px;">
-                        <i class="fas fa-times"></i> None
+                    <button id="deselectAllColumns" class="btn btn-secondary btn-sm" style="font-size: 9px; padding: 3px 6px;">
+                        Clear All
                     </button>
-                    <button id="resetToDefaults" class="btn btn-primary btn-sm" style="font-size: 10px; padding: 4px 8px;">
-                        <i class="fas fa-undo"></i> Defaults
+                    <button id="resetToDefaults" class="btn btn-primary btn-sm" style="font-size: 9px; padding: 3px 6px;">
+                        Defaults
                     </button>
-                </div>
-                <div style="font-size: 12px; font-weight: 600; color: #495057; text-transform: uppercase; letter-spacing: 0.5px;">
-                    Essential Columns
                 </div>
             </div>
         `;
         
-        // Create essential columns first
-        groupedControls.filter(group => group.essential).forEach((group, index) => {
-            const isChecked = group.columns.every(col => this.columnStates[col]) ? 'checked' : '';
-            const checkboxHtml = `
-                <div class="form-check mb-2" style="padding-left: 0; display: flex; align-items: center;">
-                    <input class="form-check-input" type="checkbox" id="group_${index}" data-group="${index}" ${isChecked} 
-                           style="margin-right: 8px; margin-top: 0;">
-                    <label class="form-check-label" for="group_${index}" 
-                           style="font-weight: 500; font-size: 11px; color: #212529; cursor: pointer;">
-                        ${group.name}
+        // Create individual checkboxes for all columns in two-column layout
+        container.innerHTML += '<div class="row" style="font-size: 10px;">';
+        
+        // Split columns into two groups for better layout
+        const halfLength = Math.ceil(columnNames.length / 2);
+        
+        // Left column
+        container.innerHTML += '<div class="col-6">';
+        for (let i = 0; i < halfLength; i++) {
+            if (i < columnNames.length) {
+                const isChecked = this.columnStates[i] ? 'checked' : '';
+                container.innerHTML += `
+                    <div class="form-check mb-1">
+                        <input class="form-check-input" type="checkbox" data-column="${i}" id="col${i}" ${isChecked}>
+                        <label class="form-check-label" for="col${i}" style="font-size: 10px;">
+                            ${columnNames[i]}
+                        </label>
+                    </div>
+                `;
+            }
+        }
+        container.innerHTML += '</div>';
+        
+        // Right column
+        container.innerHTML += '<div class="col-6">';
+        for (let i = halfLength; i < columnNames.length; i++) {
+            const isChecked = this.columnStates[i] ? 'checked' : '';
+            container.innerHTML += `
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" data-column="${i}" id="col${i}" ${isChecked}>
+                    <label class="form-check-label" for="col${i}" style="font-size: 10px;">
+                        ${columnNames[i]}
                     </label>
                 </div>
             `;
-            container.innerHTML += checkboxHtml;
-        });
+        }
+        container.innerHTML += '</div>';
         
-        // Add professional separator for advanced columns
-        container.innerHTML += `
-            <div style="border-top: 1px solid #e9ecef; margin: 16px 0 12px 0; padding-top: 12px;">
-                <div style="font-size: 11px; font-weight: 600; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-                    Advanced Options (Greeks & Market Data)
-                </div>
-            </div>
-        `;
-        
-        // Create advanced columns in two columns for better space usage
-        const advancedGroups = groupedControls.filter(group => !group.essential);
-        advancedGroups.forEach((group, index) => {
-            const realIndex = index + 7; // Offset for essential columns
-            const isChecked = group.columns.every(col => this.columnStates[col]) ? 'checked' : '';
-            const checkboxHtml = `
-                <div class="form-check mb-1" style="padding-left: 0; display: flex; align-items: center;">
-                    <input class="form-check-input" type="checkbox" id="group_${realIndex}" data-group="${realIndex}" ${isChecked}
-                           style="margin-right: 8px; margin-top: 0; transform: scale(0.9);">
-                    <label class="form-check-label" for="group_${realIndex}" 
-                           style="font-size: 10px; color: #6c757d; cursor: pointer;">
-                        ${group.name}
-                    </label>
-                </div>
-            `;
-            container.innerHTML += checkboxHtml;
-        });
-        
-        // Store grouped controls for reference
-        this.groupedControls = groupedControls;
+        container.innerHTML += '</div>'; // Close row
     }
 
     setupEventListeners() {
-        // Grouped checkbox change handlers
+        // Individual checkbox change handlers
         document.addEventListener('change', (e) => {
-            if (e.target.matches('[data-group]')) {
-                const groupIndex = parseInt(e.target.dataset.group);
-                const group = this.groupedControls[groupIndex];
+            if (e.target.matches('[data-column]')) {
+                const columnIndex = parseInt(e.target.dataset.column);
                 const isChecked = e.target.checked;
                 
-                // Toggle all columns in this group
-                group.columns.forEach(columnIndex => {
-                    this.columnStates[columnIndex] = isChecked;
-                });
+                // Toggle this specific column
+                this.columnStates[columnIndex] = isChecked;
                 
                 this.applyColumnVisibility();
                 this.saveState();
