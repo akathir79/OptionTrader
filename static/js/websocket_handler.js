@@ -33,8 +33,8 @@ class WebSocketHandler {
         
         console.log('WebSocket handler initialized');
         
-        // Start live data polling immediately
-        this.setupRealTimeDataListener();
+        // Don't start real-time data immediately - wait for table to be populated
+        this.realTimeDataStarted = false;
     }
     
     setupEventListeners() {
@@ -329,6 +329,13 @@ class WebSocketHandler {
                 window.restoreButtonStatesFromGlobalPositions();
             }
         }, 100);
+        
+        // Start real-time data listener NOW that table is populated
+        if (!this.realTimeDataStarted) {
+            this.setupRealTimeDataListener();
+            this.realTimeDataStarted = true;
+            console.log('🚀 Real-time data listener started after table population');
+        }
     }
     
     updateLiveTableData(message) {
@@ -735,27 +742,33 @@ class WebSocketHandler {
             const ceSymbol = row.querySelector('.ce-ltp')?.getAttribute('data-symbol');
             const peSymbol = row.querySelector('.pe-ltp')?.getAttribute('data-symbol');
             
-            // Update CE (Call) data
+            // Update CE (Call) data - ONLY LTP (preserve VOL/OI from initial load)
             if (ceSymbol && liveData[ceSymbol]) {
                 const ceData = liveData[ceSymbol];
                 this.updateCellValue(row, '.ce-ltp', ceData.ltp);
-                this.updateCellValue(row, '.ce-volume', ceData.volume);
-                this.updateCellValue(row, '.ce-oi', ceData.oi);
-                this.updateCellValue(row, '.ce-change', ceData.change);
-                this.updateCellValue(row, '.ce-bid', ceData.bid);
-                this.updateCellValue(row, '.ce-ask', ceData.ask);
+                // Skip volume, OI, change - preserve original values from option chain load
+                // Only update bid/ask if they have meaningful values
+                if (ceData.bid && ceData.bid > 0) {
+                    this.updateCellValue(row, '.ce-bid', ceData.bid);
+                }
+                if (ceData.ask && ceData.ask > 0) {
+                    this.updateCellValue(row, '.ce-ask', ceData.ask);
+                }
                 updatesCount++;
             }
             
-            // Update PE (Put) data
+            // Update PE (Put) data - ONLY LTP (preserve VOL/OI from initial load)  
             if (peSymbol && liveData[peSymbol]) {
                 const peData = liveData[peSymbol];
                 this.updateCellValue(row, '.pe-ltp', peData.ltp);
-                this.updateCellValue(row, '.pe-volume', peData.volume);
-                this.updateCellValue(row, '.pe-oi', peData.oi);
-                this.updateCellValue(row, '.pe-change', peData.change);
-                this.updateCellValue(row, '.pe-bid', peData.bid);
-                this.updateCellValue(row, '.pe-ask', peData.ask);
+                // Skip volume, OI, change - preserve original values from option chain load
+                // Only update bid/ask if they have meaningful values
+                if (peData.bid && peData.bid > 0) {
+                    this.updateCellValue(row, '.pe-bid', peData.bid);
+                }
+                if (peData.ask && peData.ask > 0) {
+                    this.updateCellValue(row, '.pe-ask', peData.ask);
+                }
                 updatesCount++;
             }
             
