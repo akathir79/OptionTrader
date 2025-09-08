@@ -7,35 +7,6 @@
 
 
 <style>
-/* Full Height Layout for Trading Platform */
-.trading-container {
-  height: calc(100vh - 56px);
-  overflow-y: auto;
-  padding: 0;
-}
-
-.resizable-container {
-  height: calc(100vh - 56px);
-  display: flex;
-  overflow: hidden;
-}
-
-.resizable-panel {
-  height: calc(100vh - 56px);
-  overflow-y: auto;
-}
-
-/* Ensure main content fills available space */
-.container-fluid.main-trading {
-  height: calc(100vh - 56px);
-  padding: 0;
-}
-
-.flex-fill-content {
-  flex: 1;
-  overflow-y: auto;
-}
-
 /* ATM Strike Highlighting Styles */
 .atm-strike-highlight {
   background-color: rgba(255, 193, 7, 0.3) !important;
@@ -972,7 +943,7 @@
 </style>
 
 <!-- Live Trading Container with Enhanced Bootstrap Design -->
-<div class="container-fluid main-trading trading-container">
+<div class="container-fluid py-3">
   <!-- Resizable Layout Container -->
   <div class="resizable-container">
     <!-- Left Panel - Symbol Selection & Option Chain -->
