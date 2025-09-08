@@ -448,62 +448,28 @@ class WebSocketHandler {
     }
     
     updateCallOptionData(row, data) {
-        // Update call option columns with live data
-        const ltpCell = row.querySelector('td:nth-child(7)'); // Call LTP
-        const oiCell = row.querySelector('td:nth-child(6)'); // Call OI
-        const volCell = row.querySelector('td:nth-child(5)'); // Call Volume
-        const chngCell = row.querySelector('td:nth-child(4)'); // Call Change
-        const bidCell = row.querySelector('td:nth-child(2)'); // Call Bid
-        const askCell = row.querySelector('td:nth-child(3)'); // Call Ask
+        // Update ONLY call option LTP with live WebSocket data
+        // Skip volume, OI, change - preserve original values from option chain load
+        const ltpCell = row.querySelector('.ce-ltp');
         
+        // Only update LTP - preserve all VOL/OI/Change values from timer updates
         if (ltpCell && data.ltp) {
             ltpCell.textContent = this.formatPrice(data.ltp);
-        }
-        if (oiCell && data.tot_buy_qty) {
-            oiCell.textContent = data.tot_buy_qty.toLocaleString();
-        }
-        if (volCell && data.vol_traded_today) {
-            volCell.textContent = data.vol_traded_today.toLocaleString();
-        }
-        if (chngCell && data.ch !== undefined) {
-            chngCell.textContent = data.ch.toFixed(2);
-            chngCell.className = data.ch >= 0 ? 'text-success' : 'text-danger';
-        }
-        if (bidCell && data.bid_price) {
-            bidCell.textContent = this.formatPrice(data.bid_price);
-        }
-        if (askCell && data.ask_price) {
-            askCell.textContent = this.formatPrice(data.ask_price);
+            ltpCell.classList.add('live-updated');
+            setTimeout(() => ltpCell.classList.remove('live-updated'), 1000);
         }
     }
     
     updatePutOptionData(row, data) {
-        // Update put option columns with live data
-        const ltpCell = row.querySelector('td:nth-child(13)'); // Put LTP
-        const oiCell = row.querySelector('td:nth-child(14)'); // Put OI  
-        const volCell = row.querySelector('td:nth-child(15)'); // Put Volume
-        const chngCell = row.querySelector('td:nth-child(16)'); // Put Change
-        const bidCell = row.querySelector('td:nth-child(17)'); // Put Bid
-        const askCell = row.querySelector('td:nth-child(18)'); // Put Ask
+        // Update ONLY put option LTP with live WebSocket data
+        // Skip volume, OI, change - preserve original values from option chain load
+        const ltpCell = row.querySelector('.pe-ltp');
         
+        // Only update LTP - preserve all VOL/OI/Change values from timer updates
         if (ltpCell && data.ltp) {
             ltpCell.textContent = this.formatPrice(data.ltp);
-        }
-        if (oiCell && data.tot_buy_qty) {
-            oiCell.textContent = data.tot_buy_qty.toLocaleString();
-        }
-        if (volCell && data.vol_traded_today) {
-            volCell.textContent = data.vol_traded_today.toLocaleString();
-        }
-        if (chngCell && data.ch !== undefined) {
-            chngCell.textContent = data.ch.toFixed(2);
-            chngCell.className = data.ch >= 0 ? 'text-success' : 'text-danger';
-        }
-        if (bidCell && data.bid_price) {
-            bidCell.textContent = this.formatPrice(data.bid_price);
-        }
-        if (askCell && data.ask_price) {
-            askCell.textContent = this.formatPrice(data.ask_price);
+            ltpCell.classList.add('live-updated');
+            setTimeout(() => ltpCell.classList.remove('live-updated'), 1000);
         }
     }
     
