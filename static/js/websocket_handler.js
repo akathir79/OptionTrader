@@ -289,13 +289,13 @@ class WebSocketHandler {
                 const strike = parseFloat(strikeCell.textContent);
                 if (!isNaN(strike)) {
                     // Remove existing ITM classes
-                    row.classList.remove('itm-call', 'otm-call', 'itm-put', 'otm-put');
+                    row.classList.remove('itm-call', 'otm-call', 'itm-put', 'otm-put', 'itm-call-row', 'itm-put-row');
                     
                     // Add ITM classes based on current spot price
                     if (this.currentSpotPrice > strike) {
-                        row.classList.add('itm-call'); // Call ITM when spot > strike
+                        row.classList.add('itm-call-row'); // Call ITM when spot > strike
                     } else if (this.currentSpotPrice < strike) {
-                        row.classList.add('itm-put'); // Put ITM when spot < strike
+                        row.classList.add('itm-put-row'); // Put ITM when spot < strike
                     }
                 }
             }
@@ -522,12 +522,12 @@ class WebSocketHandler {
         // For puts: ITM when current price < strike price
         if (currentSpot > strike.strike) {
             // Call options are ITM, Put options are OTM
-            row.classList.add('itm-call');
-            console.log(`Adding itm-call to strike ${strike.strike}, spot: ${currentSpot}`);
+            row.classList.add('itm-call-row');
+            console.log(`Adding itm-call-row to strike ${strike.strike}, spot: ${currentSpot}`);
         } else if (currentSpot < strike.strike) {
             // Put options are ITM, Call options are OTM  
-            row.classList.add('itm-put');
-            console.log(`Adding itm-put to strike ${strike.strike}, spot: ${currentSpot}`);
+            row.classList.add('itm-put-row');
+            console.log(`Adding itm-put-row to strike ${strike.strike}, spot: ${currentSpot}`);
         }
         // If currentSpot == strike.strike, no ITM highlighting (ATM)
         
