@@ -11,6 +11,7 @@ class WebSocketHandler {
         this.currentExpiry = null;
         this.strikeCount = 10;
         this.updateInterval = null;
+        this.volumeOIUpdateInterval = null;
         this.spotPriceElement = null;
         this.atmElement = null;
         this.optionChainTable = null;
@@ -119,6 +120,64 @@ class WebSocketHandler {
         } catch (error) {
             console.error('Error updating spot price:', error);
         }
+    }
+    
+    startVolumeOIUpdates() {
+        // Stop existing interval if any
+        if (this.volumeOIUpdateInterval) {
+            clearInterval(this.volumeOIUpdateInterval);
+        }
+        
+        // Update VOL/OI/Change in OI every 3 seconds using option chain API
+        this.volumeOIUpdateInterval = setInterval(() => {
+            this.updateVolumeOIData();
+        }, 3000);
+        
+        console.log('🔄 VOL/OI timer updates started (every 3 seconds)');
+    }
+    
+    async updateVolumeOIData() {
+        if (!this.currentSymbol || !this.currentExpiry) return;
+        
+        try {
+            const strikeCountSelect = document.getElementById('strikeCountSelect');
+            const strikeCount = strikeCountSelect ? strikeCountSelect.value : '15';
+            
+            const url = `/ws_get_option_chain?symbol=${encodeURIComponent(this.currentSymbol)}&expiry_timestamp=${encodeURIComponent(this.currentExpiry)}&strike_count=${strikeCount}`;
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            if (data.success && data.strikes) {
+                this.updateVolumeOIColumns(data.strikes);
+                console.log('📊 VOL/OI data updated via timer');
+            }
+        } catch (error) {
+            console.error('Error updating VOL/OI data:', error);
+        }
+    }
+    
+    updateVolumeOIColumns(strikes) {
+        const tableBody = document.querySelector('#optionChainTable tbody');
+        if (!tableBody) return;
+        
+        const rows = tableBody.querySelectorAll('tr');
+        
+        strikes.forEach(strike => {
+            // Find the row for this strike price
+            const matchingRow = Array.from(rows).find(row => {
+                return row.dataset.strike && parseFloat(row.dataset.strike) === strike.strike;
+            });
+            
+            if (matchingRow) {
+                // Update only VOL/OI/Change in OI columns (not LTP)
+                this.updateCellValue(matchingRow, '.ce-volume', strike.ce_volume);
+                this.updateCellValue(matchingRow, '.ce-oi', strike.ce_oi);
+                this.updateCellValue(matchingRow, '.ce-oich', strike.ce_oich);
+                this.updateCellValue(matchingRow, '.pe-volume', strike.pe_volume);
+                this.updateCellValue(matchingRow, '.pe-oi', strike.pe_oi);
+                this.updateCellValue(matchingRow, '.pe-oich', strike.pe_oich);
+            }
+        });
     }
     
     convertToFyersSymbol(symbol) {
@@ -336,6 +395,9 @@ class WebSocketHandler {
             this.realTimeDataStarted = true;
             console.log('🚀 Real-time data listener started after table population');
         }
+        
+        // Start timer-based VOL/OI updates
+        this.startVolumeOIUpdates();
     }
     
     updateLiveTableData(message) {
@@ -632,6 +694,11 @@ class WebSocketHandler {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
             this.updateInterval = null;
+        }
+        
+        if (this.volumeOIUpdateInterval) {
+            clearInterval(this.volumeOIUpdateInterval);
+            this.volumeOIUpdateInterval = null;
         }
         
         if (this.realTimeInterval) {
