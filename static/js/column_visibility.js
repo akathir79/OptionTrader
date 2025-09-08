@@ -47,35 +47,57 @@ class ColumnVisibilityController {
         
         // Grouped controls for better UX - one checkbox controls both CE and PE sides
         const groupedControls = [
-            { name: 'B/S', columns: [0, 38], essential: true },
-            { name: 'LTP', columns: [17, 21], essential: true },
-            { name: 'Vol', columns: [15, 23], essential: true },
+            { name: 'Buy/Sell Buttons', columns: [0, 38], essential: true },
+            { name: 'Last Traded Price', columns: [17, 21], essential: true },
+            { name: 'Volume', columns: [15, 23], essential: true },
             { name: 'Delta (Δ)', columns: [18, 20], essential: true },
             { name: 'Change in OI', columns: [13, 25], essential: true },
-            { name: 'OI', columns: [14, 24], essential: true },
-            { name: 'Strike', columns: [19], essential: true },
-            { name: 'Chart', columns: [16, 22], essential: false },
-            { name: 'Bid', columns: [10, 28], essential: false },
-            { name: 'Ask', columns: [11, 27], essential: false },
-            { name: 'Bid Qty', columns: [9, 29], essential: false },
-            { name: 'Ask Qty', columns: [12, 26], essential: false },
-            { name: 'Change', columns: [8, 30], essential: false },
-            { name: 'Gamma', columns: [7, 31], essential: false },
-            { name: 'Theta', columns: [6, 32], essential: false },
-            { name: 'Vega', columns: [5, 33], essential: false },
+            { name: 'Open Interest', columns: [14, 24], essential: true },
+            { name: 'Strike Price', columns: [19], essential: true },
+            { name: 'Price Charts', columns: [16, 22], essential: false },
+            { name: 'Bid Price', columns: [10, 28], essential: false },
+            { name: 'Ask Price', columns: [11, 27], essential: false },
+            { name: 'Bid Quantity', columns: [9, 29], essential: false },
+            { name: 'Ask Quantity', columns: [12, 26], essential: false },
+            { name: 'Price Change', columns: [8, 30], essential: false },
+            { name: 'Gamma (Γ)', columns: [7, 31], essential: false },
+            { name: 'Theta (Θ)', columns: [6, 32], essential: false },
+            { name: 'Vega (ν)', columns: [5, 33], essential: false },
             { name: 'Vanna', columns: [4, 34], essential: false },
             { name: 'Charm', columns: [3, 35], essential: false },
             { name: 'Volga', columns: [2, 36], essential: false },
             { name: 'Veta', columns: [1, 37], essential: false }
         ];
         
+        // Add professional header with controls
+        container.innerHTML = `
+            <div style="border-bottom: 1px solid #e9ecef; padding-bottom: 10px; margin-bottom: 12px;">
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <button id="selectAllColumns" class="btn btn-success btn-sm" style="font-size: 10px; padding: 4px 8px;">
+                        <i class="fas fa-check"></i> All
+                    </button>
+                    <button id="deselectAllColumns" class="btn btn-secondary btn-sm" style="font-size: 10px; padding: 4px 8px;">
+                        <i class="fas fa-times"></i> None
+                    </button>
+                    <button id="resetToDefaults" class="btn btn-primary btn-sm" style="font-size: 10px; padding: 4px 8px;">
+                        <i class="fas fa-undo"></i> Defaults
+                    </button>
+                </div>
+                <div style="font-size: 12px; font-weight: 600; color: #495057; text-transform: uppercase; letter-spacing: 0.5px;">
+                    Essential Columns
+                </div>
+            </div>
+        `;
+        
         // Create essential columns first
         groupedControls.filter(group => group.essential).forEach((group, index) => {
             const isChecked = group.columns.every(col => this.columnStates[col]) ? 'checked' : '';
             const checkboxHtml = `
-                <div class="form-check mb-1">
-                    <input class="form-check-input" type="checkbox" id="group_${index}" data-group="${index}" ${isChecked}>
-                    <label class="form-check-label" for="group_${index}" style="font-weight: 500;">
+                <div class="form-check mb-2" style="padding-left: 0; display: flex; align-items: center;">
+                    <input class="form-check-input" type="checkbox" id="group_${index}" data-group="${index}" ${isChecked} 
+                           style="margin-right: 8px; margin-top: 0;">
+                    <label class="form-check-label" for="group_${index}" 
+                           style="font-weight: 500; font-size: 11px; color: #212529; cursor: pointer;">
                         ${group.name}
                     </label>
                 </div>
@@ -83,18 +105,26 @@ class ColumnVisibilityController {
             container.innerHTML += checkboxHtml;
         });
         
-        // Add separator
-        container.innerHTML += '<hr class="my-2">';
-        container.innerHTML += '<div style="font-size: 11px; color: #6c757d; margin-bottom: 8px;">Advanced Columns:</div>';
+        // Add professional separator for advanced columns
+        container.innerHTML += `
+            <div style="border-top: 1px solid #e9ecef; margin: 16px 0 12px 0; padding-top: 12px;">
+                <div style="font-size: 11px; font-weight: 600; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+                    Advanced Options (Greeks & Market Data)
+                </div>
+            </div>
+        `;
         
-        // Create advanced columns
-        groupedControls.filter(group => !group.essential).forEach((group, index) => {
+        // Create advanced columns in two columns for better space usage
+        const advancedGroups = groupedControls.filter(group => !group.essential);
+        advancedGroups.forEach((group, index) => {
             const realIndex = index + 7; // Offset for essential columns
             const isChecked = group.columns.every(col => this.columnStates[col]) ? 'checked' : '';
             const checkboxHtml = `
-                <div class="form-check mb-1">
-                    <input class="form-check-input" type="checkbox" id="group_${realIndex}" data-group="${realIndex}" ${isChecked}>
-                    <label class="form-check-label" for="group_${realIndex}" style="font-size: 11px;">
+                <div class="form-check mb-1" style="padding-left: 0; display: flex; align-items: center;">
+                    <input class="form-check-input" type="checkbox" id="group_${realIndex}" data-group="${realIndex}" ${isChecked}
+                           style="margin-right: 8px; margin-top: 0; transform: scale(0.9);">
+                    <label class="form-check-label" for="group_${realIndex}" 
+                           style="font-size: 10px; color: #6c757d; cursor: pointer;">
                         ${group.name}
                     </label>
                 </div>
@@ -148,26 +178,26 @@ class ColumnVisibilityController {
         const visibleColumns = this.columnStates.map((visible, index) => visible ? index : null).filter(i => i !== null);
         console.log('Applying column visibility. Visible columns:', visibleColumns);
 
-        // Apply to header - more robust checking
+        // Apply to header - override CSS with important inline styles
         const headerCells = table.querySelectorAll('thead th');
         headerCells.forEach((cell, index) => {
             if (index < this.columnStates.length) {
                 const shouldShow = this.columnStates[index];
-                cell.style.display = shouldShow ? '' : 'none';
+                cell.style.setProperty('display', shouldShow ? 'table-cell' : 'none', 'important');
                 if (!shouldShow) {
                     console.log(`Hiding header column ${index}`);
                 }
             }
         });
 
-        // Apply to data rows - more robust checking
+        // Apply to data rows - override CSS with important inline styles
         const dataRows = table.querySelectorAll('tbody tr');
         dataRows.forEach(row => {
             const cells = row.querySelectorAll('td');
             cells.forEach((cell, index) => {
                 if (index < this.columnStates.length) {
                     const shouldShow = this.columnStates[index];
-                    cell.style.display = shouldShow ? '' : 'none';
+                    cell.style.setProperty('display', shouldShow ? 'table-cell' : 'none', 'important');
                 }
             });
         });
