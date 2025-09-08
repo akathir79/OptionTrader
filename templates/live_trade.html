@@ -4333,23 +4333,25 @@ document.addEventListener('DOMContentLoaded', function() {
 {% endblock %}
 
 <style>
-/* Professional ITM highlighting - ALL visible call/put columns using CORRECT class selectors */
-.itm-call-row .buy_sell_cell,     /* CE B/S */
-.itm-call-row .ce-oi-change,      /* Chng in OI */
-.itm-call-row .ce-oi,             /* OI */
-.itm-call-row .ce-volume,         /* Vol */
-.itm-call-row .ce-ltp,            /* LTP */
-.itm-call-row .ce-delta {         /* Δ (CE) */
+/* Professional ITM highlighting - ALL visible call/put columns with high specificity */
+tr.itm-call-row td.buy_sell_cell,     /* CE B/S */
+tr.itm-call-row td.ce-oi-change,      /* Chng in OI */
+tr.itm-call-row td.ce-oi,             /* OI */
+tr.itm-call-row td.ce-volume,         /* Vol */
+tr.itm-call-row td.ce-ltp,            /* LTP */
+tr.itm-call-row td.ce-delta {         /* Δ (CE) */
   background-color: #fff3cd !important; /* Light yellow for ITM call columns */
+  border: 2px solid orange !important; /* DEBUG: Orange border to verify CSS is working */
 }
 
-.itm-put-row .pe-delta,           /* Δ (PE) */
-.itm-put-row .pe-ltp,             /* LTP */
-.itm-put-row .pe-volume,          /* Vol */
-.itm-put-row .pe-oi,              /* OI */
-.itm-put-row .pe-oi-change,       /* Chng in OI */
-.itm-put-row .buy_sell_cell {     /* PE B/S */
+tr.itm-put-row td.pe-delta,           /* Δ (PE) */
+tr.itm-put-row td.pe-ltp,             /* LTP */
+tr.itm-put-row td.pe-volume,          /* Vol */
+tr.itm-put-row td.pe-oi,              /* OI */
+tr.itm-put-row td.pe-oi-change,       /* Chng in OI */
+tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   background-color: #fff3cd !important; /* Light yellow for ITM put columns */
+  border: 2px solid blue !important; /* DEBUG: Blue border to verify CSS is working */
 }
 
 /* ATM strike highlighting - entire row in red */
