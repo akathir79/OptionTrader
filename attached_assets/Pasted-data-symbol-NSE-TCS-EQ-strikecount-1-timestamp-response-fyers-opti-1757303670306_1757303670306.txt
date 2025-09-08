@@ -1,0 +1,161 @@
+data = {
+    "symbol":"NSE:TCS-EQ",
+    "strikecount":1,
+    "timestamp": ""
+}
+response = fyers.optionchain(data=data);
+print(response)
+ ------------------------------------------------------------------------------------------------------------------------------------------
+ Sample Success Response 
+ ------------------------------------------------------------------------------------------------------------------------------------------
+ {
+  "code": 200,
+  "data": {
+    "callOi": 10038175,
+    "expiryData": [
+      {
+        "date": "25-04-2024",
+        "expiry": "1714039200"
+      },
+      {
+        "date": "30-05-2024",
+        "expiry": "1717063200"
+      },
+      {
+        "date": "27-06-2024",
+        "expiry": "1719482400"
+      }
+    ],
+    "indiavixData": {
+      "ask": 0,
+      "bid": 0,
+      "description": "INDIAVIX-INDEX",
+      "ex_symbol": "INDIAVIX",
+      "exchange": "NSE",
+      "fyToken": "101000000026017",
+      "ltp": 10.55,
+      "ltpch": -2.15,
+      "ltpchp": -16.93,
+      "option_type": "",
+      "strike_price": -1,
+      "symbol": "NSE:INDIAVIX-INDEX"
+    },
+    "optionsChain": [
+      {
+        "ask": 3880.15,
+        "bid": 3880.05,
+        "description": "TATA CONSULTANCY SERV LT",
+        "ex_symbol": "TCS",
+        "exchange": "NSE",
+        "fp": 3876.65,
+        "fpch": 14.2,
+        "fpchp": 0.37,
+        "fyToken": "101000000011536",
+        "ltp": 3880.15,
+        "ltpch": 15.55,
+        "ltpchp": 0.4,
+        "option_type": "",
+        "strike_price": -1,
+        "symbol": "NSE:TCS-EQ"
+      },
+      {
+        "ask": 34.9,
+        "bid": 34.35,
+        "fyToken": "1011240425139431",
+        "ltp": 34.8,
+        "ltpch": 2.7,
+        "ltpchp": 8.41,
+        "oi": 99575,
+        "oich": -3325,
+        "oichp": -3.23,
+        "option_type": "CE",
+        "prev_oi": 102900,
+        "strike_price": 3860,
+        "symbol": "NSE:TCS24APR3860CE",
+        "volume": 202650
+      },
+      {
+        "ask": 19.3,
+        "bid": 19,
+        "fyToken": "1011240425139432",
+        "ltp": 19.05,
+        "ltpch": -12.4,
+        "ltpchp": -39.43,
+        "oi": 159075,
+        "oich": 28525,
+        "oichp": 21.85,
+        "option_type": "PE",
+        "prev_oi": 130550,
+        "strike_price": 3860,
+        "symbol": "NSE:TCS24APR3860PE",
+        "volume": 304150
+      },
+      {
+        "ask": 24.85,
+        "bid": 24.55,
+        "fyToken": "1011240425133432",
+        "ltp": 24.95,
+        "ltpch": -0.55,
+        "ltpchp": -2.16,
+        "oi": 165900,
+        "oich": 9975,
+        "oichp": 6.4,
+        "option_type": "CE",
+        "prev_oi": 155925,
+        "strike_price": 3880,
+        "symbol": "NSE:TCS24APR3880CE",
+        "volume": 543025
+      },
+      {
+        "ask": 29.35,
+        "bid": 28.8,
+        "fyToken": "1011240425133433",
+        "ltp": 29.2,
+        "ltpch": -14.1,
+        "ltpchp": -32.56,
+        "oi": 98175,
+        "oich": 28350,
+        "oichp": 40.6,
+        "option_type": "PE",
+        "prev_oi": 69825,
+        "strike_price": 3880,
+        "symbol": "NSE:TCS24APR3880PE",
+        "volume": 199500
+      },
+      {
+        "ask": 17.8,
+        "bid": 17.6,
+        "fyToken": "1011240425139433",
+        "ltp": 17.75,
+        "ltpch": -1.4,
+        "ltpchp": -7.31,
+        "oi": 631050,
+        "oich": 23275,
+        "oichp": 3.83,
+        "option_type": "CE",
+        "prev_oi": 607775,
+        "strike_price": 3900,
+        "symbol": "NSE:TCS24APR3900CE",
+        "volume": 981925
+      },
+      {
+        "ask": 42.45,
+        "bid": 41.85,
+        "fyToken": "1011240425139434",
+        "ltp": 41.75,
+        "ltpch": -14.65,
+        "ltpchp": -25.98,
+        "oi": 338100,
+        "oich": -9975,
+        "oichp": -2.87,
+        "option_type": "PE",
+        "prev_oi": 348075,
+        "strike_price": 3900,
+        "symbol": "NSE:TCS24APR3900PE",
+        "volume": 129325
+      }
+    ],
+    "putOi": 3875200
+  },
+  "message": "",
+  "s": "ok"

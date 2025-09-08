@@ -183,6 +183,16 @@ def get_option_chain():
         
         if not options_list:
             return jsonify({"error": "No option data found"}), 500
+
+        # Debug: Check first few options for oich field
+        sample_options = options_list[:3]
+        print("=== API RESPONSE SAMPLE ===")
+        for i, opt in enumerate(sample_options):
+            print(f"Option {i+1}: Type={opt.get('option_type')}, Strike={opt.get('strike_price')}")
+            print(f"  Has 'oich': {'oich' in opt}, OICH Value: {opt.get('oich', 'MISSING')}")
+            print(f"  Has 'oi': {'oi' in opt}, OI Value: {opt.get('oi', 'MISSING')}")
+            print(f"  Available fields: {list(opt.keys())[:10]}...")  # Show first 10 fields
+        print("==========================")
         
             
         # Calculate ATM strike

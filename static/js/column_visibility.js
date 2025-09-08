@@ -29,9 +29,9 @@ class ColumnVisibilityController {
     getDefaultColumnStates() {
         // Default visible columns for essential trading data only
         const defaults = {};
-        // Essential columns: CE B/S(0), OI(14), Vol(15), LTP(17), Delta(18), Strike(19), Delta(20), LTP(21), Vol(23), OI(24), PE B/S(38)
-        // Note: Change in OI columns (13, 25) hidden since Fyers API doesn't provide this data
-        const essentialColumns = [0, 14, 15, 17, 18, 19, 20, 21, 23, 24, 38];
+        // Essential columns: CE B/S(0), Change in OI(13), OI(14), Vol(15), LTP(17), Delta(18), Strike(19), Delta(20), LTP(21), Vol(23), OI(24), Change in OI(25), PE B/S(38)
+        // Re-enabled Change in OI columns since user confirmed Fyers API provides this data
+        const essentialColumns = [0, 13, 14, 15, 17, 18, 19, 20, 21, 23, 24, 25, 38];
         
         for (let i = 0; i < 39; i++) {
             defaults[i] = essentialColumns.includes(i);
