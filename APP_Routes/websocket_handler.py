@@ -184,13 +184,10 @@ def get_option_chain():
         if not options_list:
             return jsonify({"error": "No option data found"}), 500
         
-        # Print first few options to debug oich field
-        print(f"\n=== RAW API RESPONSE DEBUG ===")
-        print(f"Total options received: {len(options_list)}")
-        for i, option in enumerate(options_list[:5]):  # Print first 5 options
-            print(f"Option {i+1}: strike={option.get('strike_price')}, type={option.get('option_type')}, oich={option.get('oich')}, oi={option.get('oi')}")
-            print(f"  Keys in option: {list(option.keys())}")
-        print(f"===============================\n")
+        # Check if oich field exists in API response
+        sample_option = options_list[0] if options_list else {}
+        has_oich = 'oich' in sample_option
+        print(f"API Response: Has 'oich' field: {has_oich}, Sample OICH value: {sample_option.get('oich', 'N/A')}")
             
         # Calculate ATM strike
         atm_strike = min(options_list, key=lambda x: abs(x['strike_price'] - spot_price))['strike_price']
@@ -233,7 +230,6 @@ def get_option_chain():
                 strikes[strike]['ce_oi'] = option.get('oi', 0)
                 strikes[strike]['ce_volume'] = option.get('volume', 0)
                 strikes[strike]['ce_oich'] = option.get('oich', 0)
-                print(f"DEBUG CE {strike}: oich from API = {option.get('oich')}, stored = {strikes[strike]['ce_oich']}")
                 strikes[strike]['ce_bid'] = option.get('bid', 0)
                 strikes[strike]['ce_ask'] = option.get('ask', 0)
                 strikes[strike]['ce_bid_qty'] = option.get('bid_qty', 0)
@@ -246,7 +242,6 @@ def get_option_chain():
                 strikes[strike]['pe_oi'] = option.get('oi', 0)
                 strikes[strike]['pe_volume'] = option.get('volume', 0)
                 strikes[strike]['pe_oich'] = option.get('oich', 0)
-                print(f"DEBUG PE {strike}: oich from API = {option.get('oich')}, stored = {strikes[strike]['pe_oich']}")
                 strikes[strike]['pe_bid'] = option.get('bid', 0)
                 strikes[strike]['pe_ask'] = option.get('ask', 0)
                 strikes[strike]['pe_bid_qty'] = option.get('bid_qty', 0)
@@ -261,8 +256,9 @@ def get_option_chain():
         print(f"Total strikes processed: {len(strike_list)}")
         print(f"ATM Strike: {atm_strike}")
         print(f"Symbols to subscribe: {len(symbols_to_subscribe)}")
-        for i, strike in enumerate(strike_list):
-            print(f"Strike {i+1}: {strike['strike']} - CE OI: {strike['ce_oi']}, PE OI: {strike['pe_oi']}, CE Vol: {strike['ce_volume']}, PE Vol: {strike['pe_volume']}, CE OICH: {strike['ce_oich']}, PE OICH: {strike['pe_oich']}")
+        # Show only first few strikes with OICH values for debugging
+        for i, strike in enumerate(strike_list[:3]):
+            print(f"Strike {strike['strike']}: CE OICH={strike['ce_oich']}, PE OICH={strike['pe_oich']}")
         print(f"==============================\n")
         
         # Start WebSocket subscription
