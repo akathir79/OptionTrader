@@ -21,6 +21,9 @@ class ColumnVisibilityController {
         this.setupEventListeners();
         this.loadSavedState();
         this.applyColumnVisibility();
+        
+        // Reapply column visibility after every WebSocket update
+        this.setupWebSocketHooks();
     }
 
     getDefaultColumnStates() {
@@ -136,13 +139,24 @@ class ColumnVisibilityController {
 
     applyColumnVisibility() {
         const table = document.getElementById('optionChainTable');
-        if (!table) return;
+        if (!table) {
+            console.log('Table not found for column visibility');
+            return;
+        }
+
+        // Log current column states for debugging
+        const visibleColumns = this.columnStates.map((visible, index) => visible ? index : null).filter(i => i !== null);
+        console.log('Applying column visibility. Visible columns:', visibleColumns);
 
         // Apply to header - more robust checking
         const headerCells = table.querySelectorAll('thead th');
         headerCells.forEach((cell, index) => {
             if (index < this.columnStates.length) {
-                cell.style.display = this.columnStates[index] ? '' : 'none';
+                const shouldShow = this.columnStates[index];
+                cell.style.display = shouldShow ? '' : 'none';
+                if (!shouldShow) {
+                    console.log(`Hiding header column ${index}`);
+                }
             }
         });
 
@@ -152,13 +166,13 @@ class ColumnVisibilityController {
             const cells = row.querySelectorAll('td');
             cells.forEach((cell, index) => {
                 if (index < this.columnStates.length) {
-                    cell.style.display = this.columnStates[index] ? '' : 'none';
+                    const shouldShow = this.columnStates[index];
+                    cell.style.display = shouldShow ? '' : 'none';
                 }
             });
         });
         
-        // Log for debugging
-        console.log('Column visibility applied - Headers:', headerCells.length, 'Data columns expected:', this.columnStates.length);
+        console.log(`Column visibility applied - Headers: ${headerCells.length}, Data rows: ${dataRows.length}, Expected columns: ${this.columnStates.length}`);
     }
 
 
@@ -215,30 +229,41 @@ class ColumnVisibilityController {
     }
 
     loadSavedState() {
-        const currentVersion = '2.1'; // Version for new essential-only defaults with OI
-        const savedVersion = localStorage.getItem('optionChainColumnVersion');
-        const saved = localStorage.getItem('optionChainColumnStates');
+        // Force reset to essential-only columns - clear all old preferences
+        console.log('Forcing reset to essential-only column defaults');
+        localStorage.removeItem('optionChainColumnStates');
+        localStorage.removeItem('optionChainColumnVersion');
         
-        // Reset to new defaults if version changed or no saved version
-        if (savedVersion !== currentVersion) {
-            console.log('Resetting to new essential-only column defaults');
-            this.columnStates = this.getDefaultColumnStates();
-            localStorage.setItem('optionChainColumnVersion', currentVersion);
-            this.saveState();
-        } else if (saved) {
-            try {
-                this.columnStates = JSON.parse(saved);
-            } catch (e) {
-                console.warn('Failed to load saved column states:', e);
-                this.columnStates = this.getDefaultColumnStates();
-            }
-        }
+        this.columnStates = this.getDefaultColumnStates();
+        localStorage.setItem('optionChainColumnVersion', '2.2');
+        this.saveState();
         this.updateCheckboxes();
     }
 
     // Method to refresh visibility when table content changes
     refreshVisibility() {
         this.applyColumnVisibility();
+    }
+
+    setupWebSocketHooks() {
+        // Hook into WebSocket updates to reapply column visibility
+        const originalWebSocketUpdate = window.webSocketHandler?.updateOptionChainTable;
+        if (originalWebSocketUpdate) {
+            window.webSocketHandler.updateOptionChainTable = (data) => {
+                // Call original function
+                originalWebSocketUpdate.call(window.webSocketHandler, data);
+                // Reapply column visibility after update
+                console.log('WebSocket updated table, reapplying column visibility');
+                setTimeout(() => this.applyColumnVisibility(), 100);
+            };
+        }
+
+        // Also set up a continuous reapplication to fight WebSocket updates
+        setInterval(() => {
+            if (document.getElementById('optionChainTable')) {
+                this.applyColumnVisibility();
+            }
+        }, 2000); // Reapply every 2 seconds
     }
 }
 
