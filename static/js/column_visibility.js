@@ -200,8 +200,11 @@ class ColumnVisibilityController {
                 
                 console.log('📊 Updated column states:', this.columnStates);
                 
+                console.log('⚡ About to call applyColumnVisibility...');
                 this.applyColumnVisibility();
+                console.log('💾 About to call saveState...');
                 this.saveState();
+                console.log('🔄 About to call refreshTableData...');
                 this.refreshTableData(); // Intelligent refresh when columns change
                 
                 // Additional verification after a short delay
@@ -237,11 +240,15 @@ class ColumnVisibilityController {
     }
 
     applyColumnVisibility() {
+        console.log('🚀 applyColumnVisibility() called');
+        
         const table = document.getElementById('optionChainTable');
         if (!table) {
-            console.log('Table not found for column visibility');
+            console.log('❌ Table not found for column visibility');
             return;
         }
+
+        console.log('✅ Table found, proceeding with column visibility');
 
         // Log current column states for debugging
         const visibleColumns = this.columnStates.map((visible, index) => visible ? index : null).filter(i => i !== null);
