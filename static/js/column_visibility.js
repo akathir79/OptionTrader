@@ -40,8 +40,29 @@ class ColumnVisibilityController {
     }
 
     createColumnCheckboxes() {
-        const container = document.getElementById('columnCheckboxes');
-        if (!container) return;
+        console.log('createColumnCheckboxes called');
+        let container = document.getElementById('columnCheckboxes');
+        console.log('Container found:', container);
+        
+        // If container not found, wait a bit and try again
+        if (!container) {
+            console.log('Container not found, trying again after delay');
+            setTimeout(() => {
+                container = document.getElementById('columnCheckboxes');
+                if (container) {
+                    console.log('Container found on retry, creating checkboxes');
+                    this.doCreateCheckboxes(container);
+                } else {
+                    console.log('Container still not found after retry');
+                }
+            }, 100);
+            return;
+        }
+        
+        this.doCreateCheckboxes(container);
+    }
+    
+    doCreateCheckboxes(container) {
         
         container.innerHTML = '';
         
@@ -307,4 +328,14 @@ class ColumnVisibilityController {
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     window.columnVisibilityController = new ColumnVisibilityController();
+});
+
+// Also initialize when dropdown is opened (in case DOM wasn't ready)
+document.addEventListener('show.bs.dropdown', (e) => {
+    if (e.target.id === 'columnVisibilityDropdown') {
+        console.log('Column visibility dropdown opened, ensuring checkboxes exist');
+        if (window.columnVisibilityController) {
+            window.columnVisibilityController.createColumnCheckboxes();
+        }
+    }
 });
