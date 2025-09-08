@@ -215,12 +215,22 @@ class ColumnVisibilityController {
     }
 
     loadSavedState() {
+        const currentVersion = '2.0'; // Version for new essential-only defaults
+        const savedVersion = localStorage.getItem('optionChainColumnVersion');
         const saved = localStorage.getItem('optionChainColumnStates');
-        if (saved) {
+        
+        // Reset to new defaults if version changed or no saved version
+        if (savedVersion !== currentVersion) {
+            console.log('Resetting to new essential-only column defaults');
+            this.columnStates = this.getDefaultColumnStates();
+            localStorage.setItem('optionChainColumnVersion', currentVersion);
+            this.saveState();
+        } else if (saved) {
             try {
                 this.columnStates = JSON.parse(saved);
             } catch (e) {
                 console.warn('Failed to load saved column states:', e);
+                this.columnStates = this.getDefaultColumnStates();
             }
         }
         this.updateCheckboxes();
