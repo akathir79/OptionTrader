@@ -126,32 +126,34 @@ class ColumnVisibilityController {
             </div>
         `;
         
-        // Create individual checkboxes for all columns in two-column layout
+        // Create individual checkboxes organized by Call vs Put columns
         container.innerHTML += '<div class="row" style="font-size: 10px;">';
         
-        // Split columns into two groups for better layout
-        const halfLength = Math.ceil(columnNames.length / 2);
-        
-        // Left column
+        // CE (Call) columns - Left side (0-18) + Strike
         container.innerHTML += '<div class="col-6">';
-        for (let i = 0; i < halfLength; i++) {
-            if (i < columnNames.length) {
-                const isChecked = this.columnStates[i] ? 'checked' : '';
-                container.innerHTML += `
-                    <div class="form-check mb-1">
-                        <input class="form-check-input" type="checkbox" data-column="${i}" id="col${i}" ${isChecked}>
-                        <label class="form-check-label" for="col${i}" style="font-size: 10px;">
-                            ${columnNames[i]}
-                        </label>
-                    </div>
-                `;
-            }
+        container.innerHTML += '<div style="font-weight: 600; color: #28a745; margin-bottom: 8px; font-size: 11px;">Call (CE) Options</div>';
+        
+        // CE columns (0-18) + Strike (19)
+        for (let i = 0; i <= 19; i++) {
+            const isChecked = this.columnStates[i] ? 'checked' : '';
+            const labelStyle = i === 19 ? 'font-weight: 600; color: #f39c12;' : ''; // Highlight Strike
+            container.innerHTML += `
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" data-column="${i}" id="col${i}" ${isChecked}>
+                    <label class="form-check-label" for="col${i}" style="font-size: 10px; ${labelStyle}">
+                        ${columnNames[i]}
+                    </label>
+                </div>
+            `;
         }
         container.innerHTML += '</div>';
         
-        // Right column
+        // PE (Put) columns - Right side (20-38)
         container.innerHTML += '<div class="col-6">';
-        for (let i = halfLength; i < columnNames.length; i++) {
+        container.innerHTML += '<div style="font-weight: 600; color: #dc3545; margin-bottom: 8px; font-size: 11px;">Put (PE) Options</div>';
+        
+        // PE columns (20-38)
+        for (let i = 20; i < columnNames.length; i++) {
             const isChecked = this.columnStates[i] ? 'checked' : '';
             container.innerHTML += `
                 <div class="form-check mb-1">
