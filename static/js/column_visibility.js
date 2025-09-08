@@ -255,17 +255,26 @@ class ColumnVisibilityController {
         console.log('🔍 this.columnStates length:', this.columnStates ? this.columnStates.length : 'undefined');
         console.log('🔍 this.columnStates content:', this.columnStates);
 
-        // Log current column states for debugging
-        try {
-            const visibleColumns = this.columnStates.map((visible, index) => visible ? index : null).filter(i => i !== null);
-            console.log('🎯 Applying column visibility. Visible columns:', visibleColumns);
-        } catch (error) {
-            console.error('❌ Error calculating visible columns:', error);
-            return;
-        }
+        // CRITICAL FIX: Convert object to array if needed
+        console.log('🔍 Array.isArray(this.columnStates):', Array.isArray(this.columnStates));
+        console.log('🔍 Has length property:', 'length' in this.columnStates);
+        console.log('🔍 Constructor:', this.columnStates.constructor.name);
         
+        if (this.columnStates && typeof this.columnStates === 'object' && !Array.isArray(this.columnStates)) {
+            console.log('🔧 Converting columnStates object to array...');
+            const arrayStates = [];
+            for (let i = 0; i < 39; i++) { // 39 total columns
+                arrayStates[i] = this.columnStates[i.toString()] || false;
+            }
+            this.columnStates = arrayStates;
+            console.log('✅ Converted to array:', this.columnStates);
+        } else {
+            console.log('🚫 Conversion check failed - isArray:', Array.isArray(this.columnStates));
+        }
+
+        // Log current column states for debugging
         const visibleColumns = this.columnStates.map((visible, index) => visible ? index : null).filter(i => i !== null);
-        console.log('✅ Successfully calculated visible columns:', visibleColumns);
+        console.log('🎯 Applying column visibility. Visible columns:', visibleColumns);
 
         // Create dynamic CSS to override existing rules
         let dynamicCSS = '';
