@@ -240,7 +240,6 @@ class ColumnVisibilityController {
     }
 
     applyColumnVisibility() {
-        console.log('🚀 applyColumnVisibility() called');
         
         const table = document.getElementById('optionChainTable');
         if (!table) {
@@ -248,17 +247,9 @@ class ColumnVisibilityController {
             return;
         }
 
-        console.log('✅ Table found, proceeding with column visibility');
 
-        // Debug the column states before processing
-        console.log('🔍 this.columnStates type:', typeof this.columnStates);
-        console.log('🔍 this.columnStates length:', this.columnStates ? this.columnStates.length : 'undefined');
-        console.log('🔍 this.columnStates content:', this.columnStates);
 
-        // CRITICAL FIX: Convert object to array if needed
-        console.log('🔍 Array.isArray(this.columnStates):', Array.isArray(this.columnStates));
-        console.log('🔍 Has length property:', 'length' in this.columnStates);
-        console.log('🔍 Constructor:', this.columnStates.constructor.name);
+        // Convert object to array if needed
         
         if (this.columnStates && typeof this.columnStates === 'object' && !Array.isArray(this.columnStates)) {
             console.log('🔧 Converting columnStates object to array...');
@@ -269,15 +260,11 @@ class ColumnVisibilityController {
             this.columnStates = arrayStates;
             console.log('✅ Converted to array:', this.columnStates);
         } else {
-            console.log('🚫 Conversion check failed - isArray:', Array.isArray(this.columnStates));
         }
 
-        // Log current column states for debugging
         const visibleColumns = this.columnStates.map((visible, index) => visible ? index : null).filter(i => i !== null);
-        console.log('🎯 Applying column visibility. Visible columns:', visibleColumns);
 
-        // FORCE APPLY: Use inline styles with absolute highest priority
-        console.log('💪 Applying inline styles directly to table cells...');
+        // Apply inline styles with highest priority
         
         // Apply to header cells
         const headerCells = table.querySelectorAll('thead th');
@@ -287,7 +274,6 @@ class ColumnVisibilityController {
                 if (shouldShow) {
                     cell.style.display = 'table-cell';
                     cell.style.setProperty('display', 'table-cell', 'important');
-                    console.log(`🟢 Showing column ${index} (${this.columnNames[index]})`);
                 } else {
                     cell.style.display = 'none';
                     cell.style.setProperty('display', 'none', 'important');
@@ -298,7 +284,6 @@ class ColumnVisibilityController {
         // Apply to body cells - use improved row detection like WebSocket handler
         let bodyRows = table.querySelectorAll('tbody tr');
         if (bodyRows.length === 0) {
-            console.log('🔍 No tbody tr found, trying alternative row selectors...');
             bodyRows = table.querySelectorAll('tr[data-strike]');
             if (bodyRows.length === 0) {
                 bodyRows = Array.from(table.querySelectorAll('tr')).filter(row => !row.closest('thead'));
@@ -321,8 +306,6 @@ class ColumnVisibilityController {
             });
         });
         
-        console.log(`💪 Applied inline styles to ${headerCells.length} headers and ${bodyRows.length} rows`);
-        console.log(`✅ Column visibility applied - ${this.columnStates.length} columns processed`);
         
         // Force immediate visual check
         setTimeout(() => {
@@ -332,7 +315,6 @@ class ColumnVisibilityController {
                 const visibleHeaders = Array.from(headerRow.children).filter(th => 
                     getComputedStyle(th).display !== 'none'
                 ).length;
-                console.log(`🔍 Currently visible header columns: ${visibleHeaders}`);
             }
         }, 100);
     }
