@@ -250,9 +250,22 @@ class ColumnVisibilityController {
 
         console.log('✅ Table found, proceeding with column visibility');
 
+        // Debug the column states before processing
+        console.log('🔍 this.columnStates type:', typeof this.columnStates);
+        console.log('🔍 this.columnStates length:', this.columnStates ? this.columnStates.length : 'undefined');
+        console.log('🔍 this.columnStates content:', this.columnStates);
+
         // Log current column states for debugging
+        try {
+            const visibleColumns = this.columnStates.map((visible, index) => visible ? index : null).filter(i => i !== null);
+            console.log('🎯 Applying column visibility. Visible columns:', visibleColumns);
+        } catch (error) {
+            console.error('❌ Error calculating visible columns:', error);
+            return;
+        }
+        
         const visibleColumns = this.columnStates.map((visible, index) => visible ? index : null).filter(i => i !== null);
-        console.log('🎯 Applying column visibility. Visible columns:', visibleColumns);
+        console.log('✅ Successfully calculated visible columns:', visibleColumns);
 
         // Create dynamic CSS to override existing rules
         let dynamicCSS = '';
