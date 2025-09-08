@@ -279,6 +279,30 @@ class WebSocketHandler {
         return this.currentSpotPrice || 0;
     }
 
+    findATMStrike() {
+        if (!this.optionChainTable || !this.currentSpotPrice) return null;
+        
+        const rows = this.optionChainTable.querySelectorAll('tbody tr');
+        let closestStrike = null;
+        let minDifference = Infinity;
+        
+        rows.forEach(row => {
+            const strikeCell = row.querySelector('td:nth-child(20)'); // Strike column
+            if (strikeCell) {
+                const strike = parseFloat(strikeCell.textContent);
+                if (!isNaN(strike)) {
+                    const difference = Math.abs(strike - this.currentSpotPrice);
+                    if (difference < minDifference) {
+                        minDifference = difference;
+                        closestStrike = strike;
+                    }
+                }
+            }
+        });
+        
+        return closestStrike;
+    }
+
     updateITMHighlighting() {
         if (!this.optionChainTable || !this.currentSpotPrice) return;
         
@@ -288,14 +312,21 @@ class WebSocketHandler {
             if (strikeCell) {
                 const strike = parseFloat(strikeCell.textContent);
                 if (!isNaN(strike)) {
-                    // Remove existing ITM classes
-                    row.classList.remove('itm-call', 'otm-call', 'itm-put', 'otm-put', 'itm-call-row', 'itm-put-row');
+                    // Remove existing ITM and ATM classes
+                    row.classList.remove('itm-call', 'otm-call', 'itm-put', 'otm-put', 'itm-call-row', 'itm-put-row', 'atm-row');
                     
-                    // Add ITM classes based on current spot price
-                    if (this.currentSpotPrice > strike) {
-                        row.classList.add('itm-call-row'); // Call ITM when spot > strike
+                    // Find ATM strike (closest to current spot price)
+                    const atmStrike = this.findATMStrike();
+                    
+                    if (Math.abs(strike - atmStrike) < 0.01) {
+                        // This is the ATM strike - highlight in red
+                        row.classList.add('atm-row');
+                    } else if (this.currentSpotPrice > strike) {
+                        // Call ITM when spot > strike
+                        row.classList.add('itm-call-row');
                     } else if (this.currentSpotPrice < strike) {
-                        row.classList.add('itm-put-row'); // Put ITM when spot < strike
+                        // Put ITM when spot < strike
+                        row.classList.add('itm-put-row');
                     }
                 }
             }
@@ -520,7 +551,14 @@ class WebSocketHandler {
         // Apply ITM highlighting to the row
         // For calls: ITM when current price > strike price
         // For puts: ITM when current price < strike price
-        if (currentSpot > strike.strike) {
+        // Find ATM strike (closest to current spot price)
+        const atmStrike = this.findATMStrike();
+        
+        if (Math.abs(strike.strike - atmStrike) < 0.01) {
+            // This is the ATM strike - highlight in red
+            row.classList.add('atm-row');
+            console.log(`Adding atm-row to strike ${strike.strike}, spot: ${currentSpot}`);
+        } else if (currentSpot > strike.strike) {
             // Call options are ITM, Put options are OTM
             row.classList.add('itm-call-row');
             console.log(`Adding itm-call-row to strike ${strike.strike}, spot: ${currentSpot}`);
