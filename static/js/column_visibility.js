@@ -245,41 +245,49 @@ class ColumnVisibilityController {
 
         // Log current column states for debugging
         const visibleColumns = this.columnStates.map((visible, index) => visible ? index : null).filter(i => i !== null);
-        console.log('Applying column visibility. Visible columns:', visibleColumns);
+        console.log('🎯 Applying column visibility. Visible columns:', visibleColumns);
 
-        // Apply to header - override CSS with important inline styles
-        const headerCells = table.querySelectorAll('thead th');
-        headerCells.forEach((cell, index) => {
-            if (index < this.columnStates.length) {
-                const shouldShow = this.columnStates[index];
-                if (shouldShow) {
-                    // Force show with highest priority
-                    cell.style.setProperty('display', 'table-cell', 'important');
-                    console.log(`Showing header column ${index} (${this.columnNames[index]})`);
-                } else {
-                    cell.style.setProperty('display', 'none', 'important');
-                }
-            }
-        });
-
-        // Apply to data rows - override CSS with important inline styles
-        const dataRows = table.querySelectorAll('tbody tr');
-        dataRows.forEach(row => {
-            const cells = row.querySelectorAll('td');
-            cells.forEach((cell, index) => {
-                if (index < this.columnStates.length) {
-                    const shouldShow = this.columnStates[index];
-                    if (shouldShow) {
-                        // Force show with highest priority
-                        cell.style.setProperty('display', 'table-cell', 'important');
-                    } else {
-                        cell.style.setProperty('display', 'none', 'important');
-                    }
-                }
-            });
-        });
+        // Create dynamic CSS to override existing rules
+        let dynamicCSS = '';
         
-        console.log(`Column visibility applied - Headers: ${headerCells.length}, Data rows: ${dataRows.length}, Expected columns: ${this.columnStates.length}`);
+        for (let i = 0; i < this.columnStates.length; i++) {
+            const shouldShow = this.columnStates[i];
+            const nthChild = i + 1; // CSS nth-child is 1-based
+            
+            if (shouldShow) {
+                // Force show with maximum specificity
+                dynamicCSS += `
+                    #optionChainTable thead th:nth-child(${nthChild}),
+                    #optionChainTable tbody td:nth-child(${nthChild}) {
+                        display: table-cell !important;
+                    }
+                `;
+                console.log(`🟢 Showing column ${i} (${this.columnNames[i]})`);
+            } else {
+                // Force hide
+                dynamicCSS += `
+                    #optionChainTable thead th:nth-child(${nthChild}),
+                    #optionChainTable tbody td:nth-child(${nthChild}) {
+                        display: none !important;
+                    }
+                `;
+            }
+        }
+        
+        // Remove existing dynamic style if exists
+        const existingStyle = document.getElementById('dynamicColumnVisibility');
+        if (existingStyle) {
+            existingStyle.remove();
+        }
+        
+        // Add new dynamic style
+        const styleElement = document.createElement('style');
+        styleElement.id = 'dynamicColumnVisibility';
+        styleElement.textContent = dynamicCSS;
+        document.head.appendChild(styleElement);
+        
+        console.log(`✅ Column visibility CSS applied - ${this.columnStates.length} columns processed`);
+        console.log('🔍 Dynamic CSS created with', visibleColumns.length, 'visible columns');
     }
 
 
