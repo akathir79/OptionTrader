@@ -179,12 +179,27 @@ class ColumnVisibilityController {
                 const columnIndex = parseInt(e.target.dataset.column);
                 const isChecked = e.target.checked;
                 
+                console.log(`🔄 Column change detected: ${columnIndex} (${this.columnNames[columnIndex]}) = ${isChecked}`);
+                
                 // Toggle this specific column
                 this.columnStates[columnIndex] = isChecked;
+                
+                console.log('📊 Updated column states:', this.columnStates);
                 
                 this.applyColumnVisibility();
                 this.saveState();
                 this.refreshTableData(); // Intelligent refresh when columns change
+                
+                // Additional verification after a short delay
+                setTimeout(() => {
+                    const table = document.getElementById('optionChainTable');
+                    if (table) {
+                        const headerCell = table.querySelector(`thead th:nth-child(${columnIndex + 1})`);
+                        const bodyCell = table.querySelector(`tbody td:nth-child(${columnIndex + 1})`);
+                        console.log(`🔍 Verification - Column ${columnIndex} header display:`, headerCell?.style.display);
+                        console.log(`🔍 Verification - Column ${columnIndex} body display:`, bodyCell?.style.display);
+                    }
+                }, 150);
             }
         });
 
@@ -216,9 +231,12 @@ class ColumnVisibilityController {
         headerCells.forEach((cell, index) => {
             if (index < this.columnStates.length) {
                 const shouldShow = this.columnStates[index];
-                cell.style.setProperty('display', shouldShow ? 'table-cell' : 'none', 'important');
-                if (!shouldShow) {
-                    console.log(`Hiding header column ${index}`);
+                if (shouldShow) {
+                    // Force show with highest priority
+                    cell.style.setProperty('display', 'table-cell', 'important');
+                    console.log(`Showing header column ${index} (${this.columnNames[index]})`);
+                } else {
+                    cell.style.setProperty('display', 'none', 'important');
                 }
             }
         });
@@ -230,7 +248,12 @@ class ColumnVisibilityController {
             cells.forEach((cell, index) => {
                 if (index < this.columnStates.length) {
                     const shouldShow = this.columnStates[index];
-                    cell.style.setProperty('display', shouldShow ? 'table-cell' : 'none', 'important');
+                    if (shouldShow) {
+                        // Force show with highest priority
+                        cell.style.setProperty('display', 'table-cell', 'important');
+                    } else {
+                        cell.style.setProperty('display', 'none', 'important');
+                    }
                 }
             });
         });
