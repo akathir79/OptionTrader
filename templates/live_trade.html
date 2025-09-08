@@ -1507,7 +1507,31 @@
                   <th style="padding: 8px 6px; width: 40px; text-align: center;">Actions</th>
                 </tr>
               </thead>
-              <tbody id="positionTableBody">
+              
+              <!-- Broker and User ID Selection Row -->
+              <tbody style="background: #e3f2fd; border-bottom: 2px solid #dee2e6;">
+                <tr>
+                  <td colspan="16" style="padding: 8px;">
+                    <div class="d-flex align-items-center gap-3">
+                      <div class="d-flex align-items-center gap-2">
+                        <label for="brokerSelect" class="form-label mb-0" style="font-size: 11px; font-weight: 600;">Broker:</label>
+                        <select id="brokerSelect" class="form-select form-select-sm" style="width: 150px; font-size: 11px;">
+                          <option value="">Select Broker</option>
+                        </select>
+                      </div>
+                      <div class="d-flex align-items-center gap-2">
+                        <label for="userIdSelect" class="form-label mb-0" style="font-size: 11px; font-weight: 600;">User ID:</label>
+                        <select id="userIdSelect" class="form-select form-select-sm" style="width: 150px; font-size: 11px;" disabled>
+                          <option value="">Select User ID</option>
+                        </select>
+                      </div>
+                      <div class="ms-auto">
+                        <span id="brokerStatusIndicator" class="badge bg-secondary" style="font-size: 10px;">No Selection</span>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>              <tbody id="positionTableBody">
                 <tr>
                   <td colspan="16" class="text-center text-muted py-3">
                     <i class="fas fa-plus-circle me-2"></i>No positions yet. Start trading!
@@ -4051,6 +4075,133 @@ document.addEventListener('DOMContentLoaded', function() {
             window.candlestickChart.refresh();
         }
     };
+
+    // Broker and User ID Management
+    let brokerSettings = [];
+    
+    // Initialize broker dropdown
+    function initializeBrokerDropdown() {
+        console.log('Initializing broker dropdown...');
+        fetch('/api/broker_settings/')
+            .then(response => response.json())
+            .then(data => {
+                brokerSettings = data;
+                console.log('Broker settings loaded:', brokerSettings);
+                populateBrokerDropdown();
+            })
+            .catch(error => {
+                console.error('Error loading broker settings:', error);
+                document.getElementById('brokerStatusIndicator').textContent = 'Error Loading';
+                document.getElementById('brokerStatusIndicator').className = 'badge bg-danger';
+            });
+    }
+    
+    // Populate broker dropdown with unique broker names
+    function populateBrokerDropdown() {
+        const brokerSelect = document.getElementById('brokerSelect');
+        const uniqueBrokers = [...new Set(brokerSettings.map(setting => setting.brokername))];
+        
+        // Clear existing options except the first one
+        brokerSelect.innerHTML = '<option value="">Select Broker</option>';
+        
+        uniqueBrokers.forEach(brokerName => {
+            const option = document.createElement('option');
+            option.value = brokerName;
+            option.textContent = brokerName.toUpperCase();
+            brokerSelect.appendChild(option);
+        });
+        
+        console.log('Broker dropdown populated with:', uniqueBrokers);
+    }
+    
+    // Populate User ID dropdown based on selected broker
+    function populateUserIdDropdown(selectedBroker) {
+        const userIdSelect = document.getElementById('userIdSelect');
+        const userIds = brokerSettings
+            .filter(setting => setting.brokername === selectedBroker)
+            .map(setting => setting.broker_user_id);
+        
+        // Clear existing options except the first one
+        userIdSelect.innerHTML = '<option value="">Select User ID</option>';
+        
+        if (userIds.length > 0) {
+            userIds.forEach(userId => {
+                const option = document.createElement('option');
+                option.value = userId;
+                option.textContent = userId;
+                userIdSelect.appendChild(option);
+            });
+            userIdSelect.disabled = false;
+            console.log('User ID dropdown populated with:', userIds);
+        } else {
+            userIdSelect.disabled = true;
+            console.log('No user IDs found for broker:', selectedBroker);
+        }
+    }
+    
+    // Update broker info display and status
+    function updateBrokerInfo(brokerName, userId) {
+        const brokerInfo = document.getElementById('brokerInfo');
+        const selectedBrokerName = document.getElementById('selectedBrokerName');
+        const selectedBrokerUserId = document.getElementById('selectedBrokerUserId');
+        const statusIndicator = document.getElementById('brokerStatusIndicator');
+        
+        if (brokerName && userId) {
+            selectedBrokerName.textContent = brokerName.toUpperCase();
+            selectedBrokerUserId.textContent = userId;
+            brokerInfo.style.display = 'block';
+            statusIndicator.textContent = 'Active';
+            statusIndicator.className = 'badge bg-success';
+            
+            // Store selected broker info for trading operations
+            window.selectedBrokerInfo = {
+                brokerName: brokerName,
+                userId: userId,
+                settings: brokerSettings.find(s => s.brokername === brokerName && s.broker_user_id === userId)
+            };
+            
+            console.log('Broker info updated:', window.selectedBrokerInfo);
+        } else if (brokerName && !userId) {
+            brokerInfo.style.display = 'none';
+            statusIndicator.textContent = 'Select User ID';
+            statusIndicator.className = 'badge bg-warning';
+            window.selectedBrokerInfo = null;
+        } else {
+            brokerInfo.style.display = 'none';
+            statusIndicator.textContent = 'No Selection';
+            statusIndicator.className = 'badge bg-secondary';
+            window.selectedBrokerInfo = null;
+        }
+    }
+    
+    // Broker dropdown change handler
+    document.getElementById('brokerSelect').addEventListener('change', function() {
+        const selectedBroker = this.value;
+        console.log('Broker selected:', selectedBroker);
+        
+        if (selectedBroker) {
+            populateUserIdDropdown(selectedBroker);
+            updateBrokerInfo(selectedBroker, null);
+        } else {
+            // Reset User ID dropdown
+            const userIdSelect = document.getElementById('userIdSelect');
+            userIdSelect.innerHTML = '<option value="">Select User ID</option>';
+            userIdSelect.disabled = true;
+            updateBrokerInfo(null, null);
+        }
+    });
+    
+    // User ID dropdown change handler
+    document.getElementById('userIdSelect').addEventListener('change', function() {
+        const selectedUserId = this.value;
+        const selectedBroker = document.getElementById('brokerSelect').value;
+        console.log('User ID selected:', selectedUserId);
+        
+        updateBrokerInfo(selectedBroker, selectedUserId);
+    });
+    
+    // Initialize broker dropdown on page load
+    initializeBrokerDropdown();
 });
 </script>
 
