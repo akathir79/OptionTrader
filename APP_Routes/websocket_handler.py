@@ -71,7 +71,7 @@ def get_spot_price():
 
 @websocket_bp.route('/ws_get_option_chain', methods=['GET'])
 def get_option_chain():
-    """Get option chain data with WebSocket subscription"""
+    """Get option chain data with WebSocket subscription using proper Fyers API v3"""
     try:
         symbol = request.args.get('symbol', '')
         strike_count_param = request.args.get('strike_count', '15')
@@ -91,17 +91,26 @@ def get_option_chain():
         if not symbol:
             print("ERROR: No symbol provided")
             return jsonify({"error": "Symbol parameter required"}), 400
+        
+        # Get access token from database
+        broker_row = BrokerSettings.query.filter_by(brokername='fyers').first()
+        if not broker_row or not broker_row.access_token:
+            return jsonify({"error": "No FYERS access token found"}), 500
             
-        fyers, error = get_fyers_client()
-        if error:
-            return jsonify({"error": error}), 500
-            
-        # Get spot price first
+        access_token = broker_row.access_token
+        client_id = broker_row.clientid
+        
+        print(f"OPTION CHAIN: symbol={symbol}, strikes={strike_count}, expiry={expiry_timestamp}")
+        
+        # Initialize FYERS model
+        fyers = fyersModel.FyersModel(client_id=client_id, token=access_token, is_async=False, log_path="")
+        
+        # Get spot price
         spot_data = fyers.quotes({"symbols": symbol})
         spot_price = 0
         if spot_data.get('s') == 'ok' and spot_data.get('d'):
             spot_price = spot_data['d'][0]['v'].get('lp', 0)
-            
+        
         # Get expiry data if no expiry provided
         if not expiry_timestamp:
             data = {"symbol": symbol, "strikecount": 1, "timestamp": ""}
@@ -109,7 +118,6 @@ def get_option_chain():
             
             if response.get('s') == 'ok':
                 expiry_data = response.get('data', {}).get('expiryData', [])
-                print(f"EXPIRY DATA RECEIVED: {expiry_data}")
                 return jsonify({
                     "success": True,
                     "expiry_data": [{"date": exp["date"], "expiry": exp["expiry"]} for exp in expiry_data],
@@ -121,7 +129,6 @@ def get_option_chain():
                 return jsonify({"error": f"Failed to get expiry data: {response.get('message', 'Unknown error')}"}), 500
         
         # Convert date format to timestamp if needed
-        # Frontend sends "28-AUG-25" but FYERS expects timestamp like "1756375200"
         converted_timestamp = expiry_timestamp
         
         # If expiry_timestamp looks like a date (contains letters), convert it
@@ -159,8 +166,6 @@ def get_option_chain():
             else:
                 return jsonify({"error": "Failed to get expiry data for conversion"}), 500
         
-        print(f"USING TIMESTAMP: {converted_timestamp}")
-        
         # Get option chain with expiry
         data = {
             "symbol": symbol,
@@ -176,15 +181,6 @@ def get_option_chain():
         option_data = response.get('data', {})
         options_list = option_data.get('optionsChain', [])
         
-        # Print option chain data to console
-        print(f"\n=== OPTION CHAIN DATA ===")
-        print(f"Symbol: {symbol}")
-        print(f"Expiry: {expiry_timestamp}")
-        print(f"Spot Price: {spot_price}")
-        print(f"Total Options: {len(options_list)}")
-        print(f"Option Data Sample: {options_list[:3] if options_list else 'No data'}")
-        print(f"========================\n")
-        
         if not options_list:
             return jsonify({"error": "No option data found"}), 500
             
@@ -193,8 +189,7 @@ def get_option_chain():
         
         # Group by strike price
         strikes = {}
-        symbols_to_subscribe = [symbol]  # Include spot symbol
-        
+        symbols_to_subscribe = []
         for option in options_list:
             strike = option.get('strike_price', 0)
             if strike <= 0:
@@ -203,19 +198,24 @@ def get_option_chain():
             if strike not in strikes:
                 strikes[strike] = {
                     'strike': strike,
-                    'ce_ltp': 0, 'pe_ltp': 0,
-                    'ce_symbol': '', 'pe_symbol': '',
-                    'ce_oi': 0, 'pe_oi': 0,
-                    'ce_oich': 0, 'pe_oich': 0,
-                    'ce_oichp': 0, 'pe_oichp': 0,
-                    'ce_volume': 0, 'pe_volume': 0,
-                    'ce_bid': 0, 'pe_bid': 0,
-                    'ce_ask': 0, 'pe_ask': 0,
-                    'ce_bid_qty': 0, 'pe_bid_qty': 0,
-                    'ce_ask_qty': 0, 'pe_ask_qty': 0,
-                    'ce_ltpch': 0, 'pe_ltpch': 0,
-                    'ce_ltpchp': 0, 'pe_ltpchp': 0,
-                    'ce_prev_oi': 0, 'pe_prev_oi': 0,
+                    'ce_ltp': 0,
+                    'pe_ltp': 0,
+                    'ce_symbol': '',
+                    'pe_symbol': '',
+                    'ce_oi': 0,
+                    'pe_oi': 0,
+                    'ce_volume': 0,
+                    'pe_volume': 0,
+                    'ce_oich': 0,
+                    'pe_oich': 0,
+                    'ce_bid': 0,
+                    'pe_bid': 0,
+                    'ce_ask': 0,
+                    'pe_ask': 0,
+                    'ce_bid_qty': 0,
+                    'pe_bid_qty': 0,
+                    'ce_ask_qty': 0,
+                    'pe_ask_qty': 0,
                     'is_atm': strike == atm_strike
                 }
                 
@@ -223,28 +223,24 @@ def get_option_chain():
                 strikes[strike]['ce_ltp'] = option.get('ltp', 0)
                 strikes[strike]['ce_symbol'] = option.get('symbol', '')
                 strikes[strike]['ce_oi'] = option.get('oi', 0)
-                strikes[strike]['ce_oich'] = option.get('oich', 0)
-                strikes[strike]['ce_oichp'] = option.get('oichp', 0)
                 strikes[strike]['ce_volume'] = option.get('volume', 0)
+                strikes[strike]['ce_oich'] = option.get('oich', 0)
                 strikes[strike]['ce_bid'] = option.get('bid', 0)
                 strikes[strike]['ce_ask'] = option.get('ask', 0)
-                strikes[strike]['ce_ltpch'] = option.get('ltpch', 0)
-                strikes[strike]['ce_ltpchp'] = option.get('ltpchp', 0)
-                strikes[strike]['ce_prev_oi'] = option.get('prev_oi', 0)
+                strikes[strike]['ce_bid_qty'] = option.get('bid_qty', 0)
+                strikes[strike]['ce_ask_qty'] = option.get('ask_qty', 0)
                 if option.get('symbol'):
                     symbols_to_subscribe.append(option.get('symbol'))
             elif option.get('option_type') == 'PE':
                 strikes[strike]['pe_ltp'] = option.get('ltp', 0)
                 strikes[strike]['pe_symbol'] = option.get('symbol', '')
                 strikes[strike]['pe_oi'] = option.get('oi', 0)
-                strikes[strike]['pe_oich'] = option.get('oich', 0)
-                strikes[strike]['pe_oichp'] = option.get('oichp', 0)
                 strikes[strike]['pe_volume'] = option.get('volume', 0)
+                strikes[strike]['pe_oich'] = option.get('oich', 0)
                 strikes[strike]['pe_bid'] = option.get('bid', 0)
                 strikes[strike]['pe_ask'] = option.get('ask', 0)
-                strikes[strike]['pe_ltpch'] = option.get('ltpch', 0)
-                strikes[strike]['pe_ltpchp'] = option.get('ltpchp', 0)
-                strikes[strike]['pe_prev_oi'] = option.get('prev_oi', 0)
+                strikes[strike]['pe_bid_qty'] = option.get('bid_qty', 0)
+                strikes[strike]['pe_ask_qty'] = option.get('ask_qty', 0)
                 if option.get('symbol'):
                     symbols_to_subscribe.append(option.get('symbol'))
         
@@ -256,7 +252,7 @@ def get_option_chain():
         print(f"ATM Strike: {atm_strike}")
         print(f"Symbols to subscribe: {len(symbols_to_subscribe)}")
         for i, strike in enumerate(strike_list):
-            print(f"Strike {i+1}: {strike['strike']} - CE LTP: {strike['ce_ltp']}, PE LTP: {strike['pe_ltp']}")
+            print(f"Strike {i+1}: {strike['strike']} - CE OI: {strike['ce_oi']}, PE OI: {strike['pe_oi']}, CE Vol: {strike['ce_volume']}, PE Vol: {strike['pe_volume']}")
         print(f"==============================\n")
         
         # Start WebSocket subscription
@@ -273,6 +269,7 @@ def get_option_chain():
         })
         
     except Exception as e:
+        print(f"OPTION CHAIN ERROR: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 def start_websocket_subscription(symbols):
