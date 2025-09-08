@@ -170,13 +170,27 @@ class ColumnVisibilityController {
         
         // Add the complete row to container
         container.innerHTML += rowHTML;
+        
+        // CRITICAL: Setup event listeners AFTER creating checkboxes  
+        this.setupCheckboxEventListeners();
+        console.log('✅ Column checkboxes created and event listeners attached');
     }
 
-    setupEventListeners() {
-        // Individual checkbox change handlers
-        document.addEventListener('change', (e) => {
-            if (e.target.matches('[data-column]')) {
-                const columnIndex = parseInt(e.target.dataset.column);
+    setupCheckboxEventListeners() {
+        console.log('🎯 Setting up checkbox event listeners...');
+        
+        // Find all column checkboxes and attach individual event listeners
+        const checkboxes = document.querySelectorAll('#columnCheckboxes input[data-column]');
+        console.log(`📋 Found ${checkboxes.length} checkboxes to attach listeners to`);
+        
+        checkboxes.forEach(checkbox => {
+            const columnIndex = parseInt(checkbox.dataset.column);
+            
+            // Remove any existing listeners to avoid duplicates
+            checkbox.removeEventListener('change', checkbox._columnChangeHandler);
+            
+            // Create the event handler
+            checkbox._columnChangeHandler = (e) => {
                 const isChecked = e.target.checked;
                 
                 console.log(`🔄 Column change detected: ${columnIndex} (${this.columnNames[columnIndex]}) = ${isChecked}`);
@@ -200,10 +214,16 @@ class ColumnVisibilityController {
                         console.log(`🔍 Verification - Column ${columnIndex} body display:`, bodyCell?.style.display);
                     }
                 }, 150);
-            }
+            };
+            
+            // Attach the event listener
+            checkbox.addEventListener('change', checkbox._columnChangeHandler);
+            console.log(`✅ Event listener attached to column ${columnIndex} checkbox`);
         });
+    }
 
-        // Bulk action handlers
+    setupEventListeners() {
+        // Bulk action button handlers only (checkbox handlers are in setupCheckboxEventListeners)
         document.addEventListener('click', (e) => {
             if (e.target.id === 'selectAllColumns') {
                 this.selectAllColumns();
@@ -213,6 +233,7 @@ class ColumnVisibilityController {
                 this.resetToDefaults();
             }
         });
+
     }
 
     applyColumnVisibility() {
