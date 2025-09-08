@@ -183,6 +183,14 @@ def get_option_chain():
         
         if not options_list:
             return jsonify({"error": "No option data found"}), 500
+        
+        # Print first few options to debug oich field
+        print(f"\n=== RAW API RESPONSE DEBUG ===")
+        print(f"Total options received: {len(options_list)}")
+        for i, option in enumerate(options_list[:5]):  # Print first 5 options
+            print(f"Option {i+1}: strike={option.get('strike_price')}, type={option.get('option_type')}, oich={option.get('oich')}, oi={option.get('oi')}")
+            print(f"  Keys in option: {list(option.keys())}")
+        print(f"===============================\n")
             
         # Calculate ATM strike
         atm_strike = min(options_list, key=lambda x: abs(x['strike_price'] - spot_price))['strike_price']
