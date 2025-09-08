@@ -225,6 +225,7 @@ def get_option_chain():
                 strikes[strike]['ce_oi'] = option.get('oi', 0)
                 strikes[strike]['ce_volume'] = option.get('volume', 0)
                 strikes[strike]['ce_oich'] = option.get('oich', 0)
+                print(f"DEBUG CE {strike}: oich from API = {option.get('oich')}, stored = {strikes[strike]['ce_oich']}")
                 strikes[strike]['ce_bid'] = option.get('bid', 0)
                 strikes[strike]['ce_ask'] = option.get('ask', 0)
                 strikes[strike]['ce_bid_qty'] = option.get('bid_qty', 0)
@@ -237,6 +238,7 @@ def get_option_chain():
                 strikes[strike]['pe_oi'] = option.get('oi', 0)
                 strikes[strike]['pe_volume'] = option.get('volume', 0)
                 strikes[strike]['pe_oich'] = option.get('oich', 0)
+                print(f"DEBUG PE {strike}: oich from API = {option.get('oich')}, stored = {strikes[strike]['pe_oich']}")
                 strikes[strike]['pe_bid'] = option.get('bid', 0)
                 strikes[strike]['pe_ask'] = option.get('ask', 0)
                 strikes[strike]['pe_bid_qty'] = option.get('bid_qty', 0)
@@ -252,7 +254,7 @@ def get_option_chain():
         print(f"ATM Strike: {atm_strike}")
         print(f"Symbols to subscribe: {len(symbols_to_subscribe)}")
         for i, strike in enumerate(strike_list):
-            print(f"Strike {i+1}: {strike['strike']} - CE OI: {strike['ce_oi']}, PE OI: {strike['pe_oi']}, CE Vol: {strike['ce_volume']}, PE Vol: {strike['pe_volume']}")
+            print(f"Strike {i+1}: {strike['strike']} - CE OI: {strike['ce_oi']}, PE OI: {strike['pe_oi']}, CE Vol: {strike['ce_volume']}, PE Vol: {strike['pe_volume']}, CE OICH: {strike['ce_oich']}, PE OICH: {strike['pe_oich']}")
         print(f"==============================\n")
         
         # Start WebSocket subscription
