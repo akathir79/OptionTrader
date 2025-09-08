@@ -84,20 +84,27 @@ class ColumnVisibilityController {
         const table = document.getElementById('optionChainTable');
         if (!table) return;
 
-        // Apply to header
+        // Apply to header - more robust checking
         const headerCells = table.querySelectorAll('thead th');
         headerCells.forEach((cell, index) => {
-            cell.style.display = this.columnStates[index] ? '' : 'none';
+            if (index < this.columnStates.length) {
+                cell.style.display = this.columnStates[index] ? '' : 'none';
+            }
         });
 
-        // Apply to data rows
+        // Apply to data rows - more robust checking
         const dataRows = table.querySelectorAll('tbody tr');
         dataRows.forEach(row => {
             const cells = row.querySelectorAll('td');
             cells.forEach((cell, index) => {
-                cell.style.display = this.columnStates[index] ? '' : 'none';
+                if (index < this.columnStates.length) {
+                    cell.style.display = this.columnStates[index] ? '' : 'none';
+                }
             });
         });
+        
+        // Log for debugging
+        console.log('Column visibility applied - Headers:', headerCells.length, 'Data columns expected:', this.columnStates.length);
     }
 
 

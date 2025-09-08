@@ -747,6 +747,11 @@ class WebSocketHandler {
         });
         
         console.log('Updated', updatesCount, 'symbols in table');
+        
+        // Reapply column visibility after table update to ensure proper alignment
+        if (window.columnVisibilityController && typeof window.columnVisibilityController.refreshVisibility === 'function') {
+            window.columnVisibilityController.refreshVisibility();
+        }
     }
 
     autoLoadDefaultOptionChain() {
