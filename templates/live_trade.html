@@ -1487,19 +1487,19 @@
         <div class="border-bottom" style="background: #f8f9fa; padding: 12px;">
           <div class="d-flex align-items-center gap-3">
             <div class="d-flex align-items-center gap-2">
-              <label for="brokerSelect" class="form-label mb-0" style="font-size: 12px; font-weight: 600;">Broker:</label>
-              <select id="brokerSelect" class="form-select form-select-sm" style="width: 150px; font-size: 11px;">
+              <label for="positionBrokerSelect" class="form-label mb-0" style="font-size: 12px; font-weight: 600;">Broker:</label>
+              <select id="positionBrokerSelect" class="form-select form-select-sm" style="width: 150px; font-size: 11px;">
                 <option value="">Select Broker</option>
               </select>
             </div>
             <div class="d-flex align-items-center gap-2">
-              <label for="userIdSelect" class="form-label mb-0" style="font-size: 12px; font-weight: 600;">User ID:</label>
-              <select id="userIdSelect" class="form-select form-select-sm" style="width: 150px; font-size: 11px;" disabled>
+              <label for="positionUserIdSelect" class="form-label mb-0" style="font-size: 12px; font-weight: 600;">User ID:</label>
+              <select id="positionUserIdSelect" class="form-select form-select-sm" style="width: 150px; font-size: 11px;" disabled>
                 <option value="">Select User ID</option>
               </select>
             </div>
             <div class="ms-auto">
-              <span id="brokerStatusIndicator" class="badge bg-secondary" style="font-size: 10px;">No Selection</span>
+              <span id="positionBrokerStatusIndicator" class="badge bg-secondary" style="font-size: 10px;">No Selection</span>
             </div>
           </div>
         </div>
@@ -4088,14 +4088,14 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(error => {
                 console.error('Error loading broker settings:', error);
-                document.getElementById('brokerStatusIndicator').textContent = 'Error Loading';
-                document.getElementById('brokerStatusIndicator').className = 'badge bg-danger';
+                document.getElementById('positionBrokerStatusIndicator').textContent = 'Error Loading';
+                document.getElementById('positionBrokerStatusIndicator').className = 'badge bg-danger';
             });
     }
     
     // Populate broker dropdown with unique broker names
     function populateBrokerDropdown() {
-        const brokerSelect = document.getElementById('brokerSelect');
+        const brokerSelect = document.getElementById('positionBrokerSelect');
         const uniqueBrokers = [...new Set(brokerSettings.map(setting => setting.brokername))];
         
         // Clear existing options except the first one
@@ -4113,7 +4113,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Populate User ID dropdown based on selected broker
     function populateUserIdDropdown(selectedBroker) {
-        const userIdSelect = document.getElementById('userIdSelect');
+        const userIdSelect = document.getElementById('positionUserIdSelect');
         const userIds = brokerSettings
             .filter(setting => setting.brokername === selectedBroker)
             .map(setting => setting.broker_user_id);
@@ -4141,7 +4141,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const brokerInfo = document.getElementById('brokerInfo');
         const selectedBrokerName = document.getElementById('selectedBrokerName');
         const selectedBrokerUserId = document.getElementById('selectedBrokerUserId');
-        const statusIndicator = document.getElementById('brokerStatusIndicator');
+        const statusIndicator = document.getElementById('positionBrokerStatusIndicator');
         
         if (brokerName && userId) {
             selectedBrokerName.textContent = brokerName.toUpperCase();
@@ -4172,7 +4172,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Broker dropdown change handler
-    document.getElementById('brokerSelect').addEventListener('change', function() {
+    document.getElementById('positionBrokerSelect').addEventListener('change', function() {
         const selectedBroker = this.value;
         console.log('Broker selected:', selectedBroker);
         
@@ -4181,7 +4181,7 @@ document.addEventListener('DOMContentLoaded', function() {
             updateBrokerInfo(selectedBroker, null);
         } else {
             // Reset User ID dropdown
-            const userIdSelect = document.getElementById('userIdSelect');
+            const userIdSelect = document.getElementById('positionUserIdSelect');
             userIdSelect.innerHTML = '<option value="">Select User ID</option>';
             userIdSelect.disabled = true;
             updateBrokerInfo(null, null);
@@ -4189,9 +4189,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // User ID dropdown change handler
-    document.getElementById('userIdSelect').addEventListener('change', function() {
+    document.getElementById('positionUserIdSelect').addEventListener('change', function() {
         const selectedUserId = this.value;
-        const selectedBroker = document.getElementById('brokerSelect').value;
+        const selectedBroker = document.getElementById('positionBrokerSelect').value;
         console.log('User ID selected:', selectedUserId);
         
         updateBrokerInfo(selectedBroker, selectedUserId);
