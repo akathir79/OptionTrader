@@ -12,6 +12,7 @@ class ColumnVisibilityController {
             'Chng', 'Gamma', 'Theta', 'Vega', 'Vanna', 'Charm', 'Volga', 'Veta', 'PE B/S'
         ];
         this.columnStates = this.getDefaultColumnStates();
+        this.groupedControls = []; // Initialize grouped controls
         this.init();
     }
 
@@ -23,11 +24,10 @@ class ColumnVisibilityController {
     }
 
     getDefaultColumnStates() {
-        // Default visible columns for essential trading data
+        // Default visible columns for essential trading data only
         const defaults = {};
-        // Make essential columns visible by default
-        // Updated for 39-column structure: Vol(15), Chart(16), LTP(17), Strike(19), LTP(20), Chart(21), Vol(22), OI(23), PE B/S(38)
-        const essentialColumns = [0, 8, 10, 11, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 28, 38];
+        // Essential columns: CE B/S(0), Change in OI(13), Vol(15), LTP(17), Delta(18), Strike(19), Delta(20), LTP(21), Vol(23), Change in OI(25), PE B/S(38)
+        const essentialColumns = [0, 13, 15, 17, 18, 19, 20, 21, 23, 25, 38];
         
         for (let i = 0; i < 39; i++) {
             defaults[i] = essentialColumns.includes(i);
@@ -42,26 +42,80 @@ class ColumnVisibilityController {
         
         container.innerHTML = '';
         
-        this.columnNames.forEach((name, index) => {
-            const isChecked = this.columnStates[index] ? 'checked' : '';
+        // Grouped controls for better UX - one checkbox controls both CE and PE sides
+        const groupedControls = [
+            { name: 'B/S', columns: [0, 38], essential: true },
+            { name: 'LTP', columns: [17, 21], essential: true },
+            { name: 'Vol', columns: [15, 23], essential: true },
+            { name: 'Delta (Δ)', columns: [18, 20], essential: true },
+            { name: 'Change in OI', columns: [13, 25], essential: true },
+            { name: 'Strike', columns: [19], essential: true },
+            { name: 'Chart', columns: [16, 22], essential: false },
+            { name: 'OI', columns: [14, 24], essential: false },
+            { name: 'Bid', columns: [10, 28], essential: false },
+            { name: 'Ask', columns: [11, 27], essential: false },
+            { name: 'Bid Qty', columns: [9, 29], essential: false },
+            { name: 'Ask Qty', columns: [12, 26], essential: false },
+            { name: 'Change', columns: [8, 30], essential: false },
+            { name: 'Gamma', columns: [7, 31], essential: false },
+            { name: 'Theta', columns: [6, 32], essential: false },
+            { name: 'Vega', columns: [5, 33], essential: false },
+            { name: 'Vanna', columns: [4, 34], essential: false },
+            { name: 'Charm', columns: [3, 35], essential: false },
+            { name: 'Volga', columns: [2, 36], essential: false },
+            { name: 'Veta', columns: [1, 37], essential: false }
+        ];
+        
+        // Create essential columns first
+        groupedControls.filter(group => group.essential).forEach((group, index) => {
+            const isChecked = group.columns.every(col => this.columnStates[col]) ? 'checked' : '';
             const checkboxHtml = `
                 <div class="form-check mb-1">
-                    <input class="form-check-input" type="checkbox" id="col_${index}" data-column="${index}" ${isChecked}>
-                    <label class="form-check-label" for="col_${index}">
-                        ${name}
+                    <input class="form-check-input" type="checkbox" id="group_${index}" data-group="${index}" ${isChecked}>
+                    <label class="form-check-label" for="group_${index}" style="font-weight: 500;">
+                        ${group.name}
                     </label>
                 </div>
             `;
             container.innerHTML += checkboxHtml;
         });
+        
+        // Add separator
+        container.innerHTML += '<hr class="my-2">';
+        container.innerHTML += '<div style="font-size: 11px; color: #6c757d; margin-bottom: 8px;">Advanced Columns:</div>';
+        
+        // Create advanced columns
+        groupedControls.filter(group => !group.essential).forEach((group, index) => {
+            const realIndex = index + 6; // Offset for essential columns
+            const isChecked = group.columns.every(col => this.columnStates[col]) ? 'checked' : '';
+            const checkboxHtml = `
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="checkbox" id="group_${realIndex}" data-group="${realIndex}" ${isChecked}>
+                    <label class="form-check-label" for="group_${realIndex}" style="font-size: 11px;">
+                        ${group.name}
+                    </label>
+                </div>
+            `;
+            container.innerHTML += checkboxHtml;
+        });
+        
+        // Store grouped controls for reference
+        this.groupedControls = groupedControls;
     }
 
     setupEventListeners() {
-        // Column checkbox change handlers
+        // Grouped checkbox change handlers
         document.addEventListener('change', (e) => {
-            if (e.target.matches('[data-column]')) {
-                const columnIndex = parseInt(e.target.dataset.column);
-                this.columnStates[columnIndex] = e.target.checked;
+            if (e.target.matches('[data-group]')) {
+                const groupIndex = parseInt(e.target.dataset.group);
+                const group = this.groupedControls[groupIndex];
+                const isChecked = e.target.checked;
+                
+                // Toggle all columns in this group
+                group.columns.forEach(columnIndex => {
+                    this.columnStates[columnIndex] = isChecked;
+                });
+                
                 this.applyColumnVisibility();
                 this.saveState();
                 this.refreshTableData(); // Intelligent refresh when columns change
@@ -74,7 +128,7 @@ class ColumnVisibilityController {
                 this.selectAllColumns();
             } else if (e.target.id === 'deselectAllColumns') {
                 this.deselectAllColumns();
-            } else if (e.target.id === 'resetDefaultColumns') {
+            } else if (e.target.id === 'resetToDefaults') {
                 this.resetToDefaults();
             }
         });
@@ -148,9 +202,11 @@ class ColumnVisibilityController {
     }
 
     updateCheckboxes() {
-        document.querySelectorAll('[data-column]').forEach(checkbox => {
-            const columnIndex = parseInt(checkbox.dataset.column);
-            checkbox.checked = this.columnStates[columnIndex];
+        document.querySelectorAll('[data-group]').forEach(checkbox => {
+            const groupIndex = parseInt(checkbox.dataset.group);
+            const group = this.groupedControls[groupIndex];
+            // Check if all columns in this group are visible
+            checkbox.checked = group.columns.every(col => this.columnStates[col]);
         });
     }
 
