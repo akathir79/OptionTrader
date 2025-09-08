@@ -826,6 +826,63 @@
   border: 1px solid #dee2e6;
 }
 
+/* Hide non-essential columns by default - Essential only: CE B/S, Change in OI, OI, Vol, LTP, Delta, Strike, PE B/S */
+#optionChainTable thead th:nth-child(2),  /* Veta */
+#optionChainTable thead th:nth-child(3),  /* Volga */
+#optionChainTable thead th:nth-child(4),  /* Charm */
+#optionChainTable thead th:nth-child(5),  /* Vanna */
+#optionChainTable thead th:nth-child(6),  /* Vega */
+#optionChainTable thead th:nth-child(7),  /* Theta */
+#optionChainTable thead th:nth-child(8),  /* Gamma */
+#optionChainTable thead th:nth-child(9),  /* Chng */
+#optionChainTable thead th:nth-child(10), /* Bid Qty */
+#optionChainTable thead th:nth-child(11), /* Bid */
+#optionChainTable thead th:nth-child(12), /* Ask */
+#optionChainTable thead th:nth-child(13), /* Ask Qty */
+#optionChainTable thead th:nth-child(17), /* Chart */
+#optionChainTable thead th:nth-child(23), /* Chart */
+#optionChainTable thead th:nth-child(27), /* Ask Qty */
+#optionChainTable thead th:nth-child(28), /* Ask */
+#optionChainTable thead th:nth-child(29), /* Bid */
+#optionChainTable thead th:nth-child(30), /* Bid Qty */
+#optionChainTable thead th:nth-child(31), /* Chng */
+#optionChainTable thead th:nth-child(32), /* Gamma */
+#optionChainTable thead th:nth-child(33), /* Theta */
+#optionChainTable thead th:nth-child(34), /* Vega */
+#optionChainTable thead th:nth-child(35), /* Vanna */
+#optionChainTable thead th:nth-child(36), /* Charm */
+#optionChainTable thead th:nth-child(37), /* Volga */
+#optionChainTable thead th:nth-child(38), /* Veta */
+#optionChainTable tbody td:nth-child(2),  /* Veta */
+#optionChainTable tbody td:nth-child(3),  /* Volga */
+#optionChainTable tbody td:nth-child(4),  /* Charm */
+#optionChainTable tbody td:nth-child(5),  /* Vanna */
+#optionChainTable tbody td:nth-child(6),  /* Vega */
+#optionChainTable tbody td:nth-child(7),  /* Theta */
+#optionChainTable tbody td:nth-child(8),  /* Gamma */
+#optionChainTable tbody td:nth-child(9),  /* Chng */
+#optionChainTable tbody td:nth-child(10), /* Bid Qty */
+#optionChainTable tbody td:nth-child(11), /* Bid */
+#optionChainTable tbody td:nth-child(12), /* Ask */
+#optionChainTable tbody td:nth-child(13), /* Ask Qty */
+#optionChainTable tbody td:nth-child(17), /* Chart */
+#optionChainTable tbody td:nth-child(23), /* Chart */
+#optionChainTable tbody td:nth-child(27), /* Ask Qty */
+#optionChainTable tbody td:nth-child(28), /* Ask */
+#optionChainTable tbody td:nth-child(29), /* Bid */
+#optionChainTable tbody td:nth-child(30), /* Bid Qty */
+#optionChainTable tbody td:nth-child(31), /* Chng */
+#optionChainTable tbody td:nth-child(32), /* Gamma */
+#optionChainTable tbody td:nth-child(33), /* Theta */
+#optionChainTable tbody td:nth-child(34), /* Vega */
+#optionChainTable tbody td:nth-child(35), /* Vanna */
+#optionChainTable tbody td:nth-child(36), /* Charm */
+#optionChainTable tbody td:nth-child(37), /* Volga */
+#optionChainTable tbody td:nth-child(38) /* Veta */
+{
+  display: none !important;
+}
+
 #optionChainTable thead {
   position: sticky;
   top: 0;
