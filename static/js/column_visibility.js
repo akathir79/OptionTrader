@@ -288,6 +288,26 @@ class ColumnVisibilityController {
         
         console.log(`✅ Column visibility CSS applied - ${this.columnStates.length} columns processed`);
         console.log('🔍 Dynamic CSS created with', visibleColumns.length, 'visible columns');
+        console.log('📝 Generated CSS:', dynamicCSS.substring(0, 300) + '...');
+        
+        // Verify the style element was added
+        const verifyStyle = document.getElementById('dynamicColumnVisibility');
+        console.log('🎯 Style element in DOM:', !!verifyStyle);
+        if (verifyStyle) {
+            console.log('📄 Style element content length:', verifyStyle.textContent.length);
+        }
+        
+        // Force immediate visual check
+        setTimeout(() => {
+            const table = document.getElementById('optionChainTable');
+            if (table) {
+                const headerRow = table.querySelector('thead tr');
+                const visibleHeaders = Array.from(headerRow.children).filter(th => 
+                    getComputedStyle(th).display !== 'none'
+                ).length;
+                console.log(`🔍 Currently visible header columns: ${visibleHeaders}`);
+            }
+        }, 100);
     }
 
 
