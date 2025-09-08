@@ -304,9 +304,14 @@ class WebSocketHandler {
     }
 
     updateITMHighlighting() {
-        if (!this.optionChainTable || !this.currentSpotPrice) return;
+        if (!this.optionChainTable || !this.currentSpotPrice) {
+            console.log('DEBUG: updateITMHighlighting skipped - table:', !!this.optionChainTable, 'spot:', this.currentSpotPrice);
+            return;
+        }
         
         const rows = this.optionChainTable.querySelectorAll('tbody tr');
+        console.log(`DEBUG: updateITMHighlighting processing ${rows.length} rows with spot price: ${this.currentSpotPrice}`);
+        
         rows.forEach(row => {
             const strikeCell = row.querySelector('td:nth-child(20)'); // Strike column
             if (strikeCell) {
@@ -321,12 +326,15 @@ class WebSocketHandler {
                     if (Math.abs(strike - atmStrike) < 0.01) {
                         // This is the ATM strike - highlight in red
                         row.classList.add('atm-row');
+                        console.log(`DEBUG: Added atm-row to strike ${strike}`);
                     } else if (this.currentSpotPrice > strike) {
                         // Call ITM when spot > strike
                         row.classList.add('itm-call-row');
+                        console.log(`DEBUG: Added itm-call-row to strike ${strike} (spot ${this.currentSpotPrice} > strike)`);
                     } else if (this.currentSpotPrice < strike) {
                         // Put ITM when spot < strike
                         row.classList.add('itm-put-row');
+                        console.log(`DEBUG: Added itm-put-row to strike ${strike} (spot ${this.currentSpotPrice} < strike)`);
                     }
                 }
             }
