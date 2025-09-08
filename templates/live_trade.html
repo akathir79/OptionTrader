@@ -4333,22 +4333,22 @@ document.addEventListener('DOMContentLoaded', function() {
 {% endblock %}
 
 <style>
-/* Professional ITM highlighting - VISIBLE call/put columns only */
-.itm-call-row td:nth-child(1),   /* CE B/S */
-.itm-call-row td:nth-child(14),  /* Chng in OI */
-.itm-call-row td:nth-child(15),  /* OI */
-.itm-call-row td:nth-child(16),  /* Vol */
-.itm-call-row td:nth-child(18),  /* LTP */
-.itm-call-row td:nth-child(19) { /* Δ (CE) */
+/* Professional ITM highlighting - ALL visible call/put columns using class selectors */
+.itm-call-row .buy_sell_cell,     /* CE B/S */
+.itm-call-row .ce-oi-change,      /* Chng in OI */
+.itm-call-row .ce-oi,             /* OI */
+.itm-call-row .ce-volume,         /* Vol */
+.itm-call-row .ce-ltp,            /* LTP */
+.itm-call-row .ce-delta {         /* Δ (CE) */
   background-color: #fff3cd !important; /* Light yellow for ITM call columns */
 }
 
-.itm-put-row td:nth-child(21),   /* Δ (PE) */
-.itm-put-row td:nth-child(22),   /* LTP */
-.itm-put-row td:nth-child(24),   /* Vol */
-.itm-put-row td:nth-child(25),   /* OI */
-.itm-put-row td:nth-child(26),   /* Chng in OI */
-.itm-put-row td:nth-child(39) {  /* PE B/S */
+.itm-put-row .pe-delta,           /* Δ (PE) */
+.itm-put-row .pe-ltp,             /* LTP */
+.itm-put-row .pe-volume,          /* Vol */
+.itm-put-row .pe-oi,              /* OI */
+.itm-put-row .pe-oi-change,       /* Chng in OI */
+.itm-put-row .buy_sell_cell {     /* PE B/S */
   background-color: #fff3cd !important; /* Light yellow for ITM put columns */
 }
 
