@@ -2272,8 +2272,10 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`${action} ${key} for row ${rowIndex}, expiry ${targetExpiry}`);
     }
 
-    // Handle button clicks - ORIGINAL WORKING VERSION
+    // Handle button clicks - DEBUG VERSION
     function handleButtonClick(rowIndex, key, action) {
+        console.log(`🔥 handleButtonClick CALLED: row=${rowIndex}, key=${key}, action=${action}`);
+        
         // Get current expiry and strike information
         const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
         const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
@@ -2283,15 +2285,22 @@ document.addEventListener('DOMContentLoaded', function() {
             strike = parseFloat(strikeTd?.textContent || 0);
         }
         
+        console.log(`🔥 Strike: ${strike}, Expiry: ${currentExpiry}`);
+        
         // Create position key for global tracking
         const positionKey = `${strike}-${currentExpiry}-${key}`;
+        console.log(`🔥 Position key: ${positionKey}`);
         
         if (action === 'add') {
+            console.log(`🔥 BEFORE: counters[${rowIndex}][${key}] = ${counters[rowIndex]?.[key]}`);
             counters[rowIndex][key]++;
+            console.log(`🔥 AFTER: counters[${rowIndex}][${key}] = ${counters[rowIndex][key]}`);
+            
             // Store in global positions
             if (!window.globalPositions[positionKey]) {
                 const optionType = key.includes('ce') ? 'CE' : 'PE';
                 const entryPrice = getCurrentLTP(strike, optionType, currentExpiry);
+                console.log(`🔥 Creating NEW position: ${optionType}, entryPrice=${entryPrice}`);
                 window.globalPositions[positionKey] = {
                     strike: strike,
                     expiry: currentExpiry,
@@ -2304,6 +2313,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
             }
             window.globalPositions[positionKey].lots++;
+            console.log(`🔥 Position lots now: ${window.globalPositions[positionKey].lots}`);
+            console.log(`🔥 Total globalPositions:`, Object.keys(window.globalPositions).length);
         } else if (action === 'remove' && counters[rowIndex][key] > 0) {
             counters[rowIndex][key]--;
             // Update global positions
@@ -2320,6 +2331,7 @@ document.addEventListener('DOMContentLoaded', function() {
         closeAllPositionCards();
         
         // Update current positions table
+        console.log(`🔥 Calling updateCurrentPositionsTable()`);
         updateCurrentPositionsTable();
         
         // Immediately create and update payoff chart using loaded option chain data
