@@ -1,0 +1,66 @@
+[PAYOFF UPDATE] Cannot update - Missing requirements: payoffChart=false, currentSpotPrice=24773.15 websocket_handler.js:1005:21
+[PAYOFF UPDATE] Attempting fallback via global forcePayoffChartUpdate websocket_handler.js:1009:25
+[FORCE UPDATE] forcePayoffChartUpdate called with spot: 24773.15 96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev:2412:17
+[FORCE UPDATE] Updating payoff chart with spot price: 24773.15 96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev:2430:17
+[FORCE UPDATE] updateBreakevenLinesFromPositions not available, chart updated without breakeven lines 96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev:2464:21
+[FORCE UPDATE] Successfully updated payoff chart spot line to: 24773.15 96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev:2467:17
+Spot price updated: 24773.15 for NSE:NIFTY50-INDEX websocket_handler.js:116:25
+XHRGET
+https://96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev/ws_get_option_chain?symbol=NSE:NIFTY50-INDEX&expiry_timestamp=09-SEP-25&strike_count=10
+[HTTP/1.1 200 OK 35614ms]
+
+XHRGET
+https://96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev/live_market_data
+[HTTP/1.1 200 OK 35431ms]
+
+[SPOT UPDATE] Set currentSpotPrice to: 24773.15 websocket_handler.js:268:17
+[SPOT UPDATE] About to call updatePayoffChartSpotPrice with spot: 24773.15 websocket_handler.js:274:17
+[PAYOFF UPDATE] Checking payoff chart update - payoffChart exists: false, currentSpotPrice: 24773.15 websocket_handler.js:967:17
+[PAYOFF UPDATE] Cannot update - Missing requirements: payoffChart=false, currentSpotPrice=24773.15 websocket_handler.js:1005:21
+[PAYOFF UPDATE] Attempting fallback via global forcePayoffChartUpdate websocket_handler.js:1009:25
+[FORCE UPDATE] forcePayoffChartUpdate called with spot: 24773.15 96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev:2412:17
+[FORCE UPDATE] Updating payoff chart with spot price: 24773.15 96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev:2430:17
+[FORCE UPDATE] updateBreakevenLinesFromPositions not available, chart updated without breakeven lines 96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev:2464:21
+[FORCE UPDATE] Successfully updated payoff chart spot line to: 24773.15 96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev:2467:17
+Spot price updated: 24773.15 for NSE:NIFTY50-INDEX websocket_handler.js:116:25
+XHRGET
+https://96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev/get_spot_price?symbol=NSE:NIFTY50-INDEX
+[HTTP/1.1 200 OK 35787ms]
+
+XHRGET
+https://96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev/live_market_data
+[HTTP/1.1 200 OK 35342ms]
+
+Response for NSE:NIFTY2590924250CE: 
+Object { count: 750, ohlc_data: (750) […], prices: (750) […], symbol: "NSE:NIFTY2590924250CE", timestamps: (750) […] }
+option_microchart.js:42:21
+Rendering chart for NSE:NIFTY2590924250CE with 750 data points option_microchart.js:51:29
+XHRGET
+https://96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev/live_market_data
+[HTTP/1.1 200 OK 34350ms]
+
+Response for NSE:NIFTY2590924250PE: 
+Object { count: 750, ohlc_data: (750) […], prices: (750) […], symbol: "NSE:NIFTY2590924250PE", timestamps: (750) […] }
+option_microchart.js:42:21
+Rendering chart for NSE:NIFTY2590924250PE with 750 data points option_microchart.js:51:29
+XHRGET
+https://96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev/get_spot_price?symbol=NSE:NIFTY50-INDEX
+[HTTP/1.1 200 OK 34703ms]
+
+XHRGET
+https://96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev/ws_get_option_chain?symbol=NSE:NIFTY50-INDEX&expiry_timestamp=09-SEP-25&strike_count=10
+
+XHRGET
+https://96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev/live_market_data
+
+Response for NSE:NIFTY2590924300CE: 
+Object { count: 750, ohlc_data: (750) […], prices: (750) […], symbol: "NSE:NIFTY2590924300CE", timestamps: (750) […] }
+option_microchart.js:42:21
+Rendering chart for NSE:NIFTY2590924300CE with 750 data points option_microchart.js:51:29
+XHRGET
+https://96458935-faf1-4282-90bd-0724a6899aa4-00-30cragqiz70xp.kirk.replit.dev/live_market_data
+
+Response for NSE:NIFTY2590924300PE: 
+Object { count: 750, ohlc_data: (750) […], prices: (750) […], symbol: "NSE:NIFTY2590924300PE", timestamps: (750) […] }
+option_microchart.js:42:21
+Rendering chart for NSE:NIFTY2590924300PE with 750 data points option_microchart.js:51:29

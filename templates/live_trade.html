@@ -2159,10 +2159,13 @@ document.addEventListener('DOMContentLoaded', function() {
         // Main click handler
         div.onclick = (e) => {
             e.stopPropagation();
+            console.log(`🔥 BUTTON CLICKED: row=${rowIndex}, key=${key}, firstClickFlag=${firstClickFlags[rowIndex]?.[key]}`);
             if (firstClickFlags[rowIndex][key]) {
+                console.log(`🔥 CALLING handleButtonClick for first click`);
                 handleButtonClick(rowIndex, key, 'add');
                 firstClickFlags[rowIndex][key] = false;
             } else {
+                console.log(`🔥 CALLING togglePositionCard - not first click`);
                 togglePositionCard(rowIndex, key);
             }
         };
