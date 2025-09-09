@@ -2090,51 +2090,36 @@ document.addEventListener('DOMContentLoaded', function() {
     function getCurrentLTP(strike, optionType, expiry) {
         try {
             const table = document.getElementById('optionChainTable');
-            if (!table) {
-                console.log('[LTP] Table not found');
-                return 100; // Default fallback price for position creation
-            }
+            if (!table) return 0;
             
             // Find the row for this strike
             const rows = table.getElementsByTagName('tbody')[0]?.getElementsByTagName('tr');
-            if (!rows) {
-                console.log('[LTP] No rows found');
-                return 100; // Default fallback price
-            }
+            if (!rows) return 0;
             
             for (let row of rows) {
                 const strikeCell = row.children[19]; // Strike column index
                 if (strikeCell && parseFloat(strikeCell.textContent) === strike) {
-                    console.log(`[LTP] Found row for strike ${strike}, looking for ${optionType} LTP`);
-                    
                     // Found the right row, now get the LTP for the option type
                     if (optionType === 'CE') {
                         const ceLtpCell = row.querySelector('.ce-ltp');
-                        console.log(`[LTP] CE LTP cell found:`, !!ceLtpCell, ceLtpCell?.textContent);
                         if (ceLtpCell) {
                             const ltpText = ceLtpCell.textContent.replace(/[₹,]/g, '');
-                            const price = parseFloat(ltpText) || 100;
-                            console.log(`[LTP] CE LTP extracted: ${price}`);
-                            return price;
+                            return parseFloat(ltpText) || 0;
                         }
                     } else if (optionType === 'PE') {
                         const peLtpCell = row.querySelector('.pe-ltp');
-                        console.log(`[LTP] PE LTP cell found:`, !!peLtpCell, peLtpCell?.textContent);
                         if (peLtpCell) {
                             const ltpText = peLtpCell.textContent.replace(/[₹,]/g, '');
-                            const price = parseFloat(ltpText) || 100;
-                            console.log(`[LTP] PE LTP extracted: ${price}`);
-                            return price;
+                            return parseFloat(ltpText) || 0;
                         }
                     }
                     break;
                 }
             }
-            console.log(`[LTP] Strike ${strike} not found in table`);
         } catch (error) {
-            console.log('[LTP] Error getting LTP:', error);
+            console.log('Error getting LTP:', error);
         }
-        return 100; // Default fallback price instead of 0
+        return 0;
     }
     
     // Create Buy/Sell button with position management card - using attached code approach
@@ -2287,10 +2272,8 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`${action} ${key} for row ${rowIndex}, expiry ${targetExpiry}`);
     }
 
-    // Handle button clicks - SIMPLIFIED VERSION
+    // Handle button clicks - ORIGINAL WORKING VERSION
     function handleButtonClick(rowIndex, key, action) {
-        console.log(`[BUTTON CLICK] handleButtonClick called: row=${rowIndex}, key=${key}, action=${action}`);
-        
         // Get current expiry and strike information
         const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
         const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
@@ -2300,38 +2283,27 @@ document.addEventListener('DOMContentLoaded', function() {
             strike = parseFloat(strikeTd?.textContent || 0);
         }
         
-        console.log(`[BUTTON CLICK] Strike: ${strike}, Expiry: ${currentExpiry}`);
-        
         // Create position key for global tracking
         const positionKey = `${strike}-${currentExpiry}-${key}`;
-        console.log(`[BUTTON CLICK] Position key: ${positionKey}`);
         
         if (action === 'add') {
-            // Simple position creation - NO NETTING LOGIC
             counters[rowIndex][key]++;
-            
-            const optionType = key.includes('ce') ? 'CE' : 'PE';
-            const currentAction = key.includes('Buy') ? 'Buy' : 'Sell';
-            
             // Store in global positions
             if (!window.globalPositions[positionKey]) {
+                const optionType = key.includes('ce') ? 'CE' : 'PE';
                 const entryPrice = getCurrentLTP(strike, optionType, currentExpiry);
                 window.globalPositions[positionKey] = {
                     strike: strike,
                     expiry: currentExpiry,
                     optionType: optionType,
-                    action: currentAction,
+                    action: key.includes('Buy') ? 'Buy' : 'Sell',
                     lots: 0,
                     rowIndex: rowIndex,
                     key: key,
                     entryPrice: entryPrice
                 };
-                console.log(`[POSITION CREATION] New position created: ${JSON.stringify(window.globalPositions[positionKey])}`);
             }
-            
             window.globalPositions[positionKey].lots++;
-            console.log(`[POSITION UPDATE] Position ${positionKey} now has ${window.globalPositions[positionKey].lots} lots`);
-            
         } else if (action === 'remove' && counters[rowIndex][key] > 0) {
             counters[rowIndex][key]--;
             // Update global positions
@@ -2339,17 +2311,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.globalPositions[positionKey].lots--;
                 if (window.globalPositions[positionKey].lots <= 0) {
                     delete window.globalPositions[positionKey];
-                    console.log(`[POSITION REMOVE] Deleted position: ${positionKey}`);
                 }
             }
         }
         
-        // Update UI components
         updateButtonDisplay(rowIndex, key);
+        updatePositionCard(rowIndex, key);
+        closeAllPositionCards();
+        
+        // Update current positions table
         updateCurrentPositionsTable();
+        
+        // Immediately create and update payoff chart using loaded option chain data
         createPayoffChartFromOptionChain();
         
-        console.log(`[BUTTON CLICK] Final globalPositions:`, window.globalPositions);
+        // Update real-time payoff chart lines if WebSocket handler exists
+        if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
+            window.webSocketHandler.updatePayoffChartSpotPrice();
+        }
+        
+        // Keep existing position table intact - just log the action
+        console.log(`${action} ${key} for row ${rowIndex}, new count: ${counters[rowIndex][key]}`);
     }
     
     // Global function to force payoff chart update with live spot price - called by WebSocket handler
@@ -2666,15 +2648,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear existing content
         tableBody.innerHTML = '';
         
-        // Get all positions from global positions with debug logging
-        console.log('[POSITIONS TABLE] Raw globalPositions:', window.globalPositions);
+        // Get all positions from global positions
         const allPositions = Object.values(window.globalPositions || {}).filter(pos => pos.lots > 0);
-        console.log('[POSITIONS TABLE] Filtered active positions:', allPositions);
         
         // Add exited positions to display
         const exitedPositions = Object.values(window.exitedPositions || {});
         const combinedPositions = [...allPositions, ...exitedPositions];
-        console.log('[POSITIONS TABLE] Combined positions:', combinedPositions);
         
         if (combinedPositions.length === 0) {
             // Show empty state
