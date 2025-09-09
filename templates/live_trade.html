@@ -2287,8 +2287,10 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`${action} ${key} for row ${rowIndex}, expiry ${targetExpiry}`);
     }
 
-    // Handle button clicks - create payoff chart immediately on click
+    // Handle button clicks - SIMPLIFIED VERSION
     function handleButtonClick(rowIndex, key, action) {
+        console.log(`[BUTTON CLICK] handleButtonClick called: row=${rowIndex}, key=${key}, action=${action}`);
+        
         // Get current expiry and strike information
         const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
         const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
@@ -2298,67 +2300,18 @@ document.addEventListener('DOMContentLoaded', function() {
             strike = parseFloat(strikeTd?.textContent || 0);
         }
         
+        console.log(`[BUTTON CLICK] Strike: ${strike}, Expiry: ${currentExpiry}`);
+        
         // Create position key for global tracking
         const positionKey = `${strike}-${currentExpiry}-${key}`;
+        console.log(`[BUTTON CLICK] Position key: ${positionKey}`);
         
         if (action === 'add') {
-            // Check for automatic netting before creating position
+            // Simple position creation - NO NETTING LOGIC
+            counters[rowIndex][key]++;
+            
             const optionType = key.includes('ce') ? 'CE' : 'PE';
             const currentAction = key.includes('Buy') ? 'Buy' : 'Sell';
-            const oppositeAction = currentAction === 'Buy' ? 'Sell' : 'Buy';
-            
-            // Find opposite position key
-            const oppositeKeyPrefix = key.includes('ce') ? 
-                (currentAction === 'Buy' ? 'ceSell' : 'ceBuy') : 
-                (currentAction === 'Buy' ? 'peSell' : 'peBuy');
-            const oppositePositionKey = `${strike}-${currentExpiry}-${oppositeKeyPrefix}`;
-            
-            // Check if opposite position exists
-            const oppositePosition = window.globalPositions[oppositePositionKey];
-            
-            if (oppositePosition && oppositePosition.lots > 0) {
-                // Get current LTP for netting confirmation
-                const currentLTP = getCurrentLTP(strike, optionType, currentExpiry);
-                
-                // Calculate P&L for the netting transaction
-                const oppositeEntryPrice = oppositePosition.entryPrice || 0;
-                const exitPrice = currentLTP;
-                
-                let pnl = 0;
-                if (oppositeEntryPrice > 0 && exitPrice > 0) {
-                    if (oppositePosition.action === 'Buy') {
-                        pnl = (exitPrice - oppositeEntryPrice) * 75; // 1 lot = 75 quantity
-                    } else { // Sell
-                        pnl = (oppositeEntryPrice - exitPrice) * 75; // 1 lot = 75 quantity
-                    }
-                }
-                
-                const pnlSign = pnl >= 0 ? '+' : '';
-                const pnlColor = pnl >= 0 ? 'profit' : 'loss';
-                
-                // Professional netting confirmation
-                const confirmMessage = `POSITION NETTING CONFIRMATION\n\n` +
-                    `Strike: ${strike} ${optionType}\n` +
-                    `Existing: ${oppositePosition.lots} lot${oppositePosition.lots > 1 ? 's' : ''} ${oppositePosition.action}\n` +
-                    `New: 1 lot ${currentAction}\n\n` +
-                    `NETTING DETAILS:\n` +
-                    `Entry Price: ₹${oppositeEntryPrice.toFixed(2)}\n` +
-                    `Exit Price: ₹${exitPrice.toFixed(2)}\n` +
-                    `P&L: ${pnlSign}₹${pnl.toFixed(2)}\n\n` +
-                    `✓ 1 lot will be netted and moved to exited positions\n` +
-                    `✓ ${oppositePosition.lots - 1} lot${oppositePosition.lots - 1 !== 1 ? 's' : ''} will remain active\n\n` +
-                    `Confirm netting transaction?`;
-                
-                if (confirm(confirmMessage)) {
-                    // Execute automatic netting
-                    executeAutomaticNetting(oppositePosition, strike, optionType, currentExpiry, currentAction, rowIndex, key);
-                    return; // Exit early after netting
-                }
-            }
-            
-            // Normal position creation (no netting or user declined netting)
-            counters[rowIndex][key]++;
-            console.log(`[POSITION] Creating/updating position for strike ${strike}, type ${optionType}, action ${currentAction}`);
             
             // Store in global positions
             if (!window.globalPositions[positionKey]) {
@@ -2373,12 +2326,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     key: key,
                     entryPrice: entryPrice
                 };
-                console.log(`[POSITION CREATION] New position created with entry price: ₹${entryPrice} for ${positionKey}`);
+                console.log(`[POSITION CREATION] New position created: ${JSON.stringify(window.globalPositions[positionKey])}`);
             }
             
             window.globalPositions[positionKey].lots++;
             console.log(`[POSITION UPDATE] Position ${positionKey} now has ${window.globalPositions[positionKey].lots} lots`);
-            console.log(`[GLOBAL POSITIONS] Total positions:`, Object.keys(window.globalPositions).length, window.globalPositions);
+            
         } else if (action === 'remove' && counters[rowIndex][key] > 0) {
             counters[rowIndex][key]--;
             // Update global positions
@@ -2386,31 +2339,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.globalPositions[positionKey].lots--;
                 if (window.globalPositions[positionKey].lots <= 0) {
                     delete window.globalPositions[positionKey];
+                    console.log(`[POSITION REMOVE] Deleted position: ${positionKey}`);
                 }
             }
         }
         
+        // Update UI components
         updateButtonDisplay(rowIndex, key);
-        updatePositionCard(rowIndex, key);
-        closeAllPositionCards();
-        
-        // Update current positions table
         updateCurrentPositionsTable();
-        
-        // Immediately create and update payoff chart using loaded option chain data
         createPayoffChartFromOptionChain();
         
-        // Update real-time payoff chart lines if WebSocket handler exists
-        console.log(`[BUTTON CLICK] Checking WebSocket handler: exists=${!!window.webSocketHandler}, updateFunction=${window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function'}`);
-        if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
-            console.log(`[BUTTON CLICK] Calling WebSocket handler updatePayoffChartSpotPrice`);
-            window.webSocketHandler.updatePayoffChartSpotPrice();
-        } else {
-            console.log(`[BUTTON CLICK] WebSocket handler not available or updatePayoffChartSpotPrice not found`);
-        }
-        
-        // Keep existing position table intact - just log the action
-        console.log(`${action} ${key} for row ${rowIndex}, new count: ${counters[rowIndex][key]}`);
+        console.log(`[BUTTON CLICK] Final globalPositions:`, window.globalPositions);
     }
     
     // Global function to force payoff chart update with live spot price - called by WebSocket handler
