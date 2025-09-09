@@ -2853,33 +2853,36 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log(`🔥 Cleared table body, now building entries...`);
         
-        // Combine active lots and closed trades for display
+        // Combine active positions from globalPositions and closed trades for display
         const allEntries = [];
         
-        // Add active lots (showing as individual entries)
-        console.log(`🔥 Processing ${(window.activeLots || []).length} active lots...`);
-        (window.activeLots || []).forEach((lot, index) => {
-            console.log(`🔥 Processing active lot ${index}:`, lot);
-            try {
-                const currentLTP = getCurrentLTP(lot.strike, lot.optionType, lot.expiry);
-                console.log(`🔥 Got currentLTP: ${currentLTP} for ${lot.optionType} ${lot.strike}`);
-                
-                allEntries.push({
-                    type: 'active',
-                    strike: lot.strike,
-                    expiry: lot.expiry,
-                    optionType: lot.optionType,
-                    action: lot.action,
-                    actionLabel: lot.actionLabel,
-                    entryPrice: lot.entryPrice,
-                    currentLTP: currentLTP,
-                    timestamp: lot.timestamp,
-                    lots: 1, // Each active lot is 1 lot
-                    isActive: true
-                });
-                console.log(`🔥 Successfully added active lot ${index} to allEntries`);
-            } catch (error) {
-                console.error(`🔥 ERROR processing active lot ${index}:`, error);
+        // Add active positions from globalPositions (grouped by position)
+        console.log(`🔥 Processing ${Object.keys(window.globalPositions || {}).length} global positions...`);
+        Object.entries(window.globalPositions || {}).forEach(([positionKey, position]) => {
+            if (position.lots > 0) {
+                console.log(`🔥 Processing global position ${positionKey}:`, position);
+                try {
+                    const currentLTP = getCurrentLTP(position.strike, position.optionType, position.expiry);
+                    console.log(`🔥 Got currentLTP: ${currentLTP} for ${position.optionType} ${position.strike}`);
+                    
+                    allEntries.push({
+                        type: 'active',
+                        positionKey: positionKey,
+                        strike: position.strike,
+                        expiry: position.expiry,
+                        optionType: position.optionType,
+                        action: position.action,
+                        actionLabel: position.action + ' to Open',
+                        entryPrice: position.entryPrice,
+                        currentLTP: currentLTP,
+                        timestamp: new Date(), // Use current time for active positions
+                        lots: position.lots,
+                        isActive: true
+                    });
+                    console.log(`🔥 Successfully added global position ${positionKey} to allEntries`);
+                } catch (error) {
+                    console.error(`🔥 ERROR processing global position ${positionKey}:`, error);
+                }
             }
         });
         
@@ -2986,7 +2989,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const row = document.createElement('tr');
             row.style.cssText = rowStyle;
-            row.dataset.positionKey = `${entry.strike}-${entry.expiry}-${entry.optionType}-${index}`;
+            const positionKey = entry.positionKey || `${entry.strike}-${entry.expiry}-${entry.optionType}-${index}`;
+            row.dataset.positionKey = positionKey;
             
             row.innerHTML = `
                 <td style="padding: 8px 6px;">
@@ -2994,8 +2998,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${statusBadge}
                 </td>
                 <td style="padding: 8px 6px;">${actionBadge}</td>
-                <td style="padding: 8px 6px; text-align: center;">1</td>
-                <td style="padding: 8px 6px; text-align: center;">75</td>
+                <td style="padding: 8px 6px; text-align: center;" class="lots-cell">
+                    <div class="lots-container">
+                        <span class="lots-value">${entry.lots}</span>
+                        <div class="lots-controls">
+                            <button class="lots-btn lots-minus" onclick="adjustLots('${positionKey}', -1, event)" title="Decrease lots">-</button>
+                            <button class="lots-btn lots-plus" onclick="adjustLots('${positionKey}', 1, event)" title="Increase lots">+</button>
+                        </div>
+                    </div>
+                </td>
+                <td style="padding: 8px 6px; text-align: center;" class="qty-cell" data-position-key="${positionKey}">${entry.lots * 75}</td>
                 <td style="padding: 8px 6px; font-size: 11px;">${symbol}</td>
                 <td style="padding: 8px 6px; font-size: 11px;">${timeDisplay}</td>
                 <td style="padding: 8px 6px; text-align: center;">${entry.strike}</td>
@@ -3017,8 +3029,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Update positions count in header
-        const activeCount = window.activeLots.length;
-        const closedCount = window.closedTrades.length;
+        const activeCount = Object.keys(window.globalPositions || {}).length;
+        const closedCount = (window.closedTrades || []).length;
         const positionsCount = document.querySelector('#positionCount');
         if (positionsCount) {
             const activeText = activeCount === 1 ? '1 Active' : `${activeCount} Active`;
