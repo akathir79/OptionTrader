@@ -2413,6 +2413,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.activeLots.push(newLot);
                 console.log(`🔥 NEW LOT CREATED:`, newLot);
                 
+                // Also add to globalPositions for position management card synchronization
+                const globalPositionKey = `${strike}-${currentExpiry}-${key}`;
+                if (!window.globalPositions[globalPositionKey]) {
+                    window.globalPositions[globalPositionKey] = {
+                        strike: strike,
+                        expiry: currentExpiry,
+                        optionType: optionType,
+                        action: currentAction,
+                        lots: 0,
+                        rowIndex: rowIndex,
+                        key: key,
+                        entryPrice: currentLTP
+                    };
+                }
+                window.globalPositions[globalPositionKey].lots++;
+                console.log(`🔥 ADDED TO GLOBAL POSITIONS:`, window.globalPositions[globalPositionKey]);
+                
                 // Update counter
                 counters[rowIndex][key]++;
             }
@@ -4047,6 +4064,153 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         return payoff * count * lotSize;
+    }
+    
+    // Toggle position management card display
+    function togglePositionCard(rowIndex, key) {
+        const card = document.getElementById(`${key}Card_${rowIndex}`);
+        if (!card) return;
+        
+        // Close all other position cards first
+        closeAllPositionCards();
+        
+        // Toggle this card
+        if (card.style.display === 'none' || !card.style.display) {
+            card.style.display = 'block';
+            updatePositionCard(rowIndex, key);
+        } else {
+            card.style.display = 'none';
+        }
+    }
+    
+    // Update position management card content
+    function updatePositionCard(rowIndex, key) {
+        const cardContent = document.getElementById(`${key}CardContent_${rowIndex}`);
+        if (!cardContent) return;
+        
+        // Get strike and option info for this card
+        const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
+        let currentStrike = 0;
+        if (row) {
+            const strikeTd = row.children[19]; // Strike column
+            currentStrike = parseFloat(strikeTd?.textContent || 0);
+        }
+        
+        const optionType = key.includes('ce') ? 'CE' : 'PE';
+        const action = key.includes('Buy') ? 'Buy' : 'Sell';
+        
+        // Group positions by expiry for this strike, option type, and action
+        const relevantPositions = {};
+        
+        Object.entries(window.globalPositions || {}).forEach(([posKey, position]) => {
+            if (position.strike === currentStrike && 
+                position.optionType === optionType && 
+                position.action === action && 
+                position.lots > 0) {
+                
+                const expiry = position.expiry;
+                if (!relevantPositions[expiry]) {
+                    relevantPositions[expiry] = [];
+                }
+                relevantPositions[expiry].push(position);
+            }
+        });
+        
+        // Build card content
+        let content = '';
+        
+        if (Object.keys(relevantPositions).length === 0) {
+            content = `
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-info-circle me-2"></i>No positions found
+                </div>
+            `;
+        } else {
+            // Group by expiry dates
+            Object.entries(relevantPositions).forEach(([expiry, positions]) => {
+                const totalLots = positions.reduce((sum, pos) => sum + pos.lots, 0);
+                const expiryDisplay = formatExpiryDisplay(expiry);
+                
+                content += `
+                    <div class="position-expiry-tag">${expiryDisplay}</div>
+                    <div class="position-lot-control">
+                        <div class="position-lot-label">
+                            <i class="fas fa-layer-group"></i>
+                            <span>${totalLots} lots</span>
+                        </div>
+                        <div class="position-control-buttons">
+                            <button class="position-btn-decrease" onclick="handleExpirySpecificPositionChange(${rowIndex}, '${key}', 'remove', '${expiry}')">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <button class="position-btn-increase" onclick="handleExpirySpecificPositionChange(${rowIndex}, '${key}', 'add', '${expiry}')">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Add "Add Position" button for new expiry
+            content += `
+                <div class="position-add-btn" onclick="showAddPositionDialog(${rowIndex}, '${key}', ${currentStrike}, '${optionType}', '${action}')">
+                    <i class="fas fa-plus"></i>
+                    Add Position
+                </div>
+            `;
+        }
+        
+        cardContent.innerHTML = content;
+    }
+    
+    // Close all position management cards
+    function closeAllPositionCards() {
+        const allCards = document.querySelectorAll('.position-management-card');
+        allCards.forEach(card => {
+            card.style.display = 'none';
+        });
+    }
+    
+    // Format expiry display for position management cards
+    function formatExpiryDisplay(expiry) {
+        if (!expiry) return 'Unknown';
+        
+        // Handle date formats like "2025-09-12" or "12-Sep-25"
+        const date = new Date(expiry);
+        if (!isNaN(date.getTime())) {
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = date.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+            const year = date.getFullYear().toString().slice(-2);
+            return `${day}-${month}-${year}`;
+        }
+        
+        // If already in format like "12-SEP-25", return as is
+        return expiry;
+    }
+    
+    // Show dialog for adding new position with different expiry
+    function showAddPositionDialog(rowIndex, key, strike, optionType, action) {
+        // Get available expiry dates from the expiry selector
+        const expirySelect = document.getElementById('expirySelect');
+        const availableExpiries = Array.from(expirySelect.options)
+            .slice(1) // Skip the first "Select Expiry" option
+            .map(option => option.value);
+        
+        if (availableExpiries.length === 0) {
+            alert('No expiry dates available. Please load an option chain first.');
+            return;
+        }
+        
+        // Simple prompt for now - could be enhanced with a modal
+        const selectedExpiry = prompt(
+            `Add ${action} position for ${strike} ${optionType}\n\nAvailable expiries:\n${availableExpiries.join('\n')}\n\nEnter expiry date:`,
+            availableExpiries[0]
+        );
+        
+        if (selectedExpiry && availableExpiries.includes(selectedExpiry)) {
+            handleExpirySpecificPositionChange(rowIndex, key, 'add', selectedExpiry);
+        } else if (selectedExpiry) {
+            alert('Invalid expiry date. Please select from the available options.');
+        }
     }
     
     // Global click handler to close position cards
