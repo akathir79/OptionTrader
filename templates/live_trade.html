@@ -2522,6 +2522,19 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`${action} ${key} for row ${rowIndex}, new count: ${counters[rowIndex][key]}`);
     }
     
+    // Legacy adjustLots function - updated to work with professional netting system
+    function adjustLots(positionKey, change, event) {
+        if (event) {
+            event.stopPropagation();
+        }
+        
+        console.log(`🔥 adjustLots called: ${positionKey}, change: ${change}`);
+        
+        // This function is now handled by the new professional system
+        // Active lots are managed through removeActiveLot and addSimilarLot
+        console.log(`🔥 adjustLots deprecated - use removeActiveLot/addSimilarLot instead`);
+    }
+    
     // Global function to force payoff chart update with live spot price - called by WebSocket handler
     window.forcePayoffChartUpdate = function(spotPrice) {
         console.log(`[FORCE UPDATE] forcePayoffChartUpdate called with spot: ${spotPrice}`);
@@ -3072,6 +3085,113 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Update the position count badge color based on status
             positionsCount.className = activeCount > 0 ? 'badge bg-success text-white' : 'badge bg-light text-dark';
+        }
+    }
+    
+    // Professional position management functions
+    function removeActiveLot(lotId) {
+        console.log(`🔥 removeActiveLot called for lotId: ${lotId}`);
+        
+        // Find and remove the specific lot
+        const lotIndex = window.activeLots.findIndex(lot => lot.id == lotId);
+        if (lotIndex !== -1) {
+            const removedLot = window.activeLots[lotIndex];
+            window.activeLots.splice(lotIndex, 1);
+            
+            console.log(`🔥 Removed lot:`, removedLot);
+            
+            // Update button badges and synchronize
+            const { strike, expiry, optionType, action, rowIndex, key } = removedLot;
+            
+            // Update button badge
+            const remainingLots = window.activeLots.filter(lot => 
+                lot.strike === strike && 
+                lot.expiry === expiry && 
+                lot.optionType === optionType && 
+                lot.action === action
+            ).length;
+            
+            updateButtonBadge(rowIndex || 0, key || '', remainingLots);
+            
+            // Synchronize all components
+            updateCurrentPositionsTable();
+            createPayoffChartFromOptionChain();
+            
+            // Update real-time payoff chart lines if WebSocket handler exists
+            if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
+                window.webSocketHandler.updatePayoffChartSpotPrice();
+            }
+        }
+    }
+    
+    function addSimilarLot(lotId) {
+        console.log(`🔥 addSimilarLot called for lotId: ${lotId}`);
+        
+        // Find the original lot
+        const originalLot = window.activeLots.find(lot => lot.id == lotId);
+        if (originalLot) {
+            // Get current LTP as entry price for new lot
+            const currentLTP = getCurrentLTP(originalLot.strike, originalLot.optionType, originalLot.expiry);
+            
+            // Create new similar lot
+            const newLot = {
+                id: Date.now() + Math.random(), // Unique ID
+                strike: originalLot.strike,
+                expiry: originalLot.expiry,
+                optionType: originalLot.optionType,
+                action: originalLot.action,
+                entryPrice: currentLTP,
+                timestamp: new Date(),
+                rowIndex: originalLot.rowIndex,
+                key: originalLot.key,
+                actionLabel: originalLot.actionLabel
+            };
+            
+            window.activeLots.push(newLot);
+            console.log(`🔥 Added similar lot:`, newLot);
+            
+            // Update button badge
+            const totalLots = window.activeLots.filter(lot => 
+                lot.strike === originalLot.strike && 
+                lot.expiry === originalLot.expiry && 
+                lot.optionType === originalLot.optionType && 
+                lot.action === originalLot.action
+            ).length;
+            
+            updateButtonBadge(originalLot.rowIndex || 0, originalLot.key || '', totalLots);
+            
+            // Synchronize all components
+            updateCurrentPositionsTable();
+            createPayoffChartFromOptionChain();
+            
+            // Update real-time payoff chart lines if WebSocket handler exists
+            if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
+                window.webSocketHandler.updatePayoffChartSpotPrice();
+            }
+        }
+    }
+    
+    function removeTableEntry(positionKey, type) {
+        console.log(`🔥 removeTableEntry called for ${type} entry: ${positionKey}`);
+        
+        if (type === 'active') {
+            // Extract lot ID from position key
+            const lotId = positionKey.replace('active_', '');
+            removeActiveLot(lotId);
+        } else if (type === 'closed') {
+            // Remove from closed trades
+            const index = parseInt(positionKey.replace('closed_', ''));
+            if (index >= 0 && index < window.closedTrades.length) {
+                const removedTrade = window.closedTrades.splice(index, 1)[0];
+                console.log(`🔥 Removed closed trade:`, removedTrade);
+                
+                // Update realized P&L
+                window.realizedPnL -= removedTrade.realizedPnL || 0;
+                updateRealizedPnLDisplay();
+                
+                // Refresh table
+                updateCurrentPositionsTable();
+            }
         }
     }
     
