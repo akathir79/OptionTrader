@@ -2345,7 +2345,10 @@ document.addEventListener('DOMContentLoaded', function() {
             window.webSocketHandler.updatePayoffChartSpotPrice();
         }
         
-        // Keep existing position table intact - just log the action
+        // *** UPDATED: Now calls updateCurrentPositionsTable() to sync position display ***
+        console.log(`🔥 CALLING updateCurrentPositionsTable() to sync positions`);
+        updateCurrentPositionsTable();
+        
         console.log(`${action} ${key} for row ${rowIndex}, new count: ${counters[rowIndex][key]}`);
     }
     
