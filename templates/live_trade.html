@@ -2310,6 +2310,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle button clicks with FIFO netting logic
     function handleButtonClick(rowIndex, key, action) {
         console.log(`🔥 handleButtonClick CALLED: row=${rowIndex}, key=${key}, action=${action}`);
+        console.log(`🔥 Current activeLots BEFORE:`, window.activeLots);
+        console.log(`🔥 Current closedTrades BEFORE:`, window.closedTrades);
         
         // Get current expiry and strike information
         const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
@@ -2464,6 +2466,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateButtonBadge(rowIndex, key, currentLots.length - 1);
             }
         }
+        
+        console.log(`🔥 Current activeLots AFTER:`, window.activeLots);
+        console.log(`🔥 Current closedTrades AFTER:`, window.closedTrades);
+        console.log(`🔥 About to call updateCurrentPositionsTable()`);
         
         updateButtonDisplay(rowIndex, key);
         updateCurrentPositionsTable(); // ✅ SYNC: Update positions table
@@ -2793,6 +2799,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update Current Positions Table - synchronize with new lots system
     function updateCurrentPositionsTable() {
         console.log(`🔥 updateCurrentPositionsTable() called`);
+        console.log(`🔥 Active lots LENGTH:`, (window.activeLots || []).length);
+        console.log(`🔥 Closed trades LENGTH:`, (window.closedTrades || []).length);
+        console.log(`🔥 Active lots CONTENT:`, window.activeLots);
+        console.log(`🔥 Closed trades CONTENT:`, window.closedTrades);
+        
         const tableBody = document.getElementById('positionTableBody');
         if (!tableBody) {
             console.log(`🔥 ERROR: positionTableBody not found`);
@@ -2802,8 +2813,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear existing content
         tableBody.innerHTML = '';
         
-        console.log(`🔥 Active lots:`, window.activeLots);
-        console.log(`🔥 Closed trades:`, window.closedTrades);
+        console.log(`🔥 Cleared table body, now building entries...`);
         
         // Combine active lots and closed trades for display
         const allEntries = [];
