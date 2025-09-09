@@ -4024,6 +4024,52 @@ document.addEventListener('DOMContentLoaded', function() {
         return [...new Set(breakevens)].sort((a, b) => a - b);
     }
     
+    // Update Position Table Live Prices - called by WebSocket handler for real-time sync
+    function updatePositionTableLivePrices() {
+        const tableBody = document.getElementById('positionTableBody');
+        if (!tableBody) return;
+        
+        // Update each position row with current LTP and P&L
+        const rows = tableBody.querySelectorAll('tr');
+        rows.forEach(row => {
+            const positionKey = row.dataset.positionKey;
+            if (positionKey && window.globalPositions[positionKey]) {
+                const position = window.globalPositions[positionKey];
+                
+                // Get current LTP from option chain
+                const currentLTP = getCurrentLTP(position.strike, position.optionType, position.expiry);
+                if (currentLTP > 0) {
+                    // Update LTP cell
+                    const ltpCell = row.querySelector('.position-ltp');
+                    if (ltpCell) {
+                        ltpCell.textContent = currentLTP.toFixed(2);
+                        ltpCell.className = 'position-ltp ' + (currentLTP > position.entryPrice ? 'text-success' : 'text-danger');
+                    }
+                    
+                    // Calculate and update P&L
+                    const pnl = position.action === 'Buy' 
+                        ? (currentLTP - position.entryPrice) * position.lots * 75 
+                        : (position.entryPrice - currentLTP) * position.lots * 75;
+                    
+                    const pnlCell = row.querySelector('.position-pnl');
+                    if (pnlCell) {
+                        pnlCell.textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2);
+                        pnlCell.className = 'position-pnl fw-bold ' + (pnl >= 0 ? 'text-success' : 'text-danger');
+                    }
+                    
+                    // Update Delta column (P&L change indicator)
+                    const deltaCell = row.querySelector('.position-delta');
+                    if (deltaCell) {
+                        const priceChange = currentLTP - position.entryPrice;
+                        const deltaText = priceChange >= 0 ? '+' + priceChange.toFixed(2) : priceChange.toFixed(2);
+                        deltaCell.textContent = deltaText;
+                        deltaCell.className = 'position-delta ' + (priceChange >= 0 ? 'text-success' : 'text-danger');
+                    }
+                }
+            }
+        });
+    }
+
     // Make functions globally available
     window.createOptionButton = createOptionButton;
     window.handleButtonClick = handleButtonClick;
@@ -4037,6 +4083,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.updatePositionCard = updatePositionCard;
     window.handleExpirySpecificPositionChange = handleExpirySpecificPositionChange;
     window.updateCurrentPositionsTable = updateCurrentPositionsTable;
+    window.updatePositionTableLivePrices = updatePositionTableLivePrices;
     window.removePosition = removePosition;
     window.calculateBreakevens = calculateBreakevens;
     window.executeAutomaticNetting = executeAutomaticNetting;
