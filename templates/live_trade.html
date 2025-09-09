@@ -2466,12 +2466,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         updateButtonDisplay(rowIndex, key);
-        updatePositionCard(rowIndex, key);
+        updateCurrentPositionsTable(); // ✅ SYNC: Update positions table
         closeAllPositionCards();
-        
-        // Update current positions table
-        console.log(`🔥 Calling updateCurrentPositionsTable()`);
-        updateCurrentPositionsTable();
         
         // Immediately create and update payoff chart using loaded option chain data
         createPayoffChartFromOptionChain();
