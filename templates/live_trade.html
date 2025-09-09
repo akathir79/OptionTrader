@@ -2819,21 +2819,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const allEntries = [];
         
         // Add active lots (showing as individual entries)
-        window.activeLots.forEach(lot => {
-            allEntries.push({
-                type: 'active',
-                strike: lot.strike,
-                expiry: lot.expiry,
-                optionType: lot.optionType,
-                action: lot.action,
-                actionLabel: lot.actionLabel,
-                entryPrice: lot.entryPrice,
-                currentLTP: getCurrentLTP(lot.strike, lot.optionType, lot.expiry),
-                timestamp: lot.timestamp,
-                lots: 1, // Each active lot is 1 lot
-                isActive: true
-            });
+        console.log(`🔥 Processing ${(window.activeLots || []).length} active lots...`);
+        (window.activeLots || []).forEach((lot, index) => {
+            console.log(`🔥 Processing active lot ${index}:`, lot);
+            try {
+                const currentLTP = getCurrentLTP(lot.strike, lot.optionType, lot.expiry);
+                console.log(`🔥 Got currentLTP: ${currentLTP} for ${lot.optionType} ${lot.strike}`);
+                
+                allEntries.push({
+                    type: 'active',
+                    strike: lot.strike,
+                    expiry: lot.expiry,
+                    optionType: lot.optionType,
+                    action: lot.action,
+                    actionLabel: lot.actionLabel,
+                    entryPrice: lot.entryPrice,
+                    currentLTP: currentLTP,
+                    timestamp: lot.timestamp,
+                    lots: 1, // Each active lot is 1 lot
+                    isActive: true
+                });
+                console.log(`🔥 Successfully added active lot ${index} to allEntries`);
+            } catch (error) {
+                console.error(`🔥 ERROR processing active lot ${index}:`, error);
+            }
         });
+        
+        console.log(`🔥 Total allEntries after active lots: ${allEntries.length}`);
         
         // Add closed trades (showing as completed trades)
         window.closedTrades.forEach(trade => {
@@ -2853,7 +2865,9 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
         
+        console.log(`🔥 Final allEntries length: ${allEntries.length}`);
         if (allEntries.length === 0) {
+            console.log(`🔥 No entries found, showing empty state...`);
             // Show empty state
             const emptyRow = document.createElement('tr');
             emptyRow.innerHTML = `
@@ -2862,8 +2876,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 </td>
             `;
             tableBody.appendChild(emptyRow);
+            console.log(`🔥 Empty state added to table`);
             return;
         }
+        
+        console.log(`🔥 Building ${allEntries.length} table rows...`);
         
         // Sort entries by time (newest first)
         allEntries.sort((a, b) => {
