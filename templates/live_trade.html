@@ -2794,7 +2794,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Update Current Positions Table - synchronize with global positions
+    // Update Current Positions Table - synchronize with new lots system
     function updateCurrentPositionsTable() {
         console.log(`🔥 updateCurrentPositionsTable() called`);
         const tableBody = document.getElementById('positionTableBody');
@@ -2806,18 +2806,48 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear existing content
         tableBody.innerHTML = '';
         
-        console.log(`🔥 Raw window.globalPositions:`, window.globalPositions);
+        console.log(`🔥 Active lots:`, window.activeLots);
+        console.log(`🔥 Closed trades:`, window.closedTrades);
         
-        // Get all positions from global positions
-        const allPositions = Object.values(window.globalPositions || {}).filter(pos => pos.lots > 0);
-        console.log(`🔥 Filtered positions with lots > 0:`, allPositions);
+        // Combine active lots and closed trades for display
+        const allEntries = [];
         
-        // Add exited positions to display
-        const exitedPositions = Object.values(window.exitedPositions || {});
-        const combinedPositions = [...allPositions, ...exitedPositions];
-        console.log(`🔥 Combined positions (active + exited):`, combinedPositions);
+        // Add active lots (showing as individual entries)
+        window.activeLots.forEach(lot => {
+            allEntries.push({
+                type: 'active',
+                strike: lot.strike,
+                expiry: lot.expiry,
+                optionType: lot.optionType,
+                action: lot.action,
+                actionLabel: lot.actionLabel,
+                entryPrice: lot.entryPrice,
+                currentLTP: getCurrentLTP(lot.strike, lot.optionType, lot.expiry),
+                timestamp: lot.timestamp,
+                lots: 1, // Each active lot is 1 lot
+                isActive: true
+            });
+        });
         
-        if (combinedPositions.length === 0) {
+        // Add closed trades (showing as completed trades)
+        window.closedTrades.forEach(trade => {
+            allEntries.push({
+                type: 'closed',
+                strike: trade.strike,
+                expiry: trade.expiry,
+                optionType: trade.optionType,
+                actionLabel: trade.actionLabel,
+                openPrice: trade.openPrice,
+                closePrice: trade.closePrice,
+                realizedPnL: trade.realizedPnL,
+                openTime: trade.openTime,
+                closeTime: trade.closeTime,
+                lots: 1, // Each trade is 1 lot
+                isActive: false
+            });
+        });
+        
+        if (allEntries.length === 0) {
             // Show empty state
             const emptyRow = document.createElement('tr');
             emptyRow.innerHTML = `
@@ -2829,132 +2859,96 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Sort positions by expiry, then by strike, then by status (active first, then exited)
-        combinedPositions.sort((a, b) => {
-            if (a.expiry !== b.expiry) {
-                return new Date(a.expiry) - new Date(b.expiry);
-            }
-            if (a.strike !== b.strike) {
-                return a.strike - b.strike;
-            }
-            // Active positions first, then exited
-            return (a.isExited ? 1 : 0) - (b.isExited ? 1 : 0);
+        // Sort entries by time (newest first)
+        allEntries.sort((a, b) => {
+            const aTime = a.closeTime || a.timestamp;
+            const bTime = b.closeTime || b.timestamp;
+            return new Date(bTime) - new Date(aTime);
         });
         
-        // Create rows for each position
-        combinedPositions.forEach((position, index) => {
-            const { strike, expiry, optionType, action, lots, entryPrice, isExited, exitPrice, exitTime, actionLabel } = position;
+        // Create rows for each entry
+        allEntries.forEach((entry, index) => {
+            // Build symbol name
+            const expiryFormatted = formatExpiryForSymbol(entry.expiry);
+            const symbol = `NSE:NIFTY${expiryFormatted}${entry.strike}${entry.optionType}`;
             
-            // Build symbol name (approximation for display)
-            const expiryFormatted = formatExpiryForSymbol(expiry);
-            const symbol = `NSE:NIFTY${expiryFormatted}${strike}${optionType}`;
-            
-            // For exited positions, use exit price; for active positions, use current LTP
-            const currentLTP = isExited ? exitPrice : getCurrentLTP(strike, optionType, expiry);
-            
-            // Calculate Unrealized P&L for active positions
-            const entry = entryPrice || 0;
-            const ltp = currentLTP || 0;
-            const quantity = lots * 75;
+            // P&L calculation and display
             let pnl = 0;
+            let pnlLabel = '';
+            let displayPrice = '';
             
-            if (entry > 0 && ltp > 0) {
-                if (action === 'Buy') {
-                    pnl = (ltp - entry) * quantity; // Unrealized P&L for Buy: Current LTP - Entry Price
-                } else { // Sell
-                    pnl = (entry - ltp) * quantity; // Unrealized P&L for Sell: Entry Price - Current LTP
+            if (entry.type === 'active') {
+                // Active lot: calculate unrealized P&L
+                const entry_price = entry.entryPrice || 0;
+                const current_ltp = entry.currentLTP || 0;
+                const quantity = 75; // 1 lot
+                
+                if (entry_price > 0 && current_ltp > 0) {
+                    if (entry.action === 'Buy') {
+                        pnl = (current_ltp - entry_price) * quantity;
+                    } else {
+                        pnl = (entry_price - current_ltp) * quantity;
+                    }
                 }
-            }
-            
-            // Determine action label and badge styling
-            const displayActionLabel = actionLabel || (action === 'Buy' ? 'Buy to Open' : 'Sell to Open');
-            const typeClass = optionType === 'CE' ? 'text-success' : 'text-primary';
-            
-            // Action badge based on actual action (not actionLabel)
-            let actionBadge, actionClass;
-            if (displayActionLabel.includes('Buy')) {
-                actionBadge = `<span class="badge bg-success text-white">${displayActionLabel.toUpperCase()}</span>`;
-                actionClass = 'text-success';
+                pnlLabel = 'Unrealized P&L';
+                displayPrice = `₹${(current_ltp || 0).toFixed(2)}`;
             } else {
-                actionBadge = `<span class="badge bg-danger text-white">${displayActionLabel.toUpperCase()}</span>`;
-                actionClass = 'text-danger';
+                // Closed trade: use realized P&L
+                pnl = entry.realizedPnL || 0;
+                pnlLabel = 'Realized P&L';
+                displayPrice = `₹${(entry.openPrice || 0).toFixed(2)} → ₹${(entry.closePrice || 0).toFixed(2)}`;
             }
             
-            // P&L color formatting (Unrealized P&L for active positions)
+            // Style based on position type and status
+            const typeClass = entry.optionType === 'CE' ? 'text-success' : 'text-primary';
             const pnlColor = pnl >= 0 ? 'text-success' : 'text-danger';
             const pnlSign = pnl >= 0 ? '+' : '';
-            const pnlLabel = isExited ? 'Realized P&L' : 'Unrealized P&L';
             
-            // Row styling for exited positions
-            const rowStyle = isExited ? 'background-color: #f8f9fa; opacity: 0.8;' : '';
-            const exitedLabel = isExited ? ' <span class="badge bg-secondary">EXITED</span>' : '';
+            // Action badge styling
+            let actionBadge;
+            if (entry.type === 'closed') {
+                actionBadge = `<span class="badge bg-secondary text-white">${entry.actionLabel.toUpperCase()}</span>`;
+            } else if (entry.actionLabel.includes('Buy')) {
+                actionBadge = `<span class="badge bg-success text-white">${entry.actionLabel.toUpperCase()}</span>`;
+            } else {
+                actionBadge = `<span class="badge bg-danger text-white">${entry.actionLabel.toUpperCase()}</span>`;
+            }
             
-            const positionKey = isExited ? `EXITED_${strike}-${expiry}-${optionType.toLowerCase()}${action}_${Date.now()}` : `${strike}-${expiry}-${optionType.toLowerCase()}${action}`;
+            // Row styling
+            const rowStyle = entry.type === 'closed' ? 'background-color: #f8f9fa; opacity: 0.8;' : '';
+            const statusBadge = entry.type === 'closed' ? '<span class="badge bg-info ms-2">CLOSED</span>' : '';
             
-            // Time display - use exit time for exited positions
-            const timeDisplay = isExited && exitTime ? 
-                exitTime.toLocaleDateString('en-IN') + ' ' + exitTime.toLocaleTimeString('en-IN', {hour12: true, hour: '2-digit', minute: '2-digit'}).toLowerCase() :
-                new Date().toLocaleDateString('en-IN') + ' ' + new Date().toLocaleTimeString('en-IN', {hour12: true, hour: '2-digit', minute: '2-digit'}).toLowerCase();
+            // Format timestamps
+            const timeDisplay = entry.type === 'closed' ? 
+                `${new Date(entry.closeTime).toLocaleDateString()} ${new Date(entry.closeTime).toLocaleTimeString()}` :
+                `${new Date(entry.timestamp).toLocaleDateString()} ${new Date(entry.timestamp).toLocaleTimeString()}`;
             
             const row = document.createElement('tr');
-            row.className = 'position-row';
-            row.setAttribute('data-position-key', positionKey);
             row.style.cssText = rowStyle;
+            row.dataset.positionKey = `${entry.strike}-${entry.expiry}-${entry.optionType}-${index}`;
+            
             row.innerHTML = `
-                <td style="text-align: center;"><input type="checkbox" ${isExited ? 'disabled' : ''}></td>
-                <td style="text-align: center;">
-                    <span class="badge bg-${optionType === 'CE' ? 'success' : 'primary'} text-white">${optionType}</span>${exitedLabel}
+                <td style="padding: 8px 6px;">
+                    <span class="badge bg-${entry.optionType === 'CE' ? 'success' : 'primary'} text-white">${entry.optionType}</span>
+                    ${statusBadge}
                 </td>
-                <td style="text-align: center;">${actionBadge}</td>
-                <td style="text-align: center; position: relative;" class="lots-cell">
-                    ${isExited ? 
-                        `<span class="lots-value">${lots}</span>` :
-                        `<div class="lots-container" data-position-key="${positionKey}">
-                            <div class="lots-controls">
-                                <button class="lots-btn lots-minus" onclick="adjustLots('${positionKey}', -1, event)">−</button>
-                            </div>
-                            <span class="lots-value">${lots}</span>
-                            <div class="lots-controls">
-                                <button class="lots-btn lots-plus" onclick="adjustLots('${positionKey}', 1, event)">+</button>
-                            </div>
-                        </div>`
-                    }
+                <td style="padding: 8px 6px;">${actionBadge}</td>
+                <td style="padding: 8px 6px; text-align: center;">1</td>
+                <td style="padding: 8px 6px; text-align: center;">75</td>
+                <td style="padding: 8px 6px; font-size: 11px;">${symbol}</td>
+                <td style="padding: 8px 6px; font-size: 11px;">${timeDisplay}</td>
+                <td style="padding: 8px 6px; text-align: center;">${entry.strike}</td>
+                <td style="padding: 8px 6px; font-size: 11px;">09-SEP-25</td>
+                <td style="padding: 8px 6px; text-align: center;">${entry.entryPrice ? `₹${entry.entryPrice.toFixed(2)}` : '-'}</td>
+                <td style="padding: 8px 6px; text-align: center;">${displayPrice}</td>
+                <td style="padding: 8px 6px; text-align: center;">0.00</td>
+                <td style="padding: 8px 6px; text-align: center; font-weight: 600;" class="${pnlColor}">
+                    ${pnlSign}₹${Math.abs(pnl).toFixed(2)}
                 </td>
-                <td style="text-align: center;" class="qty-cell" data-position-key="${positionKey}">${lots * 75}</td>
-                <td style="text-align: center; font-size: 10px; max-width: 140px; overflow: hidden; text-overflow: ellipsis;">${symbol}</td>
-                <td style="text-align: center; font-size: 10px;">${timeDisplay}</td>
-                <td style="text-align: center;">${strike}</td>
-                <td style="text-align: center; font-size: 10px;">${formatExpiryDisplay(expiry)}</td>
-                <td style="text-align: center;" class="entry-price-cell" data-position-key="${positionKey}">₹${entry.toFixed(2)}</td>
-                <td style="text-align: center;" class="ltp-price-cell" data-position-key="${positionKey}">₹${ltp.toFixed(2)}</td>
-                <td style="text-align: center;">0.00</td>
-                <td style="text-align: center; ${pnlColor}" class="pnl-cell" data-position-key="${positionKey}">${pnlSign}₹${pnl.toFixed(2)}</td>
-                <td style="text-align: center;">
-                    ${isExited ? 
-                        '<span class="badge bg-success">EXITED</span>' :
-                        `<div class="dropdown">
-                            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" style="font-size: 9px; padding: 1px 4px;" data-bs-toggle="dropdown" id="exitDropdown_${positionKey}">Exit</button>
-                            <ul class="dropdown-menu" id="exitMenu_${positionKey}">
-                                ${generateExitOptions(lots)}
-                            </ul>
-                        </div>`
-                    }
-                </td>
-                <td style="text-align: center;">
-                    ${isExited ? 
-                        '<i class="fas fa-check-circle text-success"></i>' :
-                        `<button class="btn btn-outline-secondary btn-sm" style="font-size: 9px; padding: 1px 4px;" onclick="executePositionExit('${positionKey}')" title="Execute selected exit">
-                            <i class="fas fa-lock" style="font-size: 8px;"></i>
-                        </button>`
-                    }
-                </td>
-                <td style="text-align: center;">
-                    ${isExited ? 
-                        '<i class="fas fa-archive text-muted"></i>' :
-                        `<button class="btn btn-outline-danger btn-sm" style="font-size: 10px; padding: 2px 4px;" onclick="removePosition('${positionKey}')">
-                            <i class="fas fa-trash"></i>
-                        </button>`
-                    }
+                <td style="padding: 8px 6px;">
+                    <button class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </td>
             `;
             
@@ -2962,14 +2956,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Update positions count in header
-        const positionsCount = document.querySelector('.card-header h6');
-        if (positionsCount && positionsCount.textContent.includes('Current Positions')) {
-            const activeCount = allPositions.length;
-            const exitedCount = exitedPositions.length;
-            const countText = activeCount === 1 ? '1 Position' : `${activeCount} Positions`;
-            const exitText = exitedCount > 0 ? ` (${exitedCount} exited)` : '';
-            positionsCount.innerHTML = `<i class="fas fa-briefcase me-2"></i>Current Positions <span class="badge bg-light text-dark ms-2">${countText}${exitText}</span>`;
+        const activeCount = window.activeLots.length;
+        const closedCount = window.closedTrades.length;
+        const positionsCount = document.querySelector('#positionCount');
+        if (positionsCount) {
+            const activeText = activeCount === 1 ? '1 Active' : `${activeCount} Active`;
+            const closedText = closedCount > 0 ? ` (${closedCount} Closed)` : '';
+            positionsCount.textContent = `${activeText}${closedText}`;
         }
+    }
     }
     
     // Update live LTP and P&L in Current Positions table
