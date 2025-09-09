@@ -2279,6 +2279,29 @@ document.addEventListener('DOMContentLoaded', function() {
     // Global arrays to track closed positions and realized P&L
     window.closedPositions = window.closedPositions || [];
     window.realizedPnL = window.realizedPnL || 0;
+    
+    // Function to update button badge display
+    function updateButtonBadge(rowIndex, key, count) {
+        const badge = document.getElementById(`${key}Badge_${rowIndex}`);
+        if (badge) {
+            badge.textContent = count;
+            if (count > 0) {
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    }
+    
+    // Function to update realized P&L display
+    function updateRealizedPnLDisplay() {
+        const realizedPnLElements = document.querySelectorAll('.realized-pnl-display');
+        realizedPnLElements.forEach(element => {
+            const color = window.realizedPnL >= 0 ? 'text-success' : 'text-danger';
+            const sign = window.realizedPnL >= 0 ? '+' : '';
+            element.innerHTML = `<span class="${color}">Realized P&L: ${sign}₹${window.realizedPnL.toFixed(2)}</span>`;
+        });
+    }
 
     // Handle button clicks with advanced netting logic
     function handleButtonClick(rowIndex, key, action) {
@@ -2360,6 +2383,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`🔥 POSITION CLOSED:`, closedPosition);
                 console.log(`🔥 Total Realized P&L: ₹${window.realizedPnL}`);
                 
+                // Update realized P&L display
+                updateRealizedPnLDisplay();
+                
                 // Reduce opposite position by 1 lot
                 oppositePosition.lots--;
                 
@@ -2374,6 +2400,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Update button badges immediately
                 updateButtonBadge(rowIndex, oppositeKey, oppositePosition.lots || 0);
+                updateButtonBadge(rowIndex, key, 0); // Current button should show 0 (position closed)
                 
                 console.log(`🔥 NETTING COMPLETE - Position closed, no new position created`);
                 
@@ -2403,6 +2430,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 window.globalPositions[positionKey].lots++;
                 console.log(`🔥 Position lots now: ${window.globalPositions[positionKey].lots}`);
+                
+                // Update button badge for new position
+                updateButtonBadge(rowIndex, key, window.globalPositions[positionKey].lots);
             }
             
             console.log(`🔥 Total globalPositions:`, Object.keys(window.globalPositions).length);
@@ -2797,7 +2827,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Create rows for each position
         combinedPositions.forEach((position, index) => {
-            const { strike, expiry, optionType, action, lots, entryPrice, isExited, exitPrice, exitTime } = position;
+            const { strike, expiry, optionType, action, lots, entryPrice, isExited, exitPrice, exitTime, actionLabel } = position;
             
             // Build symbol name (approximation for display)
             const expiryFormatted = formatExpiryForSymbol(expiry);
@@ -2806,7 +2836,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // For exited positions, use exit price; for active positions, use current LTP
             const currentLTP = isExited ? exitPrice : getCurrentLTP(strike, optionType, expiry);
             
-            // Calculate P&L
+            // Calculate Unrealized P&L for active positions
             const entry = entryPrice || 0;
             const ltp = currentLTP || 0;
             const quantity = lots * 75;
@@ -2814,22 +2844,30 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (entry > 0 && ltp > 0) {
                 if (action === 'Buy') {
-                    pnl = (ltp - entry) * quantity;
+                    pnl = (ltp - entry) * quantity; // Unrealized P&L for Buy: Current LTP - Entry Price
                 } else { // Sell
-                    pnl = (entry - ltp) * quantity;
+                    pnl = (entry - ltp) * quantity; // Unrealized P&L for Sell: Entry Price - Current LTP
                 }
             }
             
-            // Determine row colors based on action and exit status
+            // Determine action label and badge styling
+            const displayActionLabel = actionLabel || (action === 'Buy' ? 'Buy to Open' : 'Sell to Open');
             const typeClass = optionType === 'CE' ? 'text-success' : 'text-primary';
-            const actionClass = action === 'Buy' ? 'text-success' : 'text-danger';
-            const actionBadge = action === 'Buy' ? 
-                '<span class="badge bg-success text-white">BUY</span>' : 
-                '<span class="badge bg-danger text-white">SELL</span>';
             
-            // P&L color formatting
+            // Action badge based on actual action (not actionLabel)
+            let actionBadge, actionClass;
+            if (displayActionLabel.includes('Buy')) {
+                actionBadge = `<span class="badge bg-success text-white">${displayActionLabel.toUpperCase()}</span>`;
+                actionClass = 'text-success';
+            } else {
+                actionBadge = `<span class="badge bg-danger text-white">${displayActionLabel.toUpperCase()}</span>`;
+                actionClass = 'text-danger';
+            }
+            
+            // P&L color formatting (Unrealized P&L for active positions)
             const pnlColor = pnl >= 0 ? 'text-success' : 'text-danger';
             const pnlSign = pnl >= 0 ? '+' : '';
+            const pnlLabel = isExited ? 'Realized P&L' : 'Unrealized P&L';
             
             // Row styling for exited positions
             const rowStyle = isExited ? 'background-color: #f8f9fa; opacity: 0.8;' : '';
