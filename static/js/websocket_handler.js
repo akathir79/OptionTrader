@@ -569,14 +569,15 @@ class WebSocketHandler {
         }
         // If currentSpot == strike.strike, no ITM highlighting (ATM)
         
-        // Initialize counters for this row
+        // Initialize counters for this row - FIXED: Ensure proper initialization
         if (!window.counters) window.counters = [];
         if (!window.firstClickFlags) window.firstClickFlags = [];
         
-        if (!window.counters[rowIndex]) {
-            window.counters[rowIndex] = { ceBuy: 0, ceSell: 0, peBuy: 0, peSell: 0 };
-            window.firstClickFlags[rowIndex] = { ceBuy: true, ceSell: true, peBuy: true, peSell: true };
-        }
+        // Always initialize for each row to ensure consistency
+        window.counters[rowIndex] = { ceBuy: 0, ceSell: 0, peBuy: 0, peSell: 0 };
+        window.firstClickFlags[rowIndex] = { ceBuy: true, ceSell: true, peBuy: true, peSell: true };
+        
+        console.log(`[ROW INIT] Initialized counters and flags for row ${rowIndex}`);
         
         // Create cells using column-specific approach
         const cells = [
