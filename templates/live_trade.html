@@ -2282,31 +2282,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Global arrays to track closed positions and realized P&L
     window.closedPositions = window.closedPositions || [];
     window.realizedPnL = window.realizedPnL || 0;
-    window.totalUnrealizedPnL = window.totalUnrealizedPnL || 0;
-    window.totalBrokerageFees = window.totalBrokerageFees || 0;
-    
-    // Professional cost basis method (default FIFO)
-    window.costBasisMethod = window.costBasisMethod || 'FIFO';
-    
-    // Brokerage fee structure (professional rates)
-    const BROKERAGE_FEES = {
-        optionsPerContract: 0.50, // ₹0.50 per contract
-        transactionTax: 0.0001,   // 0.01% STT
-        gst: 0.18                 // 18% GST on brokerage
-    };
-    
-    // Calculate total brokerage fees for a trade
-    function calculateBrokerageFees(premium, lots, lotSize = 75) {
-        const contracts = lots;
-        const notionalValue = premium * lots * lotSize;
-        
-        const brokerageFee = contracts * BROKERAGE_FEES.optionsPerContract;
-        const stt = notionalValue * BROKERAGE_FEES.transactionTax;
-        const gst = brokerageFee * BROKERAGE_FEES.gst;
-        
-        const totalFees = brokerageFee + stt + gst;
-        return Math.round(totalFees * 100) / 100; // Round to 2 decimals
-    }
     
     // Function to update button badge display
     function updateButtonBadge(rowIndex, key, count) {
@@ -2321,58 +2296,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Function to calculate holding period
-    function calculateHoldingPeriod(entryTime) {
-        const now = new Date();
-        const entry = new Date(entryTime);
-        const diffMs = now - entry;
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-        return `${diffHours}h ${diffMinutes}m`;
-    }
-    
-    // Function to update portfolio P&L display (professional layout)
-    function updatePortfolioPnLDisplay() {
-        // Calculate total unrealized P&L from active positions
-        let totalUnrealized = 0;
-        Object.values(window.globalPositions || {}).forEach(position => {
-            if (position.lots > 0) {
-                const currentLTP = getCurrentLTP(position.strike, position.optionType, position.expiry);
-                if (currentLTP > 0 && position.entryPrice > 0) {
-                    let positionPnL = 0;
-                    if (position.action === 'Buy') {
-                        positionPnL = (currentLTP - position.entryPrice) * position.lots * 75;
-                    } else {
-                        positionPnL = (position.entryPrice - currentLTP) * position.lots * 75;
-                    }
-                    totalUnrealized += positionPnL;
-                }
-            }
-        });
-        window.totalUnrealizedPnL = totalUnrealized;
-        
-        // Calculate total portfolio P&L
-        const totalPortfolioPnL = window.realizedPnL + window.totalUnrealizedPnL;
-        
-        // Update realized P&L display
+    // Function to update realized P&L display
+    function updateRealizedPnLDisplay() {
         const realizedPnLElements = document.querySelectorAll('.realized-pnl-display');
         realizedPnLElements.forEach(element => {
-            const realizedColor = window.realizedPnL >= 0 ? 'text-success' : 'text-danger';
-            const unrealizedColor = window.totalUnrealizedPnL >= 0 ? 'text-success' : 'text-danger';
-            const totalColor = totalPortfolioPnL >= 0 ? 'text-success' : 'text-danger';
-            
-            const realizedSign = window.realizedPnL >= 0 ? '+' : '';
-            const unrealizedSign = window.totalUnrealizedPnL >= 0 ? '+' : '';
-            const totalSign = totalPortfolioPnL >= 0 ? '+' : '';
-            
-            element.innerHTML = `
-                <div class="d-flex flex-column small">
-                    <div><span class="${realizedColor}">Realized: ${realizedSign}₹${window.realizedPnL.toFixed(2)}</span></div>
-                    <div><span class="${unrealizedColor}">Unrealized: ${unrealizedSign}₹${window.totalUnrealizedPnL.toFixed(2)}</span></div>
-                    <div class="border-top pt-1"><strong class="${totalColor}">Total: ${totalSign}₹${totalPortfolioPnL.toFixed(2)}</strong></div>
-                    <div class="text-muted" style="font-size: 10px;">Fees: ₹${window.totalBrokerageFees.toFixed(2)}</div>
-                </div>
-            `;
+            const color = window.realizedPnL >= 0 ? 'text-success' : 'text-danger';
+            const sign = window.realizedPnL >= 0 ? '+' : '';
+            element.innerHTML = `<span class="${color}">Realized P&L: ${sign}₹${window.realizedPnL.toFixed(2)}</span>`;
         });
     }
 
@@ -2433,22 +2363,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Calculate P&L per lot (in premium terms)
                 const pnlPerLot = sellPrice - buyPrice;
                 const lotSize = 75; // NIFTY lot size
-                const grossPnL = pnlPerLot * lotSize;
+                const realizedPnLAmount = pnlPerLot * lotSize;
                 
-                // Calculate brokerage fees for entry and exit
-                const entryFees = calculateBrokerageFees(oppositePosition.entryPrice, 1, lotSize);
-                const exitFees = calculateBrokerageFees(currentLTP, 1, lotSize);
-                const totalFees = entryFees + exitFees;
+                console.log(`🔥 REALIZED P&L: (${sellPrice} - ${buyPrice}) * ${lotSize} = ₹${realizedPnLAmount}`);
                 
-                // Net realized P&L after fees
-                const realizedPnLAmount = grossPnL - totalFees;
-                window.totalBrokerageFees += totalFees;
-                
-                console.log(`🔥 GROSS P&L: (${sellPrice} - ${buyPrice}) * ${lotSize} = ₹${grossPnL}`);
-                console.log(`🔥 BROKERAGE FEES: Entry ₹${entryFees} + Exit ₹${exitFees} = ₹${totalFees}`);
-                console.log(`🔥 NET REALIZED P&L: ₹${grossPnL} - ₹${totalFees} = ₹${realizedPnLAmount}`);
-                
-                // Record the closed position with professional details
+                // Record the closed position
                 const closedPosition = {
                     strike: strike,
                     expiry: currentExpiry,
@@ -2456,15 +2375,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     sellToOpenPrice: isCurrentBuy ? oppositePosition.entryPrice : currentLTP,
                     buyToClosePrice: isCurrentBuy ? currentLTP : oppositePosition.entryPrice,
                     action: isCurrentBuy ? 'Buy to Close' : 'Sell to Close',
-                    openAction: oppositePosition.action,
-                    closeAction: currentAction,
-                    grossPnL: grossPnL,
-                    brokerageFees: totalFees,
                     realizedPnL: realizedPnLAmount,
-                    costBasisMethod: window.costBasisMethod,
                     timestamp: new Date(),
-                    lotSize: lotSize,
-                    holdingPeriod: calculateHoldingPeriod(oppositePosition.timestamp || new Date())
+                    lotSize: lotSize
                 };
                 
                 window.closedPositions.push(closedPosition);
@@ -2473,8 +2386,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`🔥 POSITION CLOSED:`, closedPosition);
                 console.log(`🔥 Total Realized P&L: ₹${window.realizedPnL}`);
                 
-                // Update portfolio P&L display with professional metrics
-                updatePortfolioPnLDisplay();
+                // Update realized P&L display
+                updateRealizedPnLDisplay();
                 
                 // Reduce opposite position by 1 lot
                 oppositePosition.lots--;
@@ -2523,9 +2436,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Update button badge for new position
                 updateButtonBadge(rowIndex, key, window.globalPositions[positionKey].lots);
-                
-                // Update portfolio P&L after creating new position
-                updatePortfolioPnLDisplay();
             }
             
             console.log(`🔥 Total globalPositions:`, Object.keys(window.globalPositions).length);
@@ -2918,93 +2828,65 @@ document.addEventListener('DOMContentLoaded', function() {
             return (a.isExited ? 1 : 0) - (b.isExited ? 1 : 0);
         });
         
-        // Group positions by strike and expiry for professional display
-        const groupedPositions = {};
-        combinedPositions.forEach(position => {
-            const groupKey = `${position.strike}-${position.expiry}`;
-            if (!groupedPositions[groupKey]) {
-                groupedPositions[groupKey] = {
-                    strike: position.strike,
-                    expiry: position.expiry,
-                    positions: []
-                };
-            }
-            groupedPositions[groupKey].positions.push(position);
-        });
-        
-        // Create rows for each position group
-        let rowIndex = 0;
-        Object.values(groupedPositions).forEach(group => {
-            // Add group header row
-            const groupHeaderRow = document.createElement('tr');
-            groupHeaderRow.className = 'table-secondary';
-            groupHeaderRow.innerHTML = `
-                <td colspan="15" class="fw-bold text-center py-2">
-                    <i class="fas fa-layer-group me-2"></i>Strike ${group.strike} | Expiry ${group.expiry}
-                    <span class="badge bg-primary ms-2">${group.positions.length} Positions</span>
-                </td>
-            `;
-            tableBody.appendChild(groupHeaderRow);
+        // Create rows for each position
+        combinedPositions.forEach((position, index) => {
+            const { strike, expiry, optionType, action, lots, entryPrice, isExited, exitPrice, exitTime, actionLabel } = position;
             
-            // Add each position in the group
-            group.positions.forEach((position, index) => {
-                const { strike, expiry, optionType, action, lots, entryPrice, isExited, exitPrice, exitTime, actionLabel } = position;
-                
-                // Build symbol name (approximation for display)
-                const expiryFormatted = formatExpiryForSymbol(expiry);
-                const symbol = `NSE:NIFTY${expiryFormatted}${strike}${optionType}`;
-                
-                // For exited positions, use exit price; for active positions, use current LTP
-                const currentLTP = isExited ? exitPrice : getCurrentLTP(strike, optionType, expiry);
-                
-                // Calculate Unrealized P&L for active positions
-                const entry = entryPrice || 0;
-                const ltp = currentLTP || 0;
-                const quantity = lots * 75;
-                let pnl = 0;
-                
-                if (entry > 0 && ltp > 0) {
-                    if (action === 'Buy') {
-                        pnl = (ltp - entry) * quantity; // Unrealized P&L for Buy: Current LTP - Entry Price
-                    } else { // Sell
-                        pnl = (entry - ltp) * quantity; // Unrealized P&L for Sell: Entry Price - Current LTP
-                    }
+            // Build symbol name (approximation for display)
+            const expiryFormatted = formatExpiryForSymbol(expiry);
+            const symbol = `NSE:NIFTY${expiryFormatted}${strike}${optionType}`;
+            
+            // For exited positions, use exit price; for active positions, use current LTP
+            const currentLTP = isExited ? exitPrice : getCurrentLTP(strike, optionType, expiry);
+            
+            // Calculate Unrealized P&L for active positions
+            const entry = entryPrice || 0;
+            const ltp = currentLTP || 0;
+            const quantity = lots * 75;
+            let pnl = 0;
+            
+            if (entry > 0 && ltp > 0) {
+                if (action === 'Buy') {
+                    pnl = (ltp - entry) * quantity; // Unrealized P&L for Buy: Current LTP - Entry Price
+                } else { // Sell
+                    pnl = (entry - ltp) * quantity; // Unrealized P&L for Sell: Entry Price - Current LTP
                 }
-                
-                // Determine action label and badge styling
-                const displayActionLabel = actionLabel || (action === 'Buy' ? 'Buy to Open' : 'Sell to Open');
-                const typeClass = optionType === 'CE' ? 'text-success' : 'text-primary';
-                
-                // Action badge based on actual action (not actionLabel)
-                let actionBadge, actionClass;
-                if (displayActionLabel.includes('Buy')) {
-                    actionBadge = `<span class="badge bg-success text-white">${displayActionLabel.toUpperCase()}</span>`;
-                    actionClass = 'text-success';
-                } else {
-                    actionBadge = `<span class="badge bg-danger text-white">${displayActionLabel.toUpperCase()}</span>`;
-                    actionClass = 'text-danger';
-                }
-                
-                // P&L color formatting (Unrealized P&L for active positions)
-                const pnlColor = pnl >= 0 ? 'text-success' : 'text-danger';
-                const pnlSign = pnl >= 0 ? '+' : '';
-                const pnlLabel = isExited ? 'Realized P&L' : 'Unrealized P&L';
-                
-                // Row styling for exited positions
-                const rowStyle = isExited ? 'background-color: #f8f9fa; opacity: 0.8;' : '';
-                const exitedLabel = isExited ? ' <span class="badge bg-secondary">EXITED</span>' : '';
-                
-                const positionKey = isExited ? `EXITED_${strike}-${expiry}-${optionType.toLowerCase()}${action}_${Date.now()}` : `${strike}-${expiry}-${optionType.toLowerCase()}${action}`;
-                
-                // Time display - use exit time for exited positions
-                const timeDisplay = isExited && exitTime ? 
-                    exitTime.toLocaleDateString('en-IN') + ' ' + exitTime.toLocaleTimeString('en-IN', {hour12: true, hour: '2-digit', minute: '2-digit'}).toLowerCase() :
-                    new Date().toLocaleDateString('en-IN') + ' ' + new Date().toLocaleTimeString('en-IN', {hour12: true, hour: '2-digit', minute: '2-digit'}).toLowerCase();
-                
-                const row = document.createElement('tr');
-                row.className = 'position-row';
-                row.setAttribute('data-position-key', positionKey);
-                row.style.cssText = rowStyle;
+            }
+            
+            // Determine action label and badge styling
+            const displayActionLabel = actionLabel || (action === 'Buy' ? 'Buy to Open' : 'Sell to Open');
+            const typeClass = optionType === 'CE' ? 'text-success' : 'text-primary';
+            
+            // Action badge based on actual action (not actionLabel)
+            let actionBadge, actionClass;
+            if (displayActionLabel.includes('Buy')) {
+                actionBadge = `<span class="badge bg-success text-white">${displayActionLabel.toUpperCase()}</span>`;
+                actionClass = 'text-success';
+            } else {
+                actionBadge = `<span class="badge bg-danger text-white">${displayActionLabel.toUpperCase()}</span>`;
+                actionClass = 'text-danger';
+            }
+            
+            // P&L color formatting (Unrealized P&L for active positions)
+            const pnlColor = pnl >= 0 ? 'text-success' : 'text-danger';
+            const pnlSign = pnl >= 0 ? '+' : '';
+            const pnlLabel = isExited ? 'Realized P&L' : 'Unrealized P&L';
+            
+            // Row styling for exited positions
+            const rowStyle = isExited ? 'background-color: #f8f9fa; opacity: 0.8;' : '';
+            const exitedLabel = isExited ? ' <span class="badge bg-secondary">EXITED</span>' : '';
+            
+            const positionKey = isExited ? `EXITED_${strike}-${expiry}-${optionType.toLowerCase()}${action}_${Date.now()}` : `${strike}-${expiry}-${optionType.toLowerCase()}${action}`;
+            
+            // Time display - use exit time for exited positions
+            const timeDisplay = isExited && exitTime ? 
+                exitTime.toLocaleDateString('en-IN') + ' ' + exitTime.toLocaleTimeString('en-IN', {hour12: true, hour: '2-digit', minute: '2-digit'}).toLowerCase() :
+                new Date().toLocaleDateString('en-IN') + ' ' + new Date().toLocaleTimeString('en-IN', {hour12: true, hour: '2-digit', minute: '2-digit'}).toLowerCase();
+            
+            const row = document.createElement('tr');
+            row.className = 'position-row';
+            row.setAttribute('data-position-key', positionKey);
+            row.style.cssText = rowStyle;
             row.innerHTML = `
                 <td style="text-align: center;"><input type="checkbox" ${isExited ? 'disabled' : ''}></td>
                 <td style="text-align: center;">
@@ -3062,9 +2944,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 </td>
             `;
-                
-                tableBody.appendChild(row);
-            });
+            
+            tableBody.appendChild(row);
         });
         
         // Update positions count in header
