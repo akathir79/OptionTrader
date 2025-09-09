@@ -2657,18 +2657,26 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update Current Positions Table - synchronize with global positions
     function updateCurrentPositionsTable() {
+        console.log(`🔥 updateCurrentPositionsTable() called`);
         const tableBody = document.getElementById('positionTableBody');
-        if (!tableBody) return;
+        if (!tableBody) {
+            console.log(`🔥 ERROR: positionTableBody not found`);
+            return;
+        }
         
         // Clear existing content
         tableBody.innerHTML = '';
         
+        console.log(`🔥 Raw window.globalPositions:`, window.globalPositions);
+        
         // Get all positions from global positions
         const allPositions = Object.values(window.globalPositions || {}).filter(pos => pos.lots > 0);
+        console.log(`🔥 Filtered positions with lots > 0:`, allPositions);
         
         // Add exited positions to display
         const exitedPositions = Object.values(window.exitedPositions || {});
         const combinedPositions = [...allPositions, ...exitedPositions];
+        console.log(`🔥 Combined positions (active + exited):`, combinedPositions);
         
         if (combinedPositions.length === 0) {
             // Show empty state
