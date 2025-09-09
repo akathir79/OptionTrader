@@ -2282,6 +2282,31 @@ document.addEventListener('DOMContentLoaded', function() {
     // Global arrays to track closed positions and realized P&L
     window.closedPositions = window.closedPositions || [];
     window.realizedPnL = window.realizedPnL || 0;
+    window.totalUnrealizedPnL = window.totalUnrealizedPnL || 0;
+    window.totalBrokerageFees = window.totalBrokerageFees || 0;
+    
+    // Professional cost basis method (default FIFO)
+    window.costBasisMethod = window.costBasisMethod || 'FIFO';
+    
+    // Brokerage fee structure (professional rates)
+    const BROKERAGE_FEES = {
+        optionsPerContract: 0.50, // ₹0.50 per contract
+        transactionTax: 0.0001,   // 0.01% STT
+        gst: 0.18                 // 18% GST on brokerage
+    };
+    
+    // Calculate total brokerage fees for a trade
+    function calculateBrokerageFees(premium, lots, lotSize = 75) {
+        const contracts = lots;
+        const notionalValue = premium * lots * lotSize;
+        
+        const brokerageFee = contracts * BROKERAGE_FEES.optionsPerContract;
+        const stt = notionalValue * BROKERAGE_FEES.transactionTax;
+        const gst = brokerageFee * BROKERAGE_FEES.gst;
+        
+        const totalFees = brokerageFee + stt + gst;
+        return Math.round(totalFees * 100) / 100; // Round to 2 decimals
+    }
     
     // Function to update button badge display
     function updateButtonBadge(rowIndex, key, count) {
@@ -2296,13 +2321,58 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Function to update realized P&L display
-    function updateRealizedPnLDisplay() {
+    // Function to calculate holding period
+    function calculateHoldingPeriod(entryTime) {
+        const now = new Date();
+        const entry = new Date(entryTime);
+        const diffMs = now - entry;
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        return `${diffHours}h ${diffMinutes}m`;
+    }
+    
+    // Function to update portfolio P&L display (professional layout)
+    function updatePortfolioPnLDisplay() {
+        // Calculate total unrealized P&L from active positions
+        let totalUnrealized = 0;
+        Object.values(window.globalPositions || {}).forEach(position => {
+            if (position.lots > 0) {
+                const currentLTP = getCurrentLTP(position.strike, position.optionType, position.expiry);
+                if (currentLTP > 0 && position.entryPrice > 0) {
+                    let positionPnL = 0;
+                    if (position.action === 'Buy') {
+                        positionPnL = (currentLTP - position.entryPrice) * position.lots * 75;
+                    } else {
+                        positionPnL = (position.entryPrice - currentLTP) * position.lots * 75;
+                    }
+                    totalUnrealized += positionPnL;
+                }
+            }
+        });
+        window.totalUnrealizedPnL = totalUnrealized;
+        
+        // Calculate total portfolio P&L
+        const totalPortfolioPnL = window.realizedPnL + window.totalUnrealizedPnL;
+        
+        // Update realized P&L display
         const realizedPnLElements = document.querySelectorAll('.realized-pnl-display');
         realizedPnLElements.forEach(element => {
-            const color = window.realizedPnL >= 0 ? 'text-success' : 'text-danger';
-            const sign = window.realizedPnL >= 0 ? '+' : '';
-            element.innerHTML = `<span class="${color}">Realized P&L: ${sign}₹${window.realizedPnL.toFixed(2)}</span>`;
+            const realizedColor = window.realizedPnL >= 0 ? 'text-success' : 'text-danger';
+            const unrealizedColor = window.totalUnrealizedPnL >= 0 ? 'text-success' : 'text-danger';
+            const totalColor = totalPortfolioPnL >= 0 ? 'text-success' : 'text-danger';
+            
+            const realizedSign = window.realizedPnL >= 0 ? '+' : '';
+            const unrealizedSign = window.totalUnrealizedPnL >= 0 ? '+' : '';
+            const totalSign = totalPortfolioPnL >= 0 ? '+' : '';
+            
+            element.innerHTML = `
+                <div class="d-flex flex-column small">
+                    <div><span class="${realizedColor}">Realized: ${realizedSign}₹${window.realizedPnL.toFixed(2)}</span></div>
+                    <div><span class="${unrealizedColor}">Unrealized: ${unrealizedSign}₹${window.totalUnrealizedPnL.toFixed(2)}</span></div>
+                    <div class="border-top pt-1"><strong class="${totalColor}">Total: ${totalSign}₹${totalPortfolioPnL.toFixed(2)}</strong></div>
+                    <div class="text-muted" style="font-size: 10px;">Fees: ₹${window.totalBrokerageFees.toFixed(2)}</div>
+                </div>
+            `;
         });
     }
 
@@ -2363,11 +2433,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Calculate P&L per lot (in premium terms)
                 const pnlPerLot = sellPrice - buyPrice;
                 const lotSize = 75; // NIFTY lot size
-                const realizedPnLAmount = pnlPerLot * lotSize;
+                const grossPnL = pnlPerLot * lotSize;
                 
-                console.log(`🔥 REALIZED P&L: (${sellPrice} - ${buyPrice}) * ${lotSize} = ₹${realizedPnLAmount}`);
+                // Calculate brokerage fees for entry and exit
+                const entryFees = calculateBrokerageFees(oppositePosition.entryPrice, 1, lotSize);
+                const exitFees = calculateBrokerageFees(currentLTP, 1, lotSize);
+                const totalFees = entryFees + exitFees;
                 
-                // Record the closed position
+                // Net realized P&L after fees
+                const realizedPnLAmount = grossPnL - totalFees;
+                window.totalBrokerageFees += totalFees;
+                
+                console.log(`🔥 GROSS P&L: (${sellPrice} - ${buyPrice}) * ${lotSize} = ₹${grossPnL}`);
+                console.log(`🔥 BROKERAGE FEES: Entry ₹${entryFees} + Exit ₹${exitFees} = ₹${totalFees}`);
+                console.log(`🔥 NET REALIZED P&L: ₹${grossPnL} - ₹${totalFees} = ₹${realizedPnLAmount}`);
+                
+                // Record the closed position with professional details
                 const closedPosition = {
                     strike: strike,
                     expiry: currentExpiry,
@@ -2375,9 +2456,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     sellToOpenPrice: isCurrentBuy ? oppositePosition.entryPrice : currentLTP,
                     buyToClosePrice: isCurrentBuy ? currentLTP : oppositePosition.entryPrice,
                     action: isCurrentBuy ? 'Buy to Close' : 'Sell to Close',
+                    openAction: oppositePosition.action,
+                    closeAction: currentAction,
+                    grossPnL: grossPnL,
+                    brokerageFees: totalFees,
                     realizedPnL: realizedPnLAmount,
+                    costBasisMethod: window.costBasisMethod,
                     timestamp: new Date(),
-                    lotSize: lotSize
+                    lotSize: lotSize,
+                    holdingPeriod: calculateHoldingPeriod(oppositePosition.timestamp || new Date())
                 };
                 
                 window.closedPositions.push(closedPosition);
@@ -2386,8 +2473,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`🔥 POSITION CLOSED:`, closedPosition);
                 console.log(`🔥 Total Realized P&L: ₹${window.realizedPnL}`);
                 
-                // Update realized P&L display
-                updateRealizedPnLDisplay();
+                // Update portfolio P&L display with professional metrics
+                updatePortfolioPnLDisplay();
                 
                 // Reduce opposite position by 1 lot
                 oppositePosition.lots--;
@@ -2436,6 +2523,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Update button badge for new position
                 updateButtonBadge(rowIndex, key, window.globalPositions[positionKey].lots);
+                
+                // Update portfolio P&L after creating new position
+                updatePortfolioPnLDisplay();
             }
             
             console.log(`🔥 Total globalPositions:`, Object.keys(window.globalPositions).length);
