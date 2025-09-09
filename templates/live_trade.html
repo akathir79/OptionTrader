@@ -2276,7 +2276,11 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`${action} ${key} for row ${rowIndex}, expiry ${targetExpiry}`);
     }
 
-    // Handle button clicks - DEBUG VERSION
+    // Global arrays to track closed positions and realized P&L
+    window.closedPositions = window.closedPositions || [];
+    window.realizedPnL = window.realizedPnL || 0;
+
+    // Handle button clicks with advanced netting logic
     function handleButtonClick(rowIndex, key, action) {
         console.log(`🔥 handleButtonClick CALLED: row=${rowIndex}, key=${key}, action=${action}`);
         
@@ -2291,37 +2295,122 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log(`🔥 Strike: ${strike}, Expiry: ${currentExpiry}`);
         
-        // Create position key for global tracking
-        const positionKey = `${strike}-${currentExpiry}-${key}`;
-        console.log(`🔥 Position key: ${positionKey}`);
-        
         if (action === 'add') {
-            console.log(`🔥 BEFORE: counters[${rowIndex}][${key}] = ${counters[rowIndex]?.[key]}`);
-            counters[rowIndex][key]++;
-            console.log(`🔥 AFTER: counters[${rowIndex}][${key}] = ${counters[rowIndex][key]}`);
+            const optionType = key.includes('ce') ? 'CE' : 'PE';
+            const isCurrentBuy = key.includes('Buy');
+            const currentAction = isCurrentBuy ? 'Buy' : 'Sell';
+            const oppositeAction = isCurrentBuy ? 'Sell' : 'Buy';
+            const oppositeKey = key.replace(currentAction, oppositeAction);
             
-            // Store in global positions
-            if (!window.globalPositions[positionKey]) {
-                const optionType = key.includes('ce') ? 'CE' : 'PE';
-                const entryPrice = getCurrentLTP(strike, optionType, currentExpiry);
-                console.log(`🔥 Creating NEW position: ${optionType}, entryPrice=${entryPrice}`);
-                window.globalPositions[positionKey] = {
+            // Get current LTP as new position's entry price
+            const currentLTP = getCurrentLTP(strike, optionType, currentExpiry);
+            console.log(`🔥 Current LTP: ${currentLTP} for ${optionType} ${strike}`);
+            
+            // Check for opposite position to net against
+            const currentPositionKey = `${strike}-${currentExpiry}-${key}`;
+            const oppositePositionKey = `${strike}-${currentExpiry}-${oppositeKey}`;
+            
+            console.log(`🔥 Checking for netting opportunity:`);
+            console.log(`🔥 Current: ${currentPositionKey}`);
+            console.log(`🔥 Opposite: ${oppositePositionKey}`);
+            
+            const oppositePosition = window.globalPositions[oppositePositionKey];
+            
+            if (oppositePosition && oppositePosition.lots > 0) {
+                // NETTING LOGIC: We have an opposite position to close
+                console.log(`🔥 NETTING: Found opposite position with ${oppositePosition.lots} lots`);
+                
+                // Calculate realized P&L for this netting operation
+                let sellPrice, buyPrice;
+                if (isCurrentBuy) {
+                    // Current is Buy, opposite is Sell -> Buy to Close
+                    sellPrice = oppositePosition.entryPrice; // Original Sell entry price
+                    buyPrice = currentLTP; // Current Buy price
+                    console.log(`🔥 BUY TO CLOSE: Sell entry @ ${sellPrice}, Buy close @ ${buyPrice}`);
+                } else {
+                    // Current is Sell, opposite is Buy -> Sell to Close Buy position
+                    buyPrice = oppositePosition.entryPrice; // Original Buy entry price  
+                    sellPrice = currentLTP; // Current Sell price
+                    console.log(`🔥 SELL TO CLOSE: Buy entry @ ${buyPrice}, Sell close @ ${sellPrice}`);
+                }
+                
+                // Calculate P&L per lot (in premium terms)
+                const pnlPerLot = sellPrice - buyPrice;
+                const lotSize = 75; // NIFTY lot size
+                const realizedPnLAmount = pnlPerLot * lotSize;
+                
+                console.log(`🔥 REALIZED P&L: (${sellPrice} - ${buyPrice}) * ${lotSize} = ₹${realizedPnLAmount}`);
+                
+                // Record the closed position
+                const closedPosition = {
                     strike: strike,
                     expiry: currentExpiry,
                     optionType: optionType,
-                    action: key.includes('Buy') ? 'Buy' : 'Sell',
-                    lots: 0,
-                    rowIndex: rowIndex,
-                    key: key,
-                    entryPrice: entryPrice
+                    sellToOpenPrice: isCurrentBuy ? oppositePosition.entryPrice : currentLTP,
+                    buyToClosePrice: isCurrentBuy ? currentLTP : oppositePosition.entryPrice,
+                    action: isCurrentBuy ? 'Buy to Close' : 'Sell to Close',
+                    realizedPnL: realizedPnLAmount,
+                    timestamp: new Date(),
+                    lotSize: lotSize
                 };
+                
+                window.closedPositions.push(closedPosition);
+                window.realizedPnL += realizedPnLAmount;
+                
+                console.log(`🔥 POSITION CLOSED:`, closedPosition);
+                console.log(`🔥 Total Realized P&L: ₹${window.realizedPnL}`);
+                
+                // Reduce opposite position by 1 lot
+                oppositePosition.lots--;
+                
+                // Remove opposite position if lots become 0
+                if (oppositePosition.lots <= 0) {
+                    delete window.globalPositions[oppositePositionKey];
+                    console.log(`🔥 OPPOSITE POSITION REMOVED: ${oppositePositionKey}`);
+                    
+                    // Reset counter for opposite button
+                    counters[rowIndex][oppositeKey] = 0;
+                }
+                
+                // Update button badges immediately
+                updateButtonBadge(rowIndex, oppositeKey, oppositePosition.lots || 0);
+                
+                console.log(`🔥 NETTING COMPLETE - Position closed, no new position created`);
+                
+            } else {
+                // NO NETTING: Create new position (no opposite position exists)
+                console.log(`🔥 NO NETTING: Creating new ${currentAction} position`);
+                
+                counters[rowIndex][key]++;
+                
+                // Create position key for global tracking
+                const positionKey = currentPositionKey;
+                
+                // Store in global positions
+                if (!window.globalPositions[positionKey]) {
+                    console.log(`🔥 Creating NEW position: ${optionType}, entryPrice=${currentLTP}`);
+                    window.globalPositions[positionKey] = {
+                        strike: strike,
+                        expiry: currentExpiry,
+                        optionType: optionType,
+                        action: currentAction,
+                        lots: 0,
+                        rowIndex: rowIndex,
+                        key: key,
+                        entryPrice: currentLTP,
+                        actionLabel: isCurrentBuy ? 'Buy to Open' : 'Sell to Open'
+                    };
+                }
+                window.globalPositions[positionKey].lots++;
+                console.log(`🔥 Position lots now: ${window.globalPositions[positionKey].lots}`);
             }
-            window.globalPositions[positionKey].lots++;
-            console.log(`🔥 Position lots now: ${window.globalPositions[positionKey].lots}`);
+            
             console.log(`🔥 Total globalPositions:`, Object.keys(window.globalPositions).length);
+            
         } else if (action === 'remove' && counters[rowIndex][key] > 0) {
+            // Handle manual position removal
             counters[rowIndex][key]--;
-            // Update global positions
+            const positionKey = `${strike}-${currentExpiry}-${key}`;
             if (window.globalPositions[positionKey]) {
                 window.globalPositions[positionKey].lots--;
                 if (window.globalPositions[positionKey].lots <= 0) {
