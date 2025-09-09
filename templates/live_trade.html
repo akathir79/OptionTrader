@@ -2219,6 +2219,16 @@ document.addEventListener('DOMContentLoaded', function() {
             window.globalPositions[positionKey].lots++;
             const afterLots = window.globalPositions[positionKey].lots;
             console.log(`[EXPIRY POSITION CHANGE] ADD: ${beforeLots} -> ${afterLots}`);
+            
+            // Update current expiry counter if this matches current expiry
+            const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
+            if (targetExpiry === currentExpiry) {
+                if (!counters[rowIndex]) counters[rowIndex] = {};
+                if (!counters[rowIndex][key]) counters[rowIndex][key] = 0;
+                counters[rowIndex][key]++;
+                console.log(`[COUNTER UPDATE] Incremented counter for current expiry: ${counters[rowIndex][key]}`);
+            }
+            
         } else if (action === 'remove') {
             // Update global positions
             if (window.globalPositions[positionKey] && window.globalPositions[positionKey].lots > 0) {
@@ -2227,22 +2237,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 const afterLots = window.globalPositions[positionKey].lots;
                 console.log(`[EXPIRY POSITION CHANGE] REMOVE: ${beforeLots} -> ${afterLots}`);
                 
+                // Update current expiry counter if this matches current expiry
+                const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
+                if (targetExpiry === currentExpiry) {
+                    if (counters[rowIndex] && counters[rowIndex][key] > 0) {
+                        counters[rowIndex][key]--;
+                        console.log(`[COUNTER UPDATE] Decremented counter for current expiry: ${counters[rowIndex][key]}`);
+                    }
+                }
+                
                 if (window.globalPositions[positionKey].lots <= 0) {
                     delete window.globalPositions[positionKey];
                     console.log(`[POSITION REMOVE] Deleted position key: ${positionKey}, remaining positions:`, Object.keys(window.globalPositions).length);
                 }
             } else {
                 console.log(`[EXPIRY POSITION CHANGE] Cannot remove - position not found or lots already 0`);
-            }
-        }
-        
-        // Update current expiry counter if this matches current expiry
-        const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
-        if (targetExpiry === currentExpiry) {
-            if (action === 'add') {
-                counters[rowIndex][key]++;
-            } else if (action === 'remove' && counters[rowIndex][key] > 0) {
-                counters[rowIndex][key]--;
+                return; // Exit early if nothing to remove
             }
         }
         
@@ -2260,13 +2270,18 @@ document.addEventListener('DOMContentLoaded', function() {
             closeAllPositionCards();
         }
         
-        // Force update of button displays for all buttons to ensure proper synchronization
-        console.log(`[SYNC UPDATE] Before restore - Global positions count: ${Object.keys(window.globalPositions || {}).length}`);
-        restoreButtonStatesFromGlobalPositions();
+        // Update button displays to reflect the counter changes
+        updateButtonDisplay(rowIndex, key);
+        
+        // Update the position management card content
         updatePositionCard(rowIndex, key);
         
         // Update current positions table
         updateCurrentPositionsTable();
+        
+        // Force update of button displays for all buttons to ensure proper synchronization
+        console.log(`[SYNC UPDATE] After changes - Global positions count: ${Object.keys(window.globalPositions || {}).length}`);
+        console.log(`[SYNC UPDATE] Current counter for ${key}: ${counters[rowIndex] && counters[rowIndex][key] ? counters[rowIndex][key] : 0}`);
         
         // Immediately create and update payoff chart using loaded option chain data
         createPayoffChartFromOptionChain();
@@ -2570,6 +2585,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update button display - using attached code approach
     function updateButtonDisplay(rowIndex, key) {
+        // Ensure counters array is properly initialized
+        if (!counters[rowIndex]) counters[rowIndex] = {};
+        if (!counters[rowIndex][key]) counters[rowIndex][key] = 0;
+        
         const count = counters[rowIndex][key];
         const button = document.getElementById(`${key}Btn_${rowIndex}`);
         const badge = document.getElementById(`${key}Badge_${rowIndex}`);
@@ -2578,14 +2597,16 @@ document.addEventListener('DOMContentLoaded', function() {
             badge.textContent = count;
             if (count > 0) {
                 button.classList.add('active');
-                badge.style.display = 'block';
+                badge.style.display = 'inline-block';
             } else {
                 button.classList.remove('active');
                 badge.style.display = 'none';
                 firstClickFlags[rowIndex][key] = true;
             }
+            console.log(`[BUTTON UPDATE] Updated ${key} badge for row ${rowIndex}: ${count}`);
         }
     }
+    
     
     // Restore button states from global positions when option chain is rebuilt
     function restoreButtonStatesFromGlobalPositions() {
