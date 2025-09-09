@@ -2090,36 +2090,51 @@ document.addEventListener('DOMContentLoaded', function() {
     function getCurrentLTP(strike, optionType, expiry) {
         try {
             const table = document.getElementById('optionChainTable');
-            if (!table) return 0;
+            if (!table) {
+                console.log('[LTP] Table not found');
+                return 100; // Default fallback price for position creation
+            }
             
             // Find the row for this strike
             const rows = table.getElementsByTagName('tbody')[0]?.getElementsByTagName('tr');
-            if (!rows) return 0;
+            if (!rows) {
+                console.log('[LTP] No rows found');
+                return 100; // Default fallback price
+            }
             
             for (let row of rows) {
                 const strikeCell = row.children[19]; // Strike column index
                 if (strikeCell && parseFloat(strikeCell.textContent) === strike) {
+                    console.log(`[LTP] Found row for strike ${strike}, looking for ${optionType} LTP`);
+                    
                     // Found the right row, now get the LTP for the option type
                     if (optionType === 'CE') {
                         const ceLtpCell = row.querySelector('.ce-ltp');
+                        console.log(`[LTP] CE LTP cell found:`, !!ceLtpCell, ceLtpCell?.textContent);
                         if (ceLtpCell) {
                             const ltpText = ceLtpCell.textContent.replace(/[₹,]/g, '');
-                            return parseFloat(ltpText) || 0;
+                            const price = parseFloat(ltpText) || 100;
+                            console.log(`[LTP] CE LTP extracted: ${price}`);
+                            return price;
                         }
                     } else if (optionType === 'PE') {
                         const peLtpCell = row.querySelector('.pe-ltp');
+                        console.log(`[LTP] PE LTP cell found:`, !!peLtpCell, peLtpCell?.textContent);
                         if (peLtpCell) {
                             const ltpText = peLtpCell.textContent.replace(/[₹,]/g, '');
-                            return parseFloat(ltpText) || 0;
+                            const price = parseFloat(ltpText) || 100;
+                            console.log(`[LTP] PE LTP extracted: ${price}`);
+                            return price;
                         }
                     }
                     break;
                 }
             }
+            console.log(`[LTP] Strike ${strike} not found in table`);
         } catch (error) {
-            console.log('Error getting LTP:', error);
+            console.log('[LTP] Error getting LTP:', error);
         }
-        return 0;
+        return 100; // Default fallback price instead of 0
     }
     
     // Create Buy/Sell button with position management card - using attached code approach
@@ -2343,6 +2358,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Normal position creation (no netting or user declined netting)
             counters[rowIndex][key]++;
+            console.log(`[POSITION] Creating/updating position for strike ${strike}, type ${optionType}, action ${currentAction}`);
+            
             // Store in global positions
             if (!window.globalPositions[positionKey]) {
                 const entryPrice = getCurrentLTP(strike, optionType, currentExpiry);
@@ -2356,9 +2373,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     key: key,
                     entryPrice: entryPrice
                 };
-                console.log(`[POSITION CREATION] Entry price captured: ₹${entryPrice} for ${positionKey}`);
+                console.log(`[POSITION CREATION] New position created with entry price: ₹${entryPrice} for ${positionKey}`);
             }
+            
             window.globalPositions[positionKey].lots++;
+            console.log(`[POSITION UPDATE] Position ${positionKey} now has ${window.globalPositions[positionKey].lots} lots`);
+            console.log(`[GLOBAL POSITIONS] Total positions:`, Object.keys(window.globalPositions).length, window.globalPositions);
         } else if (action === 'remove' && counters[rowIndex][key] > 0) {
             counters[rowIndex][key]--;
             // Update global positions
@@ -2707,12 +2727,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Clear existing content
         tableBody.innerHTML = '';
         
-        // Get all positions from global positions
+        // Get all positions from global positions with debug logging
+        console.log('[POSITIONS TABLE] Raw globalPositions:', window.globalPositions);
         const allPositions = Object.values(window.globalPositions || {}).filter(pos => pos.lots > 0);
+        console.log('[POSITIONS TABLE] Filtered active positions:', allPositions);
         
         // Add exited positions to display
         const exitedPositions = Object.values(window.exitedPositions || {});
         const combinedPositions = [...allPositions, ...exitedPositions];
+        console.log('[POSITIONS TABLE] Combined positions:', combinedPositions);
         
         if (combinedPositions.length === 0) {
             // Show empty state
