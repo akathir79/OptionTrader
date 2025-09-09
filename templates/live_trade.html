@@ -4380,7 +4380,7 @@ document.addEventListener('DOMContentLoaded', function() {
 {% endblock %}
 
 <style>
-/* Professional ITM highlighting - ALL visible call/put columns with high specificity */
+/* Professional ITM highlighting - ALL visible call/put columns */
 tr.itm-call-row td.buy_sell_cell,     /* CE B/S */
 tr.itm-call-row td.ce-oi-change,      /* Chng in OI */
 tr.itm-call-row td.ce-oi,             /* OI */
@@ -4388,7 +4388,6 @@ tr.itm-call-row td.ce-volume,         /* Vol */
 tr.itm-call-row td.ce-ltp,            /* LTP */
 tr.itm-call-row td.ce-delta {         /* Δ (CE) */
   background-color: #fff3cd !important; /* Light yellow for ITM call columns */
-  border: 2px solid orange !important; /* DEBUG: Orange border to verify CSS is working */
 }
 
 tr.itm-put-row td.pe-delta,           /* Δ (PE) */
@@ -4398,7 +4397,6 @@ tr.itm-put-row td.pe-oi,              /* OI */
 tr.itm-put-row td.pe-oi-change,       /* Chng in OI */
 tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   background-color: #fff3cd !important; /* Light yellow for ITM put columns */
-  border: 2px solid blue !important; /* DEBUG: Blue border to verify CSS is working */
 }
 
 /* ATM strike highlighting - entire row in red */
