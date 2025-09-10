@@ -2504,7 +2504,8 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`🔥 About to call updateCurrentPositionsTable()`);
         
         updateButtonDisplay(rowIndex, key);
-        updateCurrentPositionsTable(); // ✅ SYNC: Update positions table
+        updateActiveTradesTable(); // ✅ SYNC: Update active trades table
+        updateClosedTradesTable(); // ✅ SYNC: Update closed trades table
         closeAllPositionCards();
         
         // Immediately create and update payoff chart using loaded option chain data
@@ -2515,9 +2516,10 @@ document.addEventListener('DOMContentLoaded', function() {
             window.webSocketHandler.updatePayoffChartSpotPrice();
         }
         
-        // *** UPDATED: Now calls updateCurrentPositionsTable() to sync position display ***
-        console.log(`🔥 CALLING updateCurrentPositionsTable() to sync positions`);
-        updateCurrentPositionsTable();
+        // *** UPDATED: Now calls both table update functions to sync position display ***
+        console.log(`🔥 CALLING table update functions to sync positions`);
+        updateActiveTradesTable();
+        updateClosedTradesTable();
         
         console.log(`${action} ${key} for row ${rowIndex}, new count: ${counters[rowIndex][key]}`);
     }
