@@ -1,0 +1,867 @@
+<!-- templates/option_trader.html -->
+{% extends "base.html" %}
+{% block title %}Option Trader - Modern Trading Platform{% endblock %}
+
+{% block content %}
+<style>
+/* Replit-inspired Modern UI Styles */
+:root {
+  --primary-bg: #0e1525;
+  --secondary-bg: #1c2333;
+  --accent-bg: #242b3d;
+  --border-color: #3c4857;
+  --text-primary: #f5f6fa;
+  --text-secondary: #c7d2fe;
+  --accent-color: #6366f1;
+  --success-color: #10b981;
+  --danger-color: #ef4444;
+  --warning-color: #f59e0b;
+  --sidebar-width: 280px;
+  --header-height: 60px;
+}
+
+/* Modern Font System */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  background: var(--primary-bg);
+  color: var(--text-primary);
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Header Navigation - Replit Style */
+.modern-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--header-height);
+  background: var(--secondary-bg);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+}
+
+.header-brand {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-decoration: none;
+  margin-right: 40px;
+}
+
+.header-nav {
+  display: flex;
+  gap: 24px;
+  margin-left: auto;
+}
+
+.nav-item {
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.nav-item:hover {
+  color: var(--text-primary);
+  background: var(--accent-bg);
+}
+
+.nav-item.active {
+  color: var(--accent-color);
+  background: rgba(99, 102, 241, 0.1);
+}
+
+/* Main Layout Container */
+.main-container {
+  display: flex;
+  height: 100vh;
+  margin-top: var(--header-height);
+}
+
+/* Left Sidebar - Replit Style */
+.left-sidebar {
+  width: var(--sidebar-width);
+  background: var(--secondary-bg);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.sidebar-section {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-section:last-child {
+  border-bottom: none;
+}
+
+.section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+/* Right Content Area */
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Resizable Panes - Replit Style */
+.pane-container {
+  display: flex;
+  flex: 1;
+  gap: 1px;
+  background: var(--border-color);
+}
+
+.pane {
+  background: var(--primary-bg);
+  display: flex;
+  flex-direction: column;
+  min-width: 300px;
+  position: relative;
+}
+
+.pane-header {
+  height: 40px;
+  background: var(--secondary-bg);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  justify-content: space-between;
+}
+
+.pane-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.pane-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.pane-control {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.pane-control:hover {
+  background: var(--accent-bg);
+  color: var(--text-primary);
+}
+
+.pane-content {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+}
+
+/* Docking System */
+.docked-fullscreen {
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  background: var(--primary-bg);
+}
+
+.docked-fullscreen .pane-header {
+  background: var(--accent-bg);
+}
+
+/* Resizable Splitter */
+.splitter {
+  width: 4px;
+  background: var(--border-color);
+  cursor: col-resize;
+  transition: background-color 0.2s ease;
+}
+
+.splitter:hover {
+  background: var(--accent-color);
+}
+
+/* Modern Form Controls */
+.modern-form-group {
+  margin-bottom: 16px;
+}
+
+.modern-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modern-select, .modern-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--accent-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.modern-select:focus, .modern-input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.modern-button {
+  padding: 8px 16px;
+  background: var(--accent-color);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.modern-button:hover {
+  background: #5855eb;
+  transform: translateY(-1px);
+}
+
+.modern-button.secondary {
+  background: var(--accent-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.modern-button.secondary:hover {
+  background: var(--border-color);
+}
+
+/* Tables */
+.modern-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.modern-table th {
+  padding: 12px 8px;
+  background: var(--secondary-bg);
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.modern-table td {
+  padding: 8px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.modern-table tr:hover {
+  background: var(--accent-bg);
+}
+
+/* Cards */
+.modern-card {
+  background: var(--secondary-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.card-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--accent-bg);
+}
+
+.card-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-content {
+  padding: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .left-sidebar {
+    width: 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .left-sidebar {
+    width: 100%;
+    position: fixed;
+    top: var(--header-height);
+    left: -100%;
+    z-index: 998;
+    transition: left 0.3s ease;
+  }
+  
+  .left-sidebar.mobile-open {
+    left: 0;
+  }
+  
+  .content-area {
+    width: 100%;
+  }
+  
+  .pane-container {
+    flex-direction: column;
+  }
+  
+  .pane {
+    min-width: unset;
+    min-height: 300px;
+  }
+  
+  .header-nav {
+    display: none;
+  }
+}
+
+/* Trading Button Styles */
+.trading-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.btn-buy, .btn-sell {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.btn-buy {
+  background: var(--success-color);
+  color: white;
+}
+
+.btn-buy:hover {
+  background: #059669;
+}
+
+.btn-sell {
+  background: var(--danger-color);
+  color: white;
+}
+
+.btn-sell:hover {
+  background: #dc2626;
+}
+
+.button-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--warning-color);
+  color: var(--primary-bg);
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  font-size: 9px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--secondary-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-color);
+}
+
+/* Loading States */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: var(--text-secondary);
+}
+
+.loading::after {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border-color);
+  border-top: 2px solid var(--accent-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-left: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ATM Strike Highlighting */
+.atm-strike-highlight {
+  background-color: rgba(99, 102, 241, 0.2) !important;
+  border: 1px solid var(--accent-color) !important;
+}
+
+/* ITM/OTM Color Coding */
+.itm-call, .itm-put {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+.otm-call, .otm-put {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Value Change Animations */
+.value-increased {
+  color: var(--success-color) !important;
+  transition: color 0.3s ease;
+}
+
+.value-decreased {
+  color: var(--danger-color) !important;
+  transition: color 0.3s ease;
+}
+
+/* Chart Container */
+.chart-container {
+  height: 400px;
+  width: 100%;
+  background: var(--secondary-bg);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+/* Status Indicators */
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.status-online {
+  background: var(--success-color);
+}
+
+.status-offline {
+  background: var(--danger-color);
+}
+
+.status-warning {
+  background: var(--warning-color);
+}
+</style>
+
+<!-- Modern Header -->
+<header class="modern-header">
+  <a href="/" class="header-brand">🚀 Option Trader</a>
+  <nav class="header-nav">
+    <a href="/option-trader" class="nav-item active">Trading</a>
+    <a href="#" class="nav-item">Portfolio</a>
+    <a href="#" class="nav-item">Analytics</a>
+    <a href="#" class="nav-item">Settings</a>
+  </nav>
+</header>
+
+<!-- Main Layout Container -->
+<div class="main-container">
+  <!-- Left Sidebar -->
+  <div class="left-sidebar">
+    <!-- Broker Configuration -->
+    <div class="sidebar-section">
+      <div class="section-title">Broker Setup</div>
+      <div class="modern-form-group">
+        <label class="modern-label">Broker</label>
+        <select id="brokerSelect" class="modern-select">
+          <option value="">Select Broker</option>
+        </select>
+      </div>
+      <div class="modern-form-group">
+        <label class="modern-label">User ID</label>
+        <select id="userIdSelect" class="modern-select" disabled>
+          <option value="">Select User ID</option>
+        </select>
+      </div>
+      <div id="brokerInfo" style="display: none;">
+        <div class="modern-card">
+          <div class="card-content">
+            <div style="display: flex; align-items: center; margin-bottom: 8px;">
+              <span class="status-indicator status-online"></span>
+              <span id="selectedBrokerName" style="font-weight: 600;"></span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-secondary);">
+              User: <span id="selectedBrokerUserId"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Symbol Selection -->
+    <div class="sidebar-section">
+      <div class="section-title">Symbol Selection</div>
+      <div class="modern-form-group">
+        <label class="modern-label">Index</label>
+        <select id="indexSelect" class="modern-select">
+          <option value="">Select Index</option>
+          <option value="NIFTY 50">NIFTY 50</option>
+          <option value="NIFTY BANK">NIFTY BANK</option>
+          <option value="NIFTY FIN SERVICE">NIFTY FIN SERVICE</option>
+        </select>
+      </div>
+      <div class="modern-form-group">
+        <label class="modern-label">Expiry Date</label>
+        <select id="expirySelect" class="modern-select" disabled>
+          <option value="">Select Expiry</option>
+        </select>
+      </div>
+      <div class="modern-form-group">
+        <label class="modern-label">Strike Count</label>
+        <input type="number" id="strikeCount" class="modern-input" value="10" min="5" max="50">
+      </div>
+      <button id="loadDataBtn" class="modern-button" style="width: 100%;">Load Option Chain</button>
+    </div>
+
+    <!-- Market Status -->
+    <div class="sidebar-section">
+      <div class="section-title">Market Status</div>
+      <div class="modern-card">
+        <div class="card-content">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span>NIFTY 50</span>
+            <span id="spotPrice" style="font-weight: 600;">--</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px;">
+            <span style="color: var(--text-secondary);">Change</span>
+            <span id="spotChange" style="font-weight: 600;">--</span>
+          </div>
+        </div>
+      </div>
+      <button id="marketsBtn" class="modern-button secondary" style="width: 100%; margin-top: 12px;">
+        🌍 World Markets
+      </button>
+    </div>
+
+    <!-- Position Summary -->
+    <div class="sidebar-section">
+      <div class="section-title">Position Summary</div>
+      <div class="modern-card">
+        <div class="card-content">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span>Realized P&L</span>
+            <span id="realizedPnL" style="font-weight: 600; color: var(--success-color);">₹0.00</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span>Unrealized P&L</span>
+            <span id="unrealizedPnL" style="font-weight: 600;">₹0.00</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px;">
+            <span style="color: var(--text-secondary);">Active Positions</span>
+            <span id="activePositionCount">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Area -->
+  <div class="content-area">
+    <!-- Resizable Panes Container -->
+    <div class="pane-container">
+      <!-- Option Chain Pane -->
+      <div id="optionChainPane" class="pane" style="flex: 2;">
+        <div class="pane-header">
+          <div class="pane-title">📊 Option Chain</div>
+          <div class="pane-controls">
+            <button class="pane-control" onclick="toggleDocking('optionChainPane')" title="Toggle Fullscreen">⛶</button>
+            <button class="pane-control" onclick="refreshOptionChain()" title="Refresh">↻</button>
+          </div>
+        </div>
+        <div class="pane-content">
+          <div id="optionChainContainer" class="loading">Loading option chain...</div>
+        </div>
+      </div>
+
+      <!-- Splitter -->
+      <div class="splitter" onmousedown="initResize(event)"></div>
+
+      <!-- Right Panel Container -->
+      <div style="flex: 1; display: flex; flex-direction: column;">
+        <!-- Payoff Chart Pane -->
+        <div id="payoffChartPane" class="pane" style="flex: 1;">
+          <div class="pane-header">
+            <div class="pane-title">📈 Payoff Chart</div>
+            <div class="pane-controls">
+              <button class="pane-control" onclick="toggleDocking('payoffChartPane')" title="Toggle Fullscreen">⛶</button>
+              <button class="pane-control" onclick="resetChart()" title="Reset Chart">⟲</button>
+            </div>
+          </div>
+          <div class="pane-content">
+            <div id="payoffChartContainer" class="chart-container">
+              <!-- Payoff chart will be rendered here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Position Tables Pane -->
+        <div id="positionTablesPane" class="pane" style="flex: 1;">
+          <div class="pane-header">
+            <div class="pane-title">📋 Positions & Trades</div>
+            <div class="pane-controls">
+              <button class="pane-control" onclick="toggleDocking('positionTablesPane')" title="Toggle Fullscreen">⛶</button>
+              <button class="pane-control" onclick="refreshPositions()" title="Refresh">↻</button>
+            </div>
+          </div>
+          <div class="pane-content">
+            <!-- Position Tabs -->
+            <div style="margin-bottom: 16px;">
+              <button id="activeTab" class="modern-button" onclick="switchPositionTab('active')" style="margin-right: 8px;">Active Positions</button>
+              <button id="closedTab" class="modern-button secondary" onclick="switchPositionTab('closed')">Closed Trades</button>
+            </div>
+            
+            <!-- Active Positions Table -->
+            <div id="activePositionsContainer">
+              <table id="activePositionsTable" class="modern-table">
+                <thead>
+                  <tr>
+                    <th>Strike</th>
+                    <th>Type</th>
+                    <th>Action</th>
+                    <th>Lots</th>
+                    <th>Entry</th>
+                    <th>Current</th>
+                    <th>P&L</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 40px;">
+                      No active positions
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Closed Trades Table -->
+            <div id="closedTradesContainer" style="display: none;">
+              <table id="closedTradesTable" class="modern-table">
+                <thead>
+                  <tr>
+                    <th>Strike</th>
+                    <th>Type</th>
+                    <th>Action</th>
+                    <th>Entry</th>
+                    <th>Exit</th>
+                    <th>P&L</th>
+                    <th>Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-secondary); padding: 40px;">
+                      No closed trades
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modals and Other Components will be added here -->
+
+<script>
+// Global Variables - Preserve the critical synchronization arrays
+window.activeLots = [];
+window.globalPositions = {};
+window.closedTrades = [];
+window.realizedPnL = 0;
+window.currentExpiry = '';
+window.currentSpotPrice = 0;
+
+// Docking System
+function toggleDocking(paneId) {
+  const pane = document.getElementById(paneId);
+  if (pane.classList.contains('docked-fullscreen')) {
+    pane.classList.remove('docked-fullscreen');
+  } else {
+    // Remove any existing fullscreen panes
+    document.querySelectorAll('.docked-fullscreen').forEach(p => p.classList.remove('docked-fullscreen'));
+    pane.classList.add('docked-fullscreen');
+  }
+}
+
+// Position Tab Switching
+function switchPositionTab(tab) {
+  const activeTab = document.getElementById('activeTab');
+  const closedTab = document.getElementById('closedTab');
+  const activeContainer = document.getElementById('activePositionsContainer');
+  const closedContainer = document.getElementById('closedTradesContainer');
+
+  if (tab === 'active') {
+    activeTab.className = 'modern-button';
+    closedTab.className = 'modern-button secondary';
+    activeContainer.style.display = 'block';
+    closedContainer.style.display = 'none';
+  } else {
+    activeTab.className = 'modern-button secondary';
+    closedTab.className = 'modern-button';
+    activeContainer.style.display = 'none';
+    closedContainer.style.display = 'block';
+  }
+}
+
+// Resizable Panes
+let isResizing = false;
+
+function initResize(e) {
+  isResizing = true;
+  document.addEventListener('mousemove', doResize);
+  document.addEventListener('mouseup', stopResize);
+  e.preventDefault();
+}
+
+function doResize(e) {
+  if (!isResizing) return;
+  const container = document.querySelector('.pane-container');
+  const rect = container.getBoundingClientRect();
+  const percentage = ((e.clientX - rect.left) / rect.width) * 100;
+  
+  if (percentage > 20 && percentage < 80) {
+    const leftPane = document.getElementById('optionChainPane');
+    const rightPane = leftPane.nextElementSibling.nextElementSibling;
+    leftPane.style.flex = `${percentage / 50}`;
+    rightPane.style.flex = `${(100 - percentage) / 50}`;
+  }
+}
+
+function stopResize() {
+  isResizing = false;
+  document.removeEventListener('mousemove', doResize);
+  document.removeEventListener('mouseup', stopResize);
+}
+
+// Placeholder functions - will be replaced with actual functionality
+function refreshOptionChain() {
+  console.log('Refreshing option chain...');
+}
+
+function resetChart() {
+  console.log('Resetting chart...');
+}
+
+function refreshPositions() {
+  console.log('Refreshing positions...');
+}
+
+// Mobile menu toggle
+function toggleMobileMenu() {
+  document.querySelector('.left-sidebar').classList.toggle('mobile-open');
+}
+
+// Initialize the modern UI
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('Modern Option Trader UI initialized');
+  
+  // Add mobile menu button for small screens
+  if (window.innerWidth <= 768) {
+    const header = document.querySelector('.modern-header');
+    const menuBtn = document.createElement('button');
+    menuBtn.innerHTML = '☰';
+    menuBtn.className = 'modern-button';
+    menuBtn.style.marginRight = 'auto';
+    menuBtn.onclick = toggleMobileMenu;
+    header.insertBefore(menuBtn, header.querySelector('.header-nav'));
+  }
+});
+
+// Handle window resize
+window.addEventListener('resize', function() {
+  if (window.innerWidth > 768) {
+    document.querySelector('.left-sidebar').classList.remove('mobile-open');
+  }
+});
+</script>
+
+<!-- All existing JavaScript logic will be moved here while preserving functionality -->
+<!-- This is where the complete handleButtonClick, synchronization logic, and other functions will be integrated -->
+
+{% endblock %}
