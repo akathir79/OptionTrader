@@ -2995,42 +2995,56 @@ document.addEventListener('DOMContentLoaded', function() {
             const removedLot = window.activeLots[lotIndex];
             window.activeLots.splice(lotIndex, 1);
             
-            // Update button counter and badge
             const rowIndex = removedLot.rowIndex;
             const key = removedLot.key;
+            const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
             
-            // Update counter
-            if (counters[rowIndex] && counters[rowIndex][key] > 0) {
-                counters[rowIndex][key]--;
+            console.log(`[TABLE BUTTON] Lot removed: ${lotId}, rowIndex: ${rowIndex}, key: ${key}`);
+            
+            // **COMPLETE SYNCHRONIZATION FLOW**
+            // 1. Update counters for current expiry
+            if (removedLot.expiry === currentExpiry) {
+                if (counters[rowIndex] && counters[rowIndex][key] > 0) {
+                    counters[rowIndex][key]--;
+                }
             }
             
-            // Calculate actual active lots count for this position
-            const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
-            const activeLots = window.activeLots.filter(lot => 
+            // 2. Calculate actual badge count for this specific position
+            const currentLots = window.activeLots.filter(lot => 
                 lot.strike === removedLot.strike && 
                 lot.expiry === currentExpiry && 
                 lot.optionType === removedLot.optionType && 
                 lot.action === removedLot.action
             ).length;
             
-            // Update button display with correct count
-            updateButtonDisplay(rowIndex, key);
-            updateButtonBadge(rowIndex, key, activeLots);
-            
-            // Recalculate globalPositions for synchronization
+            // 3. Recalculate globalPositions from activeLots
             updateGlobalPositionsFromActiveLots();
             
-            // Update all synchronized components
-            updateCurrentPositionsTable();
-            updatePositionCard(rowIndex, key);
-            createPayoffChartFromOptionChain();
+            // 4. Update button badge with correct count
+            updateButtonBadge(rowIndex, key, currentLots);
             
-            // Update real-time payoff chart lines if WebSocket handler exists
+            // 5. Update button display
+            updateButtonDisplay(rowIndex, key);
+            
+            // 6. Update position card
+            updatePositionCard(rowIndex, key);
+            
+            // 7. Update current positions table
+            updateCurrentPositionsTable();
+            
+            // 8. Update payoff chart
+            if (typeof createPayoffChartFromOptionChain === 'function') {
+                createPayoffChartFromOptionChain();
+            }
+            
+            // 9. Update real-time payoff chart lines
             if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
                 window.webSocketHandler.updatePayoffChartSpotPrice();
             }
             
-            console.log(`[PROFESSIONAL NETTING] Lot removed and all components synchronized. Active lots: ${activeLots}`);
+            console.log(`[TABLE BUTTON] ✅ Complete synchronization finished. Current lots for ${key}: ${currentLots}`);
+        } else {
+            console.log(`[TABLE BUTTON] ❌ Lot ${lotId} not found in activeLots array`);
         }
     };
     
@@ -3038,13 +3052,72 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`[PROFESSIONAL NETTING] Adding similar lot to: ${lotId}`);
         const referenceLot = window.activeLots.find(lot => lot.id === lotId);
         if (referenceLot) {
-            // Simulate button click to add similar position
-            handleButtonClick(referenceLot.rowIndex, referenceLot.key, 'add');
+            const rowIndex = referenceLot.rowIndex;
+            const key = referenceLot.key;
+            const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
             
-            // Ensure position card is updated
-            updatePositionCard(referenceLot.rowIndex, referenceLot.key);
+            console.log(`[TABLE BUTTON] Adding similar lot for rowIndex: ${rowIndex}, key: ${key}`);
             
-            console.log(`[PROFESSIONAL NETTING] Similar lot added successfully`);
+            // Create new lot with same properties
+            const newLot = {
+                id: Date.now() + Math.random(),
+                strike: referenceLot.strike,
+                expiry: referenceLot.expiry,
+                optionType: referenceLot.optionType,
+                action: referenceLot.action,
+                entryPrice: getCurrentLTP(referenceLot.strike, referenceLot.optionType, referenceLot.expiry) || referenceLot.entryPrice,
+                rowIndex: rowIndex,
+                key: key,
+                timestamp: Date.now()
+            };
+            
+            // Add to activeLots
+            window.activeLots.push(newLot);
+            
+            // **COMPLETE SYNCHRONIZATION FLOW**
+            // 1. Update counters for current expiry
+            if (newLot.expiry === currentExpiry) {
+                if (!counters[rowIndex]) counters[rowIndex] = {};
+                if (!counters[rowIndex][key]) counters[rowIndex][key] = 0;
+                counters[rowIndex][key]++;
+            }
+            
+            // 2. Calculate actual badge count for this specific position
+            const currentLots = window.activeLots.filter(lot => 
+                lot.strike === newLot.strike && 
+                lot.expiry === currentExpiry && 
+                lot.optionType === newLot.optionType && 
+                lot.action === newLot.action
+            ).length;
+            
+            // 3. Recalculate globalPositions from activeLots
+            updateGlobalPositionsFromActiveLots();
+            
+            // 4. Update button badge with correct count
+            updateButtonBadge(rowIndex, key, currentLots);
+            
+            // 5. Update button display
+            updateButtonDisplay(rowIndex, key);
+            
+            // 6. Update position card
+            updatePositionCard(rowIndex, key);
+            
+            // 7. Update current positions table
+            updateCurrentPositionsTable();
+            
+            // 8. Update payoff chart
+            if (typeof createPayoffChartFromOptionChain === 'function') {
+                createPayoffChartFromOptionChain();
+            }
+            
+            // 9. Update real-time payoff chart lines
+            if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
+                window.webSocketHandler.updatePayoffChartSpotPrice();
+            }
+            
+            console.log(`[TABLE BUTTON] ✅ Similar lot added and synchronized. New lot ID: ${newLot.id}, Current lots: ${currentLots}`);
+        } else {
+            console.log(`[TABLE BUTTON] ❌ Reference lot ${lotId} not found in activeLots array`);
         }
     };
     
@@ -3065,30 +3138,60 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     window.updateButtonBadge = function updateButtonBadge(rowIndex, key, count) {
-        // Try multiple selectors to find the badge
-        let badge = document.querySelector(`#row-${rowIndex} .btn-container[data-key="${key}"] .badge`);
+        // Try multiple selectors to find the badge - most comprehensive approach
+        let badge = null;
+        
+        // 1. Try direct ID selector (most reliable)
+        badge = document.getElementById(`${key}Badge_${rowIndex}`);
+        
         if (!badge) {
-            // Try alternative selector
-            badge = document.getElementById(`${key}Badge_${rowIndex}`);
+            // 2. Try finding via button container
+            const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
+            if (row) {
+                const btnContainer = row.querySelector(`[data-key="${key}"]`);
+                if (btnContainer) {
+                    badge = btnContainer.querySelector('.count_badge');
+                }
+            }
         }
+        
         if (!badge) {
-            // Try finding the button first and then the badge
+            // 3. Try finding via button ID then badge
             const button = document.getElementById(`${key}Btn_${rowIndex}`);
             if (button) {
-                badge = button.querySelector('.badge');
+                badge = button.querySelector('.count_badge') || button.querySelector('.badge');
             }
+        }
+        
+        if (!badge) {
+            // 4. Try more general selector
+            badge = document.querySelector(`#row-${rowIndex} .btn-container[data-key="${key}"] .count_badge`);
         }
         
         if (badge) {
             if (count > 0) {
                 badge.textContent = count;
                 badge.style.display = 'inline-block';
+                badge.style.visibility = 'visible';
             } else {
                 badge.style.display = 'none';
+                badge.style.visibility = 'hidden';
             }
-            console.log(`[BADGE UPDATE] Updated badge for ${key} row ${rowIndex}: ${count}`);
+            console.log(`[BADGE UPDATE] ✅ Updated badge for ${key} row ${rowIndex}: ${count}`);
         } else {
-            console.log(`[BADGE UPDATE] Badge not found for ${key} row ${rowIndex}`);
+            console.log(`[BADGE UPDATE] ❌ Badge element not found for ${key} row ${rowIndex} - checked multiple selectors`);
+            
+            // Debug: log available elements
+            const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
+            if (row) {
+                const containers = row.querySelectorAll('.btn-container');
+                console.log(`[BADGE DEBUG] Found ${containers.length} button containers in row ${rowIndex}`);
+                containers.forEach((container, idx) => {
+                    const dataKey = container.getAttribute('data-key');
+                    const badges = container.querySelectorAll('.count_badge, .badge');
+                    console.log(`[BADGE DEBUG] Container ${idx}: data-key="${dataKey}", badges: ${badges.length}`);
+                });
+            }
         }
     };
     
