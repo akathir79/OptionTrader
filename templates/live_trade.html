@@ -2322,11 +2322,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Handle button clicks with FIFO netting logic
+    // Restore original handleButtonClick for proper synchronization
     function handleButtonClick(rowIndex, key, action) {
-        console.log(`🔥 handleButtonClick CALLED: row=${rowIndex}, key=${key}, action=${action}`);
-        console.log(`🔥 Current activeLots BEFORE:`, window.activeLots);
-        console.log(`🔥 Current closedTrades BEFORE:`, window.closedTrades);
+        console.log(`[BUTTON CLICK] handleButtonClick CALLED: row=${rowIndex}, key=${key}, action=${action}`);
         
         // Get current expiry and strike information
         const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
@@ -2337,174 +2335,65 @@ document.addEventListener('DOMContentLoaded', function() {
             strike = parseFloat(strikeTd?.textContent || 0);
         }
         
-        console.log(`🔥 Strike: ${strike}, Expiry: ${currentExpiry}`);
+        console.log(`[BUTTON CLICK] Strike: ${strike}, Expiry: ${currentExpiry}`);
         
         if (action === 'add') {
             const optionType = key.includes('ce') ? 'CE' : 'PE';
-            const isCurrentBuy = key.includes('Buy');
-            const currentAction = isCurrentBuy ? 'Buy' : 'Sell';
+            const currentAction = key.includes('Buy') ? 'Buy' : 'Sell';
             
-            // Get current LTP as price
+            // Get current LTP as entry price
             const currentLTP = getCurrentLTP(strike, optionType, currentExpiry);
-            console.log(`🔥 Current LTP: ${currentLTP} for ${optionType} ${strike}`);
+            console.log(`[BUTTON CLICK] Current LTP: ${currentLTP} for ${optionType} ${strike}`);
             
-            // Check for opposite lots to net against (FIFO)
-            const oppositeLots = window.activeLots.filter(lot => 
-                lot.strike === strike && 
-                lot.expiry === currentExpiry && 
-                lot.optionType === optionType && 
-                lot.action !== currentAction
-            ).sort((a, b) => a.timestamp - b.timestamp); // FIFO: oldest first
+            // Create position key
+            const globalPositionKey = `${strike}-${currentExpiry}-${key}`;
             
-            if (oppositeLots.length > 0) {
-                // NETTING: Close the oldest opposite lot
-                const oldestLot = oppositeLots[0];
-                console.log(`🔥 NETTING: Closing lot opened at ${oldestLot.entryPrice}`);
-                
-                // Calculate realized P&L
-                let sellPrice, buyPrice;
-                if (isCurrentBuy) {
-                    // Buying to close a sell position
-                    sellPrice = oldestLot.entryPrice; // Original sell price
-                    buyPrice = currentLTP; // Current buy price
-                } else {
-                    // Selling to close a buy position  
-                    buyPrice = oldestLot.entryPrice; // Original buy price
-                    sellPrice = currentLTP; // Current sell price
-                }
-                
-                const pnlPerLot = sellPrice - buyPrice;
-                const lotSize = 75;
-                const realizedPnLAmount = pnlPerLot * lotSize;
-                
-                console.log(`🔥 REALIZED P&L: (${sellPrice} - ${buyPrice}) * ${lotSize} = ₹${realizedPnLAmount}`);
-                
-                // Create closed trade record
-                const closedTrade = {
-                    strike: strike,
-                    expiry: currentExpiry,
-                    optionType: optionType,
-                    openAction: oldestLot.action,
-                    openPrice: oldestLot.entryPrice,
-                    openTime: oldestLot.timestamp,
-                    closeAction: currentAction,
-                    closePrice: currentLTP,
-                    closeTime: new Date(),
-                    realizedPnL: realizedPnLAmount,
-                    lotSize: lotSize,
-                    actionLabel: `${oldestLot.action} to Open → ${currentAction} to Close`
-                };
-                
-                window.closedTrades.push(closedTrade);
-                window.realizedPnL += realizedPnLAmount;
-                
-                // Remove the closed lot from active lots
-                const lotIndex = window.activeLots.findIndex(lot => lot.id === oldestLot.id);
-                if (lotIndex !== -1) {
-                    window.activeLots.splice(lotIndex, 1);
-                }
-                
-                console.log(`🔥 TRADE CLOSED:`, closedTrade);
-                console.log(`🔥 Total Realized P&L: ₹${window.realizedPnL}`);
-                
-                // Update realized P&L display
-                updateRealizedPnLDisplay();
-                
-            } else {
-                // NO NETTING: Create new lot
-                const newLot = {
-                    id: Date.now() + Math.random(), // Unique ID
+            // Initialize or update global position
+            if (!window.globalPositions[globalPositionKey]) {
+                window.globalPositions[globalPositionKey] = {
                     strike: strike,
                     expiry: currentExpiry,
                     optionType: optionType,
                     action: currentAction,
-                    entryPrice: currentLTP,
-                    timestamp: new Date(),
+                    lots: 0,
                     rowIndex: rowIndex,
                     key: key,
-                    actionLabel: isCurrentBuy ? 'Buy to Open' : 'Sell to Open'
+                    entryPrice: currentLTP
                 };
-                
-                window.activeLots.push(newLot);
-                console.log(`🔥 NEW LOT CREATED:`, newLot);
-                
-                // Also add to globalPositions for position management card synchronization
-                const globalPositionKey = `${strike}-${currentExpiry}-${key}`;
-                if (!window.globalPositions[globalPositionKey]) {
-                    window.globalPositions[globalPositionKey] = {
-                        strike: strike,
-                        expiry: currentExpiry,
-                        optionType: optionType,
-                        action: currentAction,
-                        lots: 0,
-                        rowIndex: rowIndex,
-                        key: key,
-                        entryPrice: currentLTP
-                    };
-                }
-                window.globalPositions[globalPositionKey].lots++;
-                console.log(`🔥 ADDED TO GLOBAL POSITIONS:`, window.globalPositions[globalPositionKey]);
-                
-                // Update counter
-                counters[rowIndex][key]++;
             }
             
-            // Update button badge based on remaining active lots for this type
-            const remainingLots = window.activeLots.filter(lot => 
-                lot.strike === strike && 
-                lot.expiry === currentExpiry && 
-                lot.optionType === optionType && 
-                lot.action === currentAction
-            ).length;
+            window.globalPositions[globalPositionKey].lots++;
+            counters[rowIndex][key]++;
             
-            updateButtonBadge(rowIndex, key, remainingLots);
-            
-            // Update opposite button badge
-            const oppositeAction = isCurrentBuy ? 'Sell' : 'Buy';
-            const oppositeKey = key.replace(currentAction, oppositeAction);
-            const oppositeRemainingLots = window.activeLots.filter(lot => 
-                lot.strike === strike && 
-                lot.expiry === currentExpiry && 
-                lot.optionType === optionType && 
-                lot.action === oppositeAction
-            ).length;
-            
-            updateButtonBadge(rowIndex, oppositeKey, oppositeRemainingLots);
-            
-            console.log(`🔥 Active lots: ${window.activeLots.length}, Closed trades: ${window.closedTrades.length}`);
+            console.log(`[BUTTON CLICK] Position updated:`, window.globalPositions[globalPositionKey]);
             
         } else if (action === 'remove') {
-            // Handle manual position removal (remove youngest lot first - LIFO for manual removal)
             const optionType = key.includes('ce') ? 'CE' : 'PE';
-            const currentAction = key.includes('Buy') ? 'Buy' : 'Sell';
+            const globalPositionKey = `${strike}-${currentExpiry}-${key}`;
             
-            const currentLots = window.activeLots.filter(lot => 
-                lot.strike === strike && 
-                lot.expiry === currentExpiry && 
-                lot.optionType === optionType && 
-                lot.action === currentAction
-            ).sort((a, b) => b.timestamp - a.timestamp); // LIFO: newest first for manual removal
-            
-            if (currentLots.length > 0 && counters[rowIndex][key] > 0) {
-                const newestLot = currentLots[0];
-                const lotIndex = window.activeLots.findIndex(lot => lot.id === newestLot.id);
-                if (lotIndex !== -1) {
-                    window.activeLots.splice(lotIndex, 1);
-                    counters[rowIndex][key]--;
-                    console.log(`🔥 MANUAL REMOVAL: Removed newest lot`);
+            if (window.globalPositions[globalPositionKey] && counters[rowIndex][key] > 0) {
+                window.globalPositions[globalPositionKey].lots--;
+                counters[rowIndex][key]--;
+                
+                // Remove position if lots = 0
+                if (window.globalPositions[globalPositionKey].lots <= 0) {
+                    delete window.globalPositions[globalPositionKey];
                 }
                 
-                // Update button badge
-                updateButtonBadge(rowIndex, key, currentLots.length - 1);
+                console.log(`[BUTTON CLICK] Position decreased for ${globalPositionKey}`);
             }
         }
         
-        console.log(`🔥 Current activeLots AFTER:`, window.activeLots);
-        console.log(`🔥 Current closedTrades AFTER:`, window.closedTrades);
-        console.log(`🔥 About to call updateCurrentPositionsTable()`);
-        
+        // Update button display
         updateButtonDisplay(rowIndex, key);
-        updateCurrentPositionsTable(); // ✅ SYNC: Update positions table
+        
+        // Update the position management card content
+        updatePositionCard(rowIndex, key);
+        
+        // Update current positions table
+        updateCurrentPositionsTable();
+        
+        // Close all position cards
         closeAllPositionCards();
         
         // Immediately create and update payoff chart using loaded option chain data
@@ -2515,24 +2404,54 @@ document.addEventListener('DOMContentLoaded', function() {
             window.webSocketHandler.updatePayoffChartSpotPrice();
         }
         
-        // *** UPDATED: Now calls updateCurrentPositionsTable() to sync position display ***
-        console.log(`🔥 CALLING updateCurrentPositionsTable() to sync positions`);
-        updateCurrentPositionsTable();
-        
-        console.log(`${action} ${key} for row ${rowIndex}, new count: ${counters[rowIndex][key]}`);
+        console.log(`[BUTTON CLICK] ${action} ${key} for row ${rowIndex}, new count: ${counters[rowIndex][key]}`);
     }
     
-    // Legacy adjustLots function - updated to work with professional netting system
+    // Restore original adjustLots function for synchronization
     function adjustLots(positionKey, change, event) {
         if (event) {
             event.stopPropagation();
         }
         
-        console.log(`🔥 adjustLots called: ${positionKey}, change: ${change}`);
+        console.log(`[ADJUST LOTS] adjustLots called: ${positionKey}, change: ${change}`);
         
-        // This function is now handled by the new professional system
-        // Active lots are managed through removeActiveLot and addSimilarLot
-        console.log(`🔥 adjustLots deprecated - use removeActiveLot/addSimilarLot instead`);
+        if (!window.globalPositions[positionKey]) {
+            console.log(`[ADJUST LOTS] Position not found: ${positionKey}`);
+            return;
+        }
+        
+        const position = window.globalPositions[positionKey];
+        const newLots = Math.max(0, position.lots + change);
+        
+        if (newLots === 0) {
+            // Remove position entirely
+            delete window.globalPositions[positionKey];
+            console.log(`[ADJUST LOTS] Position removed: ${positionKey}`);
+        } else {
+            // Update lots
+            position.lots = newLots;
+            console.log(`[ADJUST LOTS] Position updated: ${positionKey}, new lots: ${newLots}`);
+        }
+        
+        // Update button badge
+        const { rowIndex, key } = position;
+        if (typeof updateButtonBadge === 'function') {
+            updateButtonBadge(rowIndex, key, newLots);
+        }
+        
+        // Synchronize all components
+        updateCurrentPositionsTable();
+        
+        if (typeof createPayoffChartFromOptionChain === 'function') {
+            createPayoffChartFromOptionChain();
+        }
+        
+        // Update real-time payoff chart lines if WebSocket handler exists
+        if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
+            window.webSocketHandler.updatePayoffChartSpotPrice();
+        }
+        
+        console.log(`[ADJUST LOTS] Synchronization complete for ${positionKey}`);
     }
     
     // Global function to force payoff chart update with live spot price - called by WebSocket handler
@@ -3088,112 +3007,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Professional position management functions
-    function removeActiveLot(lotId) {
-        console.log(`🔥 removeActiveLot called for lotId: ${lotId}`);
-        
-        // Find and remove the specific lot
-        const lotIndex = window.activeLots.findIndex(lot => lot.id == lotId);
-        if (lotIndex !== -1) {
-            const removedLot = window.activeLots[lotIndex];
-            window.activeLots.splice(lotIndex, 1);
-            
-            console.log(`🔥 Removed lot:`, removedLot);
-            
-            // Update button badges and synchronize
-            const { strike, expiry, optionType, action, rowIndex, key } = removedLot;
-            
-            // Update button badge
-            const remainingLots = window.activeLots.filter(lot => 
-                lot.strike === strike && 
-                lot.expiry === expiry && 
-                lot.optionType === optionType && 
-                lot.action === action
-            ).length;
-            
-            updateButtonBadge(rowIndex || 0, key || '', remainingLots);
-            
-            // Synchronize all components
-            updateCurrentPositionsTable();
-            createPayoffChartFromOptionChain();
-            
-            // Update real-time payoff chart lines if WebSocket handler exists
-            if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
-                window.webSocketHandler.updatePayoffChartSpotPrice();
-            }
-        }
-    }
-    
-    function addSimilarLot(lotId) {
-        console.log(`🔥 addSimilarLot called for lotId: ${lotId}`);
-        
-        // Find the original lot
-        const originalLot = window.activeLots.find(lot => lot.id == lotId);
-        if (originalLot) {
-            // Get current LTP as entry price for new lot
-            const currentLTP = getCurrentLTP(originalLot.strike, originalLot.optionType, originalLot.expiry);
-            
-            // Create new similar lot
-            const newLot = {
-                id: Date.now() + Math.random(), // Unique ID
-                strike: originalLot.strike,
-                expiry: originalLot.expiry,
-                optionType: originalLot.optionType,
-                action: originalLot.action,
-                entryPrice: currentLTP,
-                timestamp: new Date(),
-                rowIndex: originalLot.rowIndex,
-                key: originalLot.key,
-                actionLabel: originalLot.actionLabel
-            };
-            
-            window.activeLots.push(newLot);
-            console.log(`🔥 Added similar lot:`, newLot);
-            
-            // Update button badge
-            const totalLots = window.activeLots.filter(lot => 
-                lot.strike === originalLot.strike && 
-                lot.expiry === originalLot.expiry && 
-                lot.optionType === originalLot.optionType && 
-                lot.action === originalLot.action
-            ).length;
-            
-            updateButtonBadge(originalLot.rowIndex || 0, originalLot.key || '', totalLots);
-            
-            // Synchronize all components
-            updateCurrentPositionsTable();
-            createPayoffChartFromOptionChain();
-            
-            // Update real-time payoff chart lines if WebSocket handler exists
-            if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
-                window.webSocketHandler.updatePayoffChartSpotPrice();
-            }
-        }
-    }
-    
-    function removeTableEntry(positionKey, type) {
-        console.log(`🔥 removeTableEntry called for ${type} entry: ${positionKey}`);
-        
-        if (type === 'active') {
-            // Extract lot ID from position key
-            const lotId = positionKey.replace('active_', '');
-            removeActiveLot(lotId);
-        } else if (type === 'closed') {
-            // Remove from closed trades
-            const index = parseInt(positionKey.replace('closed_', ''));
-            if (index >= 0 && index < window.closedTrades.length) {
-                const removedTrade = window.closedTrades.splice(index, 1)[0];
-                console.log(`🔥 Removed closed trade:`, removedTrade);
-                
-                // Update realized P&L
-                window.realizedPnL -= removedTrade.realizedPnL || 0;
-                updateRealizedPnLDisplay();
-                
-                // Refresh table
-                updateCurrentPositionsTable();
-            }
-        }
-    }
     
     // Update live LTP and P&L in Current Positions table
     window.updatePositionTableLivePrices = function updatePositionTableLivePrices() {
