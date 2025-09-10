@@ -97,9 +97,59 @@ This is a Flask-based trading platform that provides live trading functionality 
 
 Preferred communication style: Simple, everyday language.
 
+## CRITICAL SYNCHRONIZATION LOGIC - DO NOT BREAK
+
+### Position Tracking Arrays (PRESERVE THIS LOGIC)
+The app uses THREE synchronized arrays that MUST always stay in sync:
+
+1. **window.activeLots** - Array of individual lot objects (used for button badge counts)
+2. **window.globalPositions** - Object with aggregated position data (used for active trades table & position cards)  
+3. **window.closedTrades** - Array of closed trade records (used for closed trades table)
+
+### Synchronization Rules (CRITICAL - NEVER BREAK)
+**Every position modification MUST update ALL THREE arrays:**
+
+1. **Buy/Sell Button Clicks (handleButtonClick function)**:
+   - Updates window.activeLots (add/remove individual lots)
+   - Updates window.globalPositions (increment/decrement aggregated counts)
+   - During NETTING: Updates both arrays to remove closed positions
+
+2. **Lots Column +/- Buttons (adjustLots function)**:
+   - Updates window.globalPositions 
+   - Syncs window.activeLots to match
+   - Calls same update functions
+
+3. **Position Card +/- Buttons (handleExpirySpecificPositionChange function)**:
+   - Updates window.globalPositions
+   - Syncs window.activeLots to match  
+   - Calls same update functions
+
+### Required Update Function Calls (ALWAYS CALL THESE)
+After ANY position change, MUST call:
+```javascript
+updateActiveTradesTable();    // Updates active trades display
+updateClosedTradesTable();    // Updates closed trades display  
+updateCurrentPositionsTable(); // Updates position cards
+createPayoffChartFromOptionChain(); // Updates payoff chart
+```
+
+### Netting Logic (PRESERVE EXACTLY)
+When opposite positions net out:
+1. Update window.activeLots (remove closed lot)
+2. **CRITICAL**: Also update window.globalPositions (reduce lot count)
+3. Add to window.closedTrades (record closed trade)
+4. If globalPositions lots reach zero, delete the position entry
+
+### Badge Count Calculation (PRESERVE)
+Button badges calculate from window.activeLots filtering, NOT from counters:
+```javascript
+const remainingLots = window.activeLots.filter(lot => /* conditions */).length;
+```
+
 ## Changelog
 
 Changelog:
+- September 10, 2025. CRITICAL PRESERVATION: Documented complete synchronization logic to prevent future breakage - all position modification systems now properly sync window.activeLots, window.globalPositions, and window.closedTrades arrays with mandatory update function calls
 - September 09, 2025. URGENT: Position synchronization broken - Buy/Sell button badges show counts but Current Positions card shows "No positions yet" - the three-way sync between buttons, positions table, and payoff chart that was working perfectly has been disrupted by recent changes to handleButtonClick function
 - July 07, 2025. Implemented comprehensive real-time payoff chart updates with dynamic spot price and breakeven line synchronization - the system now polls WebSocket data every 1 second to update the blue spot price vertical line and automatically recalculates red dashed breakeven lines based on current positions, with immediate updates triggered by Buy/Sell button clicks and support for both single and complex multi-leg option strategies
 - July 06, 2025. Enhanced payoff chart with interactive features: zoom/pan functionality (drag to zoom, Shift+drag to pan), crosshairs with value labels, reset zoom button, simplified tooltip, removed title and legend for maximum space utilization, and improved horizontal label display for Breakeven and Spot price indicators with professional font styling

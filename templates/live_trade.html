@@ -2209,6 +2209,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Handle expiry-specific position changes from position cards
+    //====================================================================
+    // CRITICAL SYNCHRONIZATION FUNCTION - DO NOT BREAK THIS LOGIC
+    // Position Card +/- buttons MUST update BOTH arrays: globalPositions AND activeLots
+    // See replit.md "CRITICAL SYNCHRONIZATION LOGIC" section for preservation rules
+    //====================================================================
     function handleExpirySpecificPositionChange(rowIndex, key, action, targetExpiry) {
         console.log(`[EXPIRY POSITION CHANGE] START - Action: ${action}, rowIndex: ${rowIndex}, key: ${key}, targetExpiry: ${targetExpiry}`);
         
@@ -2389,6 +2394,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Handle button clicks with FIFO netting logic
+    //====================================================================
+    // CRITICAL SYNCHRONIZATION FUNCTION - DO NOT BREAK THIS LOGIC
+    // This function MUST update ALL THREE arrays: activeLots, globalPositions, closedTrades
+    // See replit.md "CRITICAL SYNCHRONIZATION LOGIC" section for preservation rules
+    //====================================================================
     function handleButtonClick(rowIndex, key, action) {
         console.log(`🔥 handleButtonClick CALLED: row=${rowIndex}, key=${key}, action=${action}`);
         console.log(`🔥 Current activeLots BEFORE:`, window.activeLots);
@@ -2470,8 +2480,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.activeLots.splice(lotIndex, 1);
                 }
                 
-                // **FIX: CRITICAL - Also update globalPositions during netting**
+                //====================================================================
+                // **CRITICAL NETTING SYNC - PRESERVE THIS EXACT LOGIC**
+                // MUST update globalPositions during netting to keep all systems in sync
                 // This ensures active trades table and position cards show correct counts
+                //====================================================================
                 const oppositeKey = oldestLot.action === 'Buy' ? 
                     (oldestLot.optionType === 'CE' ? 'ceBuy' : 'peBuy') :
                     (oldestLot.optionType === 'CE' ? 'ceSell' : 'peSell');
@@ -2588,11 +2601,19 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`🔥 About to call updateCurrentPositionsTable()`);
         
         updateButtonDisplay(rowIndex, key);
-        updateActiveTradesTable(); // ✅ SYNC: Update active trades table
-        updateClosedTradesTable(); // ✅ SYNC: Update closed trades table
+        
+        //====================================================================
+        // **MANDATORY UPDATE CALLS - NEVER REMOVE THESE**
+        // These MUST be called after any position change for full synchronization
+        //====================================================================
+        updateActiveTradesTable();     // ✅ SYNC: Update active trades table
+        updateClosedTradesTable();     // ✅ SYNC: Update closed trades table
         closeAllPositionCards();
         
-        // Immediately create and update payoff chart using loaded option chain data
+        //====================================================================
+        // **MANDATORY PAYOFF CHART UPDATE - PRESERVE THIS**
+        // This ensures payoff chart stays synchronized with position changes
+        //====================================================================
         createPayoffChartFromOptionChain();
         
         // Update real-time payoff chart lines if WebSocket handler exists
@@ -3531,6 +3552,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Adjust lots function for + and - buttons in current positions table
+    //====================================================================
+    // CRITICAL SYNCHRONIZATION FUNCTION - DO NOT BREAK THIS LOGIC
+    // Lots Column +/- buttons MUST update BOTH arrays: globalPositions AND activeLots
+    // See replit.md "CRITICAL SYNCHRONIZATION LOGIC" section for preservation rules
+    //====================================================================
     window.adjustLots = function adjustLots(positionKey, change, event) {
         // Prevent event bubbling
         if (event) {
