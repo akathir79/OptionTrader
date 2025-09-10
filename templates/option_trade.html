@@ -3,18 +3,302 @@
 {% block title %}Option Trade - Trading Platform{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row justify-content-center">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="mb-0">Option Trade</h4>
-                </div>
-                <div class="card-body text-center" style="min-height: 400px;">
-                    <p class="text-muted">This page is under development.</p>
-                </div>
+<style>
+    /* Replit-style split pane layout */
+    .split-container {
+        display: flex;
+        height: calc(100vh - 120px);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-size: 13px;
+        line-height: 1.4;
+        background: #1e1e1e;
+        color: #cccccc;
+    }
+    
+    .split-pane {
+        background: #252526;
+        border: 1px solid #3e3e42;
+        display: flex;
+        flex-direction: column;
+        min-width: 200px;
+    }
+    
+    .split-pane-left {
+        flex: 0 0 40%;
+        border-right: none;
+    }
+    
+    .split-pane-right {
+        flex: 1;
+        border-left: none;
+    }
+    
+    .resize-handle {
+        width: 6px;
+        background: #3e3e42;
+        cursor: col-resize;
+        user-select: none;
+        border-left: 1px solid #3e3e42;
+        border-right: 1px solid #3e3e42;
+        position: relative;
+    }
+    
+    .resize-handle:hover {
+        background: #007acc;
+    }
+    
+    .resize-handle::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 2px;
+        height: 20px;
+        background: #666;
+        border-radius: 1px;
+    }
+    
+    .pane-header {
+        background: #2d2d30;
+        padding: 8px 12px;
+        border-bottom: 1px solid #3e3e42;
+        font-size: 12px;
+        font-weight: 500;
+        color: #cccccc;
+        display: flex;
+        align-items: center;
+        min-height: 32px;
+    }
+    
+    .pane-content {
+        flex: 1;
+        padding: 12px;
+        overflow: auto;
+        background: #1e1e1e;
+    }
+    
+    .pane-content h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0 0 12px 0;
+        color: #ffffff;
+    }
+    
+    .pane-content p {
+        font-size: 13px;
+        line-height: 1.5;
+        margin: 8px 0;
+        color: #cccccc;
+    }
+    
+    .code-block {
+        background: #0d1117;
+        border: 1px solid #30363d;
+        border-radius: 4px;
+        padding: 12px;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 12px;
+        color: #f0f6fc;
+        margin: 8px 0;
+        overflow-x: auto;
+    }
+    
+    .file-tree {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .file-tree li {
+        padding: 4px 8px;
+        cursor: pointer;
+        font-size: 13px;
+        border-radius: 3px;
+        margin: 1px 0;
+    }
+    
+    .file-tree li:hover {
+        background: #2a2d2e;
+    }
+    
+    .file-tree .folder {
+        font-weight: 500;
+        color: #ffffff;
+    }
+    
+    .file-tree .file {
+        color: #cccccc;
+        padding-left: 16px;
+    }
+    
+    .icon {
+        margin-right: 6px;
+        width: 14px;
+        display: inline-block;
+    }
+</style>
+
+<div class="split-container">
+    <!-- Left Pane -->
+    <div class="split-pane split-pane-left">
+        <div class="pane-header">
+            <span class="icon">📁</span>
+            Explorer
+        </div>
+        <div class="pane-content">
+            <h3>Project Files</h3>
+            <ul class="file-tree">
+                <li class="folder">
+                    <span class="icon">📁</span>
+                    src/
+                </li>
+                <li class="file">
+                    <span class="icon">📄</span>
+                    option_trading.py
+                </li>
+                <li class="file">
+                    <span class="icon">📄</span>
+                    strategies.py
+                </li>
+                <li class="file">
+                    <span class="icon">📄</span>
+                    risk_management.py
+                </li>
+                <li class="folder">
+                    <span class="icon">📁</span>
+                    models/
+                </li>
+                <li class="file">
+                    <span class="icon">📄</span>
+                    option_chain.py
+                </li>
+                <li class="file">
+                    <span class="icon">📄</span>
+                    portfolio.py
+                </li>
+                <li class="folder">
+                    <span class="icon">📁</span>
+                    utils/
+                </li>
+                <li class="file">
+                    <span class="icon">📄</span>
+                    calculations.py
+                </li>
+                <li class="file">
+                    <span class="icon">📄</span>
+                    indicators.py
+                </li>
+            </ul>
+            
+            <div style="margin-top: 24px;">
+                <h3>Trading Strategies</h3>
+                <p>Build and test your option trading strategies:</p>
+                <ul style="padding-left: 16px; margin: 8px 0;">
+                    <li>Covered Calls</li>
+                    <li>Iron Condors</li>
+                    <li>Butterfly Spreads</li>
+                    <li>Calendar Spreads</li>
+                </ul>
             </div>
         </div>
     </div>
+    
+    <!-- Resize Handle -->
+    <div class="resize-handle" id="resizeHandle"></div>
+    
+    <!-- Right Pane -->
+    <div class="split-pane split-pane-right">
+        <div class="pane-header">
+            <span class="icon">⚡</span>
+            Option Trading Workspace
+        </div>
+        <div class="pane-content">
+            <h3>Welcome to Option Trade</h3>
+            <p>This is your option trading development environment. Build, test, and deploy sophisticated trading strategies.</p>
+            
+            <div class="code-block">
+# Example: Basic Option Strategy
+from trading_engine import OptionChain, Strategy
+
+class CoveredCall(Strategy):
+    def __init__(self, underlying, strike_price):
+        self.underlying = underlying
+        self.strike_price = strike_price
+    
+    def execute(self):
+        # Buy 100 shares of underlying
+        self.buy_stock(self.underlying, 100)
+        
+        # Sell call option
+        self.sell_call(self.underlying, self.strike_price)
+        
+        return self.get_position_summary()
+
+# Initialize strategy
+strategy = CoveredCall("NIFTY", 24500)
+result = strategy.execute()
+print(result)
+            </div>
+            
+            <p>Features available in this workspace:</p>
+            <ul style="padding-left: 16px; margin: 12px 0;">
+                <li>Real-time option chain data</li>
+                <li>Strategy backtesting engine</li>
+                <li>Risk management tools</li>
+                <li>Portfolio optimization</li>
+                <li>Market data integration</li>
+            </ul>
+            
+            <p>Start by selecting a file from the explorer or create a new trading strategy.</p>
+        </div>
+    </div>
 </div>
+
+<script>
+// Replit-style resizable split panes
+document.addEventListener('DOMContentLoaded', function() {
+    const resizeHandle = document.getElementById('resizeHandle');
+    const leftPane = document.querySelector('.split-pane-left');
+    const rightPane = document.querySelector('.split-pane-right');
+    const container = document.querySelector('.split-container');
+    
+    let isResizing = false;
+    
+    resizeHandle.addEventListener('mousedown', function(e) {
+        isResizing = true;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+    });
+    
+    document.addEventListener('mousemove', function(e) {
+        if (!isResizing) return;
+        
+        const containerRect = container.getBoundingClientRect();
+        const newLeftWidth = e.clientX - containerRect.left;
+        const containerWidth = containerRect.width;
+        const handleWidth = 6;
+        
+        // Calculate percentage, ensuring minimum widths
+        const leftPercentage = Math.max(20, Math.min(80, (newLeftWidth / containerWidth) * 100));
+        
+        leftPane.style.flex = `0 0 ${leftPercentage}%`;
+        rightPane.style.flex = `1`;
+    });
+    
+    document.addEventListener('mouseup', function() {
+        if (isResizing) {
+            isResizing = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        }
+    });
+    
+    // Prevent text selection during resize
+    resizeHandle.addEventListener('selectstart', function(e) {
+        e.preventDefault();
+    });
+});
+</script>
 {% endblock %}
