@@ -3134,13 +3134,27 @@ document.addEventListener('DOMContentLoaded', function() {
             const removedLot = window.activeLots[lotIndex];
             window.activeLots.splice(lotIndex, 1);
             
-            // Update button counter
+            // Update button counter and badge
             const rowIndex = removedLot.rowIndex;
             const key = removedLot.key;
+            
+            // Update counter
             if (counters[rowIndex] && counters[rowIndex][key] > 0) {
                 counters[rowIndex][key]--;
-                updateButtonDisplay(rowIndex, key);
             }
+            
+            // Calculate actual active lots count for this position
+            const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
+            const activeLots = window.activeLots.filter(lot => 
+                lot.strike === removedLot.strike && 
+                lot.expiry === currentExpiry && 
+                lot.optionType === removedLot.optionType && 
+                lot.action === removedLot.action
+            ).length;
+            
+            // Update button display with correct count
+            updateButtonDisplay(rowIndex, key);
+            updateButtonBadge(rowIndex, key, activeLots);
             
             // Recalculate globalPositions for synchronization
             updateGlobalPositionsFromActiveLots();
@@ -3155,7 +3169,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.webSocketHandler.updatePayoffChartSpotPrice();
             }
             
-            console.log(`[PROFESSIONAL NETTING] Lot removed and all components synchronized`);
+            console.log(`[PROFESSIONAL NETTING] Lot removed and all components synchronized. Active lots: ${activeLots}`);
         }
     };
     
@@ -3165,6 +3179,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (referenceLot) {
             // Simulate button click to add similar position
             handleButtonClick(referenceLot.rowIndex, referenceLot.key, 'add');
+            
+            // Ensure position card is updated
+            updatePositionCard(referenceLot.rowIndex, referenceLot.key);
+            
+            console.log(`[PROFESSIONAL NETTING] Similar lot added successfully`);
         }
     };
     
@@ -3185,14 +3204,30 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     window.updateButtonBadge = function updateButtonBadge(rowIndex, key, count) {
-        const button = document.querySelector(`#row-${rowIndex} .btn-container[data-key="${key}"] .badge`);
-        if (button) {
-            if (count > 0) {
-                button.textContent = count;
-                button.style.display = 'inline-block';
-            } else {
-                button.style.display = 'none';
+        // Try multiple selectors to find the badge
+        let badge = document.querySelector(`#row-${rowIndex} .btn-container[data-key="${key}"] .badge`);
+        if (!badge) {
+            // Try alternative selector
+            badge = document.getElementById(`${key}Badge_${rowIndex}`);
+        }
+        if (!badge) {
+            // Try finding the button first and then the badge
+            const button = document.getElementById(`${key}Btn_${rowIndex}`);
+            if (button) {
+                badge = button.querySelector('.badge');
             }
+        }
+        
+        if (badge) {
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+            console.log(`[BADGE UPDATE] Updated badge for ${key} row ${rowIndex}: ${count}`);
+        } else {
+            console.log(`[BADGE UPDATE] Badge not found for ${key} row ${rowIndex}`);
         }
     };
     
