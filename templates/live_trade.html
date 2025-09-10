@@ -2470,6 +2470,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.activeLots.splice(lotIndex, 1);
                 }
                 
+                // **FIX: CRITICAL - Also update globalPositions during netting**
+                // This ensures active trades table and position cards show correct counts
+                const oppositeKey = oldestLot.action === 'Buy' ? 
+                    (oldestLot.optionType === 'CE' ? 'ceBuy' : 'peBuy') :
+                    (oldestLot.optionType === 'CE' ? 'ceSell' : 'peSell');
+                const oppositePositionKey = `${strike}-${currentExpiry}-${oppositeKey}`;
+                
+                if (window.globalPositions[oppositePositionKey] && window.globalPositions[oppositePositionKey].lots > 0) {
+                    window.globalPositions[oppositePositionKey].lots--;
+                    console.log(`🔥 NETTING: Reduced globalPositions[${oppositePositionKey}] to ${window.globalPositions[oppositePositionKey].lots}`);
+                    
+                    // Remove from globalPositions if lots reach zero
+                    if (window.globalPositions[oppositePositionKey].lots <= 0) {
+                        delete window.globalPositions[oppositePositionKey];
+                        console.log(`🔥 NETTING: Removed globalPositions[${oppositePositionKey}] - lots reached zero`);
+                    }
+                }
+                
                 console.log(`🔥 TRADE CLOSED:`, closedTrade);
                 console.log(`🔥 Total Realized P&L: ₹${window.realizedPnL}`);
                 
