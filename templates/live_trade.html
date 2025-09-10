@@ -2622,7 +2622,30 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!counters[rowIndex]) counters[rowIndex] = {};
         if (!counters[rowIndex][key]) counters[rowIndex][key] = 0;
         
-        const count = counters[rowIndex][key];
+        // Get current expiry and strike information for accurate count
+        const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
+        const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
+        let strike = 0;
+        if (row) {
+            const strikeTd = row.children[19]; // Strike column
+            strike = parseFloat(strikeTd?.textContent || 0);
+        }
+        
+        // Calculate actual remaining lots from activeLots array instead of using outdated counter
+        const optionType = key.includes('ce') ? 'CE' : 'PE';
+        const actionType = key.includes('Buy') ? 'Buy' : 'Sell';
+        
+        const remainingLots = (window.activeLots || []).filter(lot => 
+            lot.strike === strike && 
+            lot.expiry === currentExpiry && 
+            lot.optionType === optionType && 
+            lot.action === actionType
+        ).length;
+        
+        // Update counter to match actual remaining lots
+        counters[rowIndex][key] = remainingLots;
+        const count = remainingLots;
+        
         const button = document.getElementById(`${key}Btn_${rowIndex}`);
         const badge = document.getElementById(`${key}Badge_${rowIndex}`);
         
@@ -2636,7 +2659,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 badge.style.display = 'none';
                 firstClickFlags[rowIndex][key] = true;
             }
-            console.log(`[BUTTON UPDATE] Updated ${key} badge for row ${rowIndex}: ${count}`);
+            console.log(`[BUTTON UPDATE] Updated ${key} badge for row ${rowIndex}: ${count} (calculated from ${remainingLots} active lots)`);
         }
     }
     
