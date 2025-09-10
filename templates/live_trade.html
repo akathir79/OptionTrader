@@ -3132,6 +3132,74 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`[PROFESSIONAL TABLE] Table updated - Active: ${activeCount}, Exited: ${exitedCount}`);
     }
     
+    // Helper functions for professional netting system
+    window.removeActiveLot = function removeActiveLot(lotId) {
+        console.log(`[PROFESSIONAL NETTING] Removing active lot: ${lotId}`);
+        const lotIndex = window.activeLots.findIndex(lot => lot.id === lotId);
+        if (lotIndex !== -1) {
+            const removedLot = window.activeLots[lotIndex];
+            window.activeLots.splice(lotIndex, 1);
+            
+            // Update button counter
+            const rowIndex = removedLot.rowIndex;
+            const key = removedLot.key;
+            if (counters[rowIndex] && counters[rowIndex][key] > 0) {
+                counters[rowIndex][key]--;
+                updateButtonDisplay(rowIndex, key);
+            }
+            
+            // Update globalPositions for synchronization
+            const globalPositionKey = `${removedLot.strike}-${removedLot.expiry}-${key}`;
+            if (window.globalPositions[globalPositionKey]) {
+                window.globalPositions[globalPositionKey].lots--;
+                if (window.globalPositions[globalPositionKey].lots <= 0) {
+                    delete window.globalPositions[globalPositionKey];
+                }
+            }
+            
+            updateCurrentPositionsTable();
+            createPayoffChartFromOptionChain();
+            
+            console.log(`[PROFESSIONAL NETTING] Lot removed successfully`);
+        }
+    };
+    
+    window.addSimilarLot = function addSimilarLot(lotId) {
+        console.log(`[PROFESSIONAL NETTING] Adding similar lot to: ${lotId}`);
+        const referenceLot = window.activeLots.find(lot => lot.id === lotId);
+        if (referenceLot) {
+            // Simulate button click to add similar position
+            handleButtonClick(referenceLot.rowIndex, referenceLot.key, 'add');
+        }
+    };
+    
+    window.removeExitedTrade = function removeExitedTrade(tradeId) {
+        console.log(`[PROFESSIONAL NETTING] Removing exited trade: ${tradeId}`);
+        const tradeIndex = window.exitedTrades.findIndex(trade => trade.id === tradeId);
+        if (tradeIndex !== -1) {
+            const removedTrade = window.exitedTrades[tradeIndex];
+            window.exitedTrades.splice(tradeIndex, 1);
+            
+            // Update realized P&L
+            window.realizedPnL -= removedTrade.realizedPnL;
+            updateRealizedPnLDisplay();
+            updateCurrentPositionsTable();
+            
+            console.log(`[PROFESSIONAL NETTING] Exited trade removed successfully`);
+        }
+    };
+    
+    window.updateButtonBadge = function updateButtonBadge(rowIndex, key, count) {
+        const button = document.querySelector(`#row-${rowIndex} .btn-container[data-key="${key}"] .badge`);
+        if (button) {
+            if (count > 0) {
+                button.textContent = count;
+                button.style.display = 'inline-block';
+            } else {
+                button.style.display = 'none';
+            }
+        }
+    };
     
     // Update live LTP and P&L in Current Positions table
     
