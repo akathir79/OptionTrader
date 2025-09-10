@@ -2912,7 +2912,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show empty state
             const emptyRow = document.createElement('tr');
             emptyRow.innerHTML = `
-                <td colspan="15" class="text-center text-muted py-3">
+                <td colspan="16" class="text-center text-muted py-3">
                     <i class="fas fa-plus-circle me-2"></i>No positions yet. Start trading!
                 </td>
             `;
@@ -2993,6 +2993,9 @@ document.addEventListener('DOMContentLoaded', function() {
             row.dataset.positionKey = positionKey;
             
             row.innerHTML = `
+                <td style="padding: 8px 6px; text-align: center;">
+                    <input type="checkbox" class="form-check-input">
+                </td>
                 <td style="padding: 8px 6px;">
                     <span class="badge bg-${entry.optionType === 'CE' ? 'success' : 'primary'} text-white">${entry.optionType}</span>
                     ${statusBadge}
@@ -3011,16 +3014,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td style="padding: 8px 6px; font-size: 11px;">${symbol}</td>
                 <td style="padding: 8px 6px; font-size: 11px;">${timeDisplay}</td>
                 <td style="padding: 8px 6px; text-align: center;">${entry.strike}</td>
-                <td style="padding: 8px 6px; font-size: 11px;">09-SEP-25</td>
+                <td style="padding: 8px 6px; font-size: 11px;">${formatExpiryDisplay(entry.expiry)}</td>
                 <td style="padding: 8px 6px; text-align: center;">${entry.entryPrice ? `₹${entry.entryPrice.toFixed(2)}` : '-'}</td>
                 <td style="padding: 8px 6px; text-align: center;">${displayPrice}</td>
-                <td style="padding: 8px 6px; text-align: center;">0.00</td>
+                <td style="padding: 8px 6px; text-align: center;">₹0.00</td>
                 <td style="padding: 8px 6px; text-align: center; font-weight: 600;" class="${pnlColor}">
                     ${pnlSign}₹${Math.abs(pnl).toFixed(2)}
                 </td>
-                <td style="padding: 8px 6px;">
-                    <button class="btn btn-outline-danger btn-sm">
-                        <i class="fas fa-times"></i>
+                <td style="padding: 8px 6px; text-align: center;">
+                    <select class="form-select form-select-sm" style="width: 80px;">
+                        <option value="exit">Exit</option>
+                        <option value="partial">Partial</option>
+                    </select>
+                </td>
+                <td style="padding: 8px 6px; text-align: center;">
+                    <button class="btn btn-outline-secondary btn-sm" style="padding: 2px 8px;">
+                        <i class="fas fa-lock"></i>
+                    </button>
+                </td>
+                <td style="padding: 8px 6px; text-align: center;">
+                    <button class="btn btn-outline-danger btn-sm" style="padding: 2px 8px;">
+                        <i class="fas fa-trash"></i>
                     </button>
                 </td>
             `;
