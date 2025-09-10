@@ -10,6 +10,21 @@
     <!-- Font Awesome (for live_trade.html icons) -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* Full viewport layout */
+        html, body {
+            height: 100vh;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        
+        /* Main content fills remaining height after navbar */
+        main.container-fluid {
+            height: calc(100vh - 60px); /* Subtract navbar height */
+            overflow-y: auto;
+            padding: 0;
+        }
+        
         /* Navigation Menu Styles */
         .navbar-custom {
             background-color: #f8f9fa;
