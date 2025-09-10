@@ -2441,42 +2441,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 counters[rowIndex][key]++;
             }
             
-            // Maintain globalPositions for synchronization with other components
-            const globalPositionKey = `${strike}-${currentExpiry}-${key}`;
-            
-            // Calculate net position for globalPositions (for payoff chart sync)
-            const buyLots = window.activeLots.filter(lot => 
-                lot.strike === strike && 
-                lot.expiry === currentExpiry && 
-                lot.optionType === optionType && 
-                lot.action === 'Buy'
-            ).length;
-            
-            const sellLots = window.activeLots.filter(lot => 
-                lot.strike === strike && 
-                lot.expiry === currentExpiry && 
-                lot.optionType === optionType && 
-                lot.action === 'Sell'
-            ).length;
-            
-            const netLots = buyLots - sellLots;
-            
-            if (netLots !== 0) {
-                const netAction = netLots > 0 ? 'Buy' : 'Sell';
-                window.globalPositions[globalPositionKey] = {
-                    strike: strike,
-                    expiry: currentExpiry,
-                    optionType: optionType,
-                    action: netAction,
-                    lots: Math.abs(netLots),
-                    rowIndex: rowIndex,
-                    key: key,
-                    entryPrice: currentLTP
-                };
-            } else {
-                // Net position is zero, remove from globalPositions
-                delete window.globalPositions[globalPositionKey];
-            }
+            // Update globalPositions for synchronization with other components
+            updateGlobalPositionsFromActiveLots();
             
             // Update button badge based on active lots count
             const activeLots = window.activeLots.filter(lot => 
@@ -2511,14 +2477,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log(`[PROFESSIONAL NETTING] MANUAL REMOVAL: Removed newest lot`);
                 }
                 
-                // Update globalPositions
-                const globalPositionKey = `${strike}-${currentExpiry}-${key}`;
-                if (window.globalPositions[globalPositionKey]) {
-                    window.globalPositions[globalPositionKey].lots--;
-                    if (window.globalPositions[globalPositionKey].lots <= 0) {
-                        delete window.globalPositions[globalPositionKey];
-                    }
-                }
+                // Update globalPositions for synchronization
+                updateGlobalPositionsFromActiveLots();
                 
                 // Update button badge
                 updateButtonBadge(rowIndex, key, currentLots.length - 1);
@@ -2548,51 +2508,85 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`[PROFESSIONAL NETTING] ${action} ${key} for row ${rowIndex}, new count: ${counters[rowIndex][key]}`);
     }
     
-    // Restore original adjustLots function for synchronization
+    // Professional adjustLots function - works with both old globalPositions and new netting system
     function adjustLots(positionKey, change, event) {
         if (event) {
             event.stopPropagation();
         }
         
-        console.log(`[ADJUST LOTS] adjustLots called: ${positionKey}, change: ${change}`);
+        console.log(`[PROFESSIONAL ADJUST] adjustLots called: ${positionKey}, change: ${change}`);
         
-        if (!window.globalPositions[positionKey]) {
-            console.log(`[ADJUST LOTS] Position not found: ${positionKey}`);
+        // Initialize professional netting arrays if they don't exist
+        if (!window.activeLots) window.activeLots = [];
+        if (!window.exitedTrades) window.exitedTrades = [];
+        if (!window.globalPositions) window.globalPositions = {};
+        
+        // Handle different position key formats
+        let targetPosition = null;
+        let rowIndex = null;
+        let key = null;
+        
+        // Check if it's a globalPositions key (backward compatibility)
+        if (window.globalPositions[positionKey]) {
+            targetPosition = window.globalPositions[positionKey];
+            rowIndex = targetPosition.rowIndex;
+            key = targetPosition.key;
+            console.log(`[PROFESSIONAL ADJUST] Found globalPosition: ${positionKey}`);
+        } else {
+            // Check if it's an active lot ID
+            const activeLot = window.activeLots.find(lot => `active_${lot.id}` === positionKey || lot.id.toString() === positionKey);
+            if (activeLot) {
+                rowIndex = activeLot.rowIndex;
+                key = activeLot.key;
+                console.log(`[PROFESSIONAL ADJUST] Found active lot: ${positionKey}`);
+            }
+        }
+        
+        if (!rowIndex || !key) {
+            console.log(`[PROFESSIONAL ADJUST] Position not found: ${positionKey}`);
             return;
         }
         
-        const position = window.globalPositions[positionKey];
-        const newLots = Math.max(0, position.lots + change);
-        
-        if (newLots === 0) {
-            // Remove position entirely
-            delete window.globalPositions[positionKey];
-            console.log(`[ADJUST LOTS] Position removed: ${positionKey}`);
-        } else {
-            // Update lots
-            position.lots = newLots;
-            console.log(`[ADJUST LOTS] Position updated: ${positionKey}, new lots: ${newLots}`);
+        const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
+        const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
+        let strike = 0;
+        if (row) {
+            const strikeTd = row.children[19]; // Strike column
+            strike = parseFloat(strikeTd?.textContent || 0);
         }
         
-        // Update button badge
-        const { rowIndex, key } = position;
-        if (typeof updateButtonBadge === 'function') {
-            updateButtonBadge(rowIndex, key, newLots);
+        const optionType = key.includes('ce') ? 'CE' : 'PE';
+        const action = key.includes('Buy') ? 'Buy' : 'Sell';
+        
+        console.log(`[PROFESSIONAL ADJUST] Processing: Strike=${strike}, Type=${optionType}, Action=${action}, Change=${change}`);
+        
+        if (change > 0) {
+            // Adding lots - simulate button clicks
+            for (let i = 0; i < Math.abs(change); i++) {
+                console.log(`[PROFESSIONAL ADJUST] Adding lot ${i + 1}/${Math.abs(change)}`);
+                handleButtonClick(rowIndex, key, 'add');
+            }
+        } else if (change < 0) {
+            // Removing lots - simulate button clicks or remove active lots directly
+            const currentLots = window.activeLots.filter(lot => 
+                lot.strike === strike && 
+                lot.expiry === currentExpiry && 
+                lot.optionType === optionType && 
+                lot.action === action
+            ).sort((a, b) => b.timestamp - a.timestamp); // LIFO for removal
+            
+            const lotsToRemove = Math.min(Math.abs(change), currentLots.length);
+            console.log(`[PROFESSIONAL ADJUST] Removing ${lotsToRemove} lots out of ${currentLots.length} available`);
+            
+            for (let i = 0; i < lotsToRemove; i++) {
+                if (currentLots[i]) {
+                    console.log(`[PROFESSIONAL ADJUST] Removing lot ${i + 1}/${lotsToRemove}: ${currentLots[i].id}`);
+                    window.removeActiveLot(currentLots[i].id);
+                }
+            }
         }
         
-        // Synchronize all components
-        updateCurrentPositionsTable();
-        
-        if (typeof createPayoffChartFromOptionChain === 'function') {
-            createPayoffChartFromOptionChain();
-        }
-        
-        // Update real-time payoff chart lines if WebSocket handler exists
-        if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
-            window.webSocketHandler.updatePayoffChartSpotPrice();
-        }
-        
-        console.log(`[ADJUST LOTS] Synchronization complete for ${positionKey}`);
+        console.log(`[PROFESSIONAL ADJUST] Adjustment complete for ${positionKey}`);
     }
     
     // Global function to force payoff chart update with live spot price - called by WebSocket handler
@@ -3148,19 +3142,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateButtonDisplay(rowIndex, key);
             }
             
-            // Update globalPositions for synchronization
-            const globalPositionKey = `${removedLot.strike}-${removedLot.expiry}-${key}`;
-            if (window.globalPositions[globalPositionKey]) {
-                window.globalPositions[globalPositionKey].lots--;
-                if (window.globalPositions[globalPositionKey].lots <= 0) {
-                    delete window.globalPositions[globalPositionKey];
-                }
-            }
+            // Recalculate globalPositions for synchronization
+            updateGlobalPositionsFromActiveLots();
             
+            // Update all synchronized components
             updateCurrentPositionsTable();
+            updatePositionCard(rowIndex, key);
             createPayoffChartFromOptionChain();
             
-            console.log(`[PROFESSIONAL NETTING] Lot removed successfully`);
+            // Update real-time payoff chart lines if WebSocket handler exists
+            if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
+                window.webSocketHandler.updatePayoffChartSpotPrice();
+            }
+            
+            console.log(`[PROFESSIONAL NETTING] Lot removed and all components synchronized`);
         }
     };
     
@@ -3199,6 +3194,79 @@ document.addEventListener('DOMContentLoaded', function() {
                 button.style.display = 'none';
             }
         }
+    };
+    
+    // Synchronization function - keeps globalPositions in sync with activeLots for backward compatibility
+    window.updateGlobalPositionsFromActiveLots = function updateGlobalPositionsFromActiveLots() {
+        console.log(`[SYNC] Updating globalPositions from activeLots`);
+        
+        if (!window.activeLots) window.activeLots = [];
+        if (!window.globalPositions) window.globalPositions = {};
+        
+        // Clear existing globalPositions
+        window.globalPositions = {};
+        
+        // Group active lots by strike, expiry, optionType, and action
+        const grouped = {};
+        window.activeLots.forEach(lot => {
+            const groupKey = `${lot.strike}-${lot.expiry}-${lot.key}`;
+            if (!grouped[groupKey]) {
+                grouped[groupKey] = {
+                    strike: lot.strike,
+                    expiry: lot.expiry,
+                    optionType: lot.optionType,
+                    action: lot.action,
+                    lots: 0,
+                    rowIndex: lot.rowIndex,
+                    key: lot.key,
+                    entryPrice: lot.entryPrice
+                };
+            }
+            grouped[groupKey].lots++;
+        });
+        
+        // Calculate net positions for each group
+        Object.entries(grouped).forEach(([groupKey, group]) => {
+            const { strike, expiry, optionType } = group;
+            
+            // Count buy and sell lots for this strike/expiry/optionType
+            const buyLots = window.activeLots.filter(lot => 
+                lot.strike === strike && 
+                lot.expiry === expiry && 
+                lot.optionType === optionType && 
+                lot.action === 'Buy'
+            ).length;
+            
+            const sellLots = window.activeLots.filter(lot => 
+                lot.strike === strike && 
+                lot.expiry === expiry && 
+                lot.optionType === optionType && 
+                lot.action === 'Sell'
+            ).length;
+            
+            const netLots = buyLots - sellLots;
+            
+            if (netLots !== 0) {
+                const netAction = netLots > 0 ? 'Buy' : 'Sell';
+                const netKey = `${optionType.toLowerCase()}${netAction}`;
+                const globalKey = `${strike}-${expiry}-${netKey}`;
+                
+                window.globalPositions[globalKey] = {
+                    strike: strike,
+                    expiry: expiry,
+                    optionType: optionType,
+                    action: netAction,
+                    lots: Math.abs(netLots),
+                    rowIndex: group.rowIndex,
+                    key: netKey,
+                    entryPrice: group.entryPrice
+                };
+                
+                console.log(`[SYNC] Created globalPosition: ${globalKey} with ${Math.abs(netLots)} ${netAction} lots`);
+            }
+        });
+        
+        console.log(`[SYNC] GlobalPositions updated:`, Object.keys(window.globalPositions).length, 'net positions');
     };
     
     // Update live LTP and P&L in Current Positions table
