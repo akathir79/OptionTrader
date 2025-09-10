@@ -3525,8 +3525,39 @@ document.addEventListener('DOMContentLoaded', function() {
             qtyElement.textContent = window.globalPositions[positionKey].lots * 75;
         }
         
+        // **FIX: Update window.activeLots array to sync with globalPositions**
+        // This ensures badge counts are calculated correctly
+        if (window.activeLots && window.globalPositions[positionKey]) {
+            const { strike, expiry, optionType, action } = position;
+            
+            // Remove existing lots for this position
+            window.activeLots = window.activeLots.filter(lot => 
+                !(lot.strike === strike && lot.expiry === expiry && 
+                  lot.optionType === optionType && lot.action === action)
+            );
+            
+            // Add new lots based on updated count
+            for (let i = 0; i < position.lots; i++) {
+                const newLot = {
+                    id: Date.now() + Math.random() + i,
+                    strike: strike,
+                    expiry: expiry,
+                    optionType: optionType,
+                    action: action,
+                    entryPrice: position.price,
+                    timestamp: new Date(),
+                    actionLabel: action === 'Buy' ? 'Buy to Open' : 'Sell to Open'
+                };
+                window.activeLots.push(newLot);
+            }
+            
+            console.log(`[ADJUST LOTS] Synced activeLots array: ${window.activeLots.length} total lots`);
+        }
+        
         // Update all three components to maintain synchronization
         updateCurrentPositionsTable();
+        updateActiveTradesTable(); // **FIX: Explicitly update active trades table**
+        updateClosedTradesTable(); // **FIX: Explicitly update closed trades table**
         restoreButtonStatesFromGlobalPositions();
         createPayoffChartFromOptionChain();
         
