@@ -2189,109 +2189,99 @@ document.addEventListener('DOMContentLoaded', function() {
             strike = parseFloat(strikeTd?.textContent || 0);
         }
         
-        // Create position key for global tracking with target expiry
-        const positionKey = `${strike}-${targetExpiry}-${key}`;
-        console.log(`[EXPIRY POSITION CHANGE] Position key: ${positionKey}`);
+        const optionType = key.includes('ce') ? 'CE' : 'PE';
+        const actionType = key.includes('Buy') ? 'Buy' : 'Sell';
+        const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
         
-        // Log current position state before change
-        const currentPosition = window.globalPositions[positionKey];
-        console.log(`[EXPIRY POSITION CHANGE] Current position:`, currentPosition);
+        console.log(`[EXPIRY POSITION CHANGE] Strike: ${strike}, Type: ${optionType}, Action: ${actionType}, Target: ${targetExpiry}, Current: ${currentExpiry}`);
         
         if (action === 'add') {
-            // Store in global positions
-            if (!window.globalPositions[positionKey]) {
-                console.log(`[EXPIRY POSITION CHANGE] Creating new position for ${positionKey}`);
-                const optionType = key.includes('ce') ? 'CE' : 'PE';
-                const entryPrice = getCurrentLTP(strike, optionType, targetExpiry);
-                window.globalPositions[positionKey] = {
-                    strike: strike,
-                    expiry: targetExpiry,
-                    optionType: optionType,
-                    action: key.includes('Buy') ? 'Buy' : 'Sell',
-                    lots: 0,
-                    rowIndex: rowIndex,
-                    key: key,
-                    entryPrice: entryPrice
-                };
-                console.log(`[POSITION CREATION] Entry price captured: ₹${entryPrice} for ${positionKey}`);
-            }
-            const beforeLots = window.globalPositions[positionKey].lots;
-            window.globalPositions[positionKey].lots++;
-            const afterLots = window.globalPositions[positionKey].lots;
-            console.log(`[EXPIRY POSITION CHANGE] ADD: ${beforeLots} -> ${afterLots}`);
+            // Add to activeLots array (primary data source)
+            const newLot = {
+                id: Date.now() + Math.random(),
+                strike: strike,
+                expiry: targetExpiry,
+                optionType: optionType,
+                action: actionType,
+                entryPrice: getCurrentLTP(strike, optionType, targetExpiry) || 100,
+                rowIndex: rowIndex,
+                key: key,
+                timestamp: Date.now()
+            };
             
-            // Update current expiry counter if this matches current expiry
-            const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
+            window.activeLots.push(newLot);
+            console.log(`[EXPIRY POSITION CHANGE] Added new lot to activeLots: ${newLot.id}`);
+            
+            // Update counter for current expiry display
             if (targetExpiry === currentExpiry) {
                 if (!counters[rowIndex]) counters[rowIndex] = {};
                 if (!counters[rowIndex][key]) counters[rowIndex][key] = 0;
                 counters[rowIndex][key]++;
-                console.log(`[COUNTER UPDATE] Incremented counter for current expiry: ${counters[rowIndex][key]}`);
             }
             
         } else if (action === 'remove') {
-            // Update global positions
-            if (window.globalPositions[positionKey] && window.globalPositions[positionKey].lots > 0) {
-                const beforeLots = window.globalPositions[positionKey].lots;
-                window.globalPositions[positionKey].lots--;
-                const afterLots = window.globalPositions[positionKey].lots;
-                console.log(`[EXPIRY POSITION CHANGE] REMOVE: ${beforeLots} -> ${afterLots}`);
+            // Find and remove from activeLots array
+            const relevantLots = window.activeLots.filter(lot => 
+                lot.strike === strike && 
+                lot.expiry === targetExpiry && 
+                lot.optionType === optionType && 
+                lot.action === actionType
+            ).sort((a, b) => b.timestamp - a.timestamp); // LIFO removal
+            
+            if (relevantLots.length > 0) {
+                const lotToRemove = relevantLots[0];
+                const lotIndex = window.activeLots.findIndex(lot => lot.id === lotToRemove.id);
+                if (lotIndex !== -1) {
+                    window.activeLots.splice(lotIndex, 1);
+                    console.log(`[EXPIRY POSITION CHANGE] Removed lot from activeLots: ${lotToRemove.id}`);
+                }
                 
-                // Update current expiry counter if this matches current expiry
-                const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
+                // Update counter for current expiry display
                 if (targetExpiry === currentExpiry) {
                     if (counters[rowIndex] && counters[rowIndex][key] > 0) {
                         counters[rowIndex][key]--;
-                        console.log(`[COUNTER UPDATE] Decremented counter for current expiry: ${counters[rowIndex][key]}`);
                     }
                 }
-                
-                if (window.globalPositions[positionKey].lots <= 0) {
-                    delete window.globalPositions[positionKey];
-                    console.log(`[POSITION REMOVE] Deleted position key: ${positionKey}, remaining positions:`, Object.keys(window.globalPositions).length);
-                }
             } else {
-                console.log(`[EXPIRY POSITION CHANGE] Cannot remove - position not found or lots already 0`);
-                return; // Exit early if nothing to remove
+                console.log(`[EXPIRY POSITION CHANGE] No lots found to remove for ${strike}-${targetExpiry}-${optionType}-${actionType}`);
             }
         }
         
-        // Close position card if no positions remain for this strike/option type/action combination
-        const currentStrike = strike;
-        const currentOptionType = key.includes('ce') ? 'CE' : 'PE';
-        const currentAction = key.includes('Buy') ? 'Buy' : 'Sell';
+        // **CRITICAL SYNCHRONIZATION FLOW**
+        // 1. Recalculate globalPositions from activeLots for backward compatibility
+        updateGlobalPositionsFromActiveLots();
         
-        const remainingPositions = Object.values(window.globalPositions || {}).filter(pos => 
-            pos.strike === currentStrike && pos.optionType === currentOptionType && 
-            pos.action === currentAction && pos.lots > 0
-        );
+        // 2. Calculate actual badge count for this specific position
+        const currentLots = window.activeLots.filter(lot => 
+            lot.strike === strike && 
+            lot.expiry === currentExpiry && 
+            lot.optionType === optionType && 
+            lot.action === actionType
+        ).length;
         
-        if (remainingPositions.length === 0) {
-            closeAllPositionCards();
-        }
+        // 3. Update button badge with correct count
+        updateButtonBadge(rowIndex, key, currentLots);
         
-        // Update button displays to reflect the counter changes
+        // 4. Update button display
         updateButtonDisplay(rowIndex, key);
         
-        // Update the position management card content
+        // 5. Update position card to reflect changes
         updatePositionCard(rowIndex, key);
         
-        // Update current positions table
+        // 6. Update current positions table
         updateCurrentPositionsTable();
         
-        // Force update of button displays for all buttons to ensure proper synchronization
-        console.log(`[SYNC UPDATE] After changes - Global positions count: ${Object.keys(window.globalPositions || {}).length}`);
-        console.log(`[SYNC UPDATE] Current counter for ${key}: ${counters[rowIndex] && counters[rowIndex][key] ? counters[rowIndex][key] : 0}`);
+        // 7. Update payoff chart with new positions
+        if (typeof createPayoffChartFromOptionChain === 'function') {
+            createPayoffChartFromOptionChain();
+        }
         
-        // Immediately create and update payoff chart using loaded option chain data
-        createPayoffChartFromOptionChain();
-        
-        // Update real-time payoff chart lines if WebSocket handler exists
+        // 8. Update real-time payoff chart lines if WebSocket handler exists
         if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
             window.webSocketHandler.updatePayoffChartSpotPrice();
         }
         
-        console.log(`${action} ${key} for row ${rowIndex}, expiry ${targetExpiry}`);
+        console.log(`[EXPIRY POSITION CHANGE] END - All components synchronized. Badge count: ${currentLots}`);
     }
 
     // Global arrays to track positions and P&L
