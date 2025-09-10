@@ -2781,27 +2781,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!window.activeLots) window.activeLots = [];
         if (!window.exitedTrades) window.exitedTrades = [];
         
-        // **AGGREGATE SIMILAR POSITIONS**
-        const aggregatedActive = {};
-        window.activeLots.forEach(lot => {
-            const key = `${lot.strike}-${lot.expiry}-${lot.optionType}-${lot.action}`;
-            if (!aggregatedActive[key]) {
-                aggregatedActive[key] = {
-                    strike: lot.strike,
-                    expiry: lot.expiry,
-                    optionType: lot.optionType,
-                    action: lot.action,
-                    lots: 0,
-                    entryPrice: lot.entryPrice,
-                    firstLotId: lot.id,
-                    allLotIds: []
-                };
-            }
-            aggregatedActive[key].lots++;
-            aggregatedActive[key].allLotIds.push(lot.id);
-        });
-        
-        const activeCount = Object.keys(aggregatedActive).length;
+        const activeCount = window.activeLots.length;
         const exitedCount = window.exitedTrades.length;
         
         if (activeCount === 0 && exitedCount === 0) {
@@ -2820,77 +2800,102 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`[PROFESSIONAL TABLE] Building table rows...`);
         
         // ========== ACTIVE POSITIONS SECTION ==========
-        if (activeCount > 0) {
+        if (window.activeLots.length > 0) {
             // Active positions header
             const activeHeaderRow = document.createElement('tr');
             activeHeaderRow.innerHTML = `
                 <td colspan="16" style="background-color: #e8f5e8; padding: 8px; font-weight: bold; color: #28a745; border-left: 4px solid #28a745;">
-                    <i class="fas fa-chart-line me-2"></i>Active Positions (${activeCount})
+                    <i class="fas fa-chart-line me-2"></i>Active Positions (${window.activeLots.length})
                 </td>
             `;
             tableBody.appendChild(activeHeaderRow);
             
-            // Create rows for aggregated active positions
-            Object.values(aggregatedActive).forEach((position) => {
+            // Show each individual lot (simplified approach)
+            window.activeLots.forEach((lot) => {
                 // Build symbol name
-                const expiryFormatted = formatExpiryForSymbol(position.expiry);
-                const symbol = `NSE:NIFTY${expiryFormatted}${position.strike}${position.optionType}`;
+                const expiryFormatted = formatExpiryForSymbol(lot.expiry);
+                const symbol = `NSE:NIFTY${expiryFormatted}${lot.strike}${lot.optionType}`;
                 
-                // Get current LTP and calculate unrealized P&L
-                const currentLTP = getCurrentLTP(position.strike, position.optionType, position.expiry);
-                const entryPrice = position.entryPrice || 0;
-                const totalQuantity = position.lots * 75; // Total qty for all lots
+                // Get current LTP and calculate P&L
+                const currentLTP = getCurrentLTP(lot.strike, lot.optionType, lot.expiry);
+                const entryPrice = lot.entryPrice || 0;
+                const quantity = 75; // 1 lot = 75 qty
                 
-                let totalPnl = 0;
+                let pnl = 0;
                 if (entryPrice > 0 && currentLTP > 0) {
-                    if (position.action === 'Buy') {
-                        totalPnl = (currentLTP - entryPrice) * totalQuantity;
+                    if (lot.action === 'Buy') {
+                        pnl = (currentLTP - entryPrice) * quantity;
                     } else {
-                        totalPnl = (entryPrice - currentLTP) * totalQuantity;
+                        pnl = (entryPrice - currentLTP) * quantity;
                     }
                 }
                 
-                // Style based on position type and P&L
-                const pnlColor = totalPnl >= 0 ? 'text-success' : 'text-danger';
-                const pnlSign = totalPnl >= 0 ? '+' : '';
+                // Style based on P&L
+                const pnlColor = pnl >= 0 ? 'text-success' : 'text-danger';
+                const pnlSign = pnl >= 0 ? '+' : '';
                 
-                // Professional action badge
-                const actionLabel = position.action === 'Buy' ? 'BUY TO OPEN' : 'SELL TO OPEN';
-                const actionBadge = `<span class="badge bg-${position.action === 'Buy' ? 'success' : 'danger'} text-white" style="font-size: 10px;">${actionLabel}</span>`;
+                // Action badge
+                const actionLabel = lot.action === 'Buy' ? 'BUY TO OPEN' : 'SELL TO OPEN';
+                const actionBadge = `<span class="badge bg-${lot.action === 'Buy' ? 'success' : 'danger'} text-white" style="font-size: 10px;">${actionLabel}</span>`;
                 
-                // Use first lot timestamp for display
-                const firstLot = window.activeLots.find(lot => lot.id === position.firstLotId);
-                const timeDisplay = firstLot ? 
-                    new Date(firstLot.timestamp).toLocaleDateString() + ' ' + new Date(firstLot.timestamp).toLocaleTimeString() :
-                    'N/A';
+                // Time display
+                const timeDisplay = new Date(lot.timestamp).toLocaleDateString() + ' ' + new Date(lot.timestamp).toLocaleTimeString();
                 
                 const row = document.createElement('tr');
                 row.className = 'position-row active-position';
-                row.style.cssText = 'border-left: 3px solid #28a745; background-color: #f8fff8;'; // Green border for active
-                row.dataset.positionKey = `aggregated_${position.strike}_${position.expiry}_${position.optionType}_${position.action}`;
+                row.style.cssText = 'border-left: 3px solid #28a745; background-color: #f8fff8;';
+                row.dataset.positionKey = `active_${lot.id}`;
                 
                 row.innerHTML = `
                     <td style="padding: 8px 6px; text-align: center;">
-                        <input type="checkbox" class="position-checkbox" data-position-key="aggregated_${position.firstLotId}" style="transform: scale(0.8);">
+                        <input type="checkbox" class="position-checkbox" data-position-key="active_${lot.id}" style="transform: scale(0.8);">
                     </td>
                     <td style="padding: 8px 6px; text-align: center;">
-                        <span class="badge bg-${position.optionType === 'CE' ? 'success' : 'primary'} text-white">${position.optionType}</span>
+                        <span class="badge bg-${lot.optionType === 'CE' ? 'success' : 'primary'} text-white">${lot.optionType}</span>
                         <span class="badge bg-success ms-1" style="font-size: 8px;">ACTIVE</span>
                     </td>
                     <td style="padding: 8px 6px; text-align: center;">${actionBadge}</td>
                     <td style="padding: 8px 6px; text-align: center;" class="lots-cell">
                         <div class="lots-container">
-                            <span class="lots-value">${position.lots}</span>
+                            <span class="lots-value">1</span>
                             <div class="lots-controls">
-                                <button class="lots-btn lots-minus" onclick="removePositionLot('${position.firstLotId}')" title="Remove lot">-</button>
-                                <button class="lots-btn lots-plus" onclick="addPositionLot('${position.firstLotId}')" title="Add similar lot">+</button>
+                                <button class="lots-btn lots-minus" onclick="removeActiveLot('${lot.id}')" title="Remove lot">-</button>
+                                <button class="lots-btn lots-plus" onclick="addSimilarLot('${lot.id}')" title="Add similar lot">+</button>
                             </div>
                         </div>
                     </td>
-                    <td style="padding: 8px 6px; text-align: center;">${totalQuantity}</td>
+                    <td style="padding: 8px 6px; text-align: center;">${quantity}</td>
                     <td style="padding: 8px 6px; font-size: 11px;">${symbol}</td>
                     <td style="padding: 8px 6px; font-size: 11px;">${timeDisplay}</td>
-                    <td style="padding: 8px 6px; text-align: center;">${position.strike}</td>
+                    <td style="padding: 8px 6px; text-align: center;">${lot.strike}</td>
+                    <td style="padding: 8px 6px; font-size: 11px;">16-SEP-25</td>
+                    <td style="padding: 8px 6px; text-align: center;">₹${entryPrice.toFixed(2)}</td>
+                    <td style="padding: 8px 6px; text-align: center;">₹${(currentLTP || 0).toFixed(2)}</td>
+                    <td style="padding: 8px 6px; text-align: center;">0.00</td>
+                    <td style="padding: 8px 6px; text-align: center; font-weight: 600;" class="${pnlColor}">
+                        ${pnlSign}₹${Math.abs(pnl).toFixed(2)}
+                    </td>
+                    <td style="padding: 8px 6px; text-align: center;">
+                        <select class="form-select form-select-sm" style="font-size: 10px; width: 60px;">
+                            <option value="">Exit</option>
+                            <option value="1">1 lot</option>
+                        </select>
+                    </td>
+                    <td style="padding: 8px 6px; text-align: center;">
+                        <button class="btn btn-outline-secondary btn-sm" style="font-size: 9px; padding: 2px 6px;">
+                            <i class="fas fa-lock"></i>
+                        </button>
+                    </td>
+                    <td style="padding: 8px 6px; text-align: center;">
+                        <button class="btn btn-outline-danger btn-sm" style="font-size: 9px; padding: 2px 6px;" onclick="removeActiveLot('${lot.id}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
                     <td style="padding: 8px 6px; font-size: 11px;">16-SEP-25</td>
                     <td style="padding: 8px 6px; text-align: center;">₹${entryPrice.toFixed(2)}</td>
                     <td style="padding: 8px 6px; text-align: center;">₹${(currentLTP || 0).toFixed(2)}</td>
