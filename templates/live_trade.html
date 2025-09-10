@@ -3022,15 +3022,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${pnlSign}₹${Math.abs(pnl).toFixed(2)}
                 </td>
                 <td style="padding: 8px 6px; text-align: center;">
-                    <select class="form-select form-select-sm" style="width: 80px;">
-                        <option value="exit">Exit</option>
-                        <option value="partial">Partial</option>
-                    </select>
+                    ${entry.type === 'active' ? `
+                        <select class="form-select form-select-sm" style="width: 80px;">
+                            <option value="exit">Exit</option>
+                            <option value="partial">Partial</option>
+                        </select>
+                    ` : '-'}
                 </td>
                 <td style="padding: 8px 6px; text-align: center;">
-                    <button class="btn btn-outline-secondary btn-sm" style="padding: 2px 8px;">
-                        <i class="fas fa-lock"></i>
-                    </button>
+                    ${entry.type === 'active' ? `
+                        <button class="btn btn-outline-secondary btn-sm" style="padding: 2px 8px;">
+                            <i class="fas fa-lock"></i>
+                        </button>
+                    ` : '-'}
                 </td>
                 <td style="padding: 8px 6px; text-align: center;">
                     <button class="btn btn-outline-danger btn-sm" style="padding: 2px 8px;">
