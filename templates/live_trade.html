@@ -2301,14 +2301,49 @@ document.addEventListener('DOMContentLoaded', function() {
             closeAllPositionCards();
         }
         
+        // **FIX: Sync window.activeLots array with globalPositions for badge count accuracy**
+        // This ensures all position tracking arrays stay synchronized
+        const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
+        if (targetExpiry === currentExpiry) {
+            const optionType = key.includes('ce') ? 'CE' : 'PE';
+            const actionType = key.includes('Buy') ? 'Buy' : 'Sell';
+            
+            // Remove existing lots for this position from activeLots array
+            window.activeLots = (window.activeLots || []).filter(lot => 
+                !(lot.strike === strike && lot.expiry === targetExpiry && 
+                  lot.optionType === optionType && lot.action === actionType)
+            );
+            
+            // Re-add lots based on current globalPositions count
+            const currentPosition = window.globalPositions[positionKey];
+            if (currentPosition && currentPosition.lots > 0) {
+                for (let i = 0; i < currentPosition.lots; i++) {
+                    const newLot = {
+                        id: Date.now() + Math.random() + i,
+                        strike: strike,
+                        expiry: targetExpiry,
+                        optionType: optionType,
+                        action: actionType,
+                        entryPrice: currentPosition.entryPrice || 0,
+                        timestamp: new Date(),
+                        actionLabel: actionType === 'Buy' ? 'Buy to Open' : 'Sell to Open'
+                    };
+                    window.activeLots.push(newLot);
+                }
+            }
+            console.log(`[POSITION CARD SYNC] Synced activeLots array: ${window.activeLots.length} total lots`);
+        }
+        
         // Update button displays to reflect the counter changes
         updateButtonDisplay(rowIndex, key);
         
         // Update the position management card content
         updatePositionCard(rowIndex, key);
         
-        // Update current positions table
+        // Update current positions table and separate tables
         updateCurrentPositionsTable();
+        updateActiveTradesTable(); // **FIX: Explicitly update active trades table**
+        updateClosedTradesTable(); // **FIX: Explicitly update closed trades table**
         
         // Force update of button displays for all buttons to ensure proper synchronization
         console.log(`[SYNC UPDATE] After changes - Global positions count: ${Object.keys(window.globalPositions || {}).length}`);
