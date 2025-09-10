@@ -2189,99 +2189,109 @@ document.addEventListener('DOMContentLoaded', function() {
             strike = parseFloat(strikeTd?.textContent || 0);
         }
         
-        const optionType = key.includes('ce') ? 'CE' : 'PE';
-        const actionType = key.includes('Buy') ? 'Buy' : 'Sell';
-        const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
+        // Create position key for global tracking with target expiry
+        const positionKey = `${strike}-${targetExpiry}-${key}`;
+        console.log(`[EXPIRY POSITION CHANGE] Position key: ${positionKey}`);
         
-        console.log(`[EXPIRY POSITION CHANGE] Strike: ${strike}, Type: ${optionType}, Action: ${actionType}, Target: ${targetExpiry}, Current: ${currentExpiry}`);
+        // Log current position state before change
+        const currentPosition = window.globalPositions[positionKey];
+        console.log(`[EXPIRY POSITION CHANGE] Current position:`, currentPosition);
         
         if (action === 'add') {
-            // Add to activeLots array (primary data source)
-            const newLot = {
-                id: Date.now() + Math.random(),
-                strike: strike,
-                expiry: targetExpiry,
-                optionType: optionType,
-                action: actionType,
-                entryPrice: getCurrentLTP(strike, optionType, targetExpiry) || 100,
-                rowIndex: rowIndex,
-                key: key,
-                timestamp: Date.now()
-            };
+            // Store in global positions
+            if (!window.globalPositions[positionKey]) {
+                console.log(`[EXPIRY POSITION CHANGE] Creating new position for ${positionKey}`);
+                const optionType = key.includes('ce') ? 'CE' : 'PE';
+                const entryPrice = getCurrentLTP(strike, optionType, targetExpiry);
+                window.globalPositions[positionKey] = {
+                    strike: strike,
+                    expiry: targetExpiry,
+                    optionType: optionType,
+                    action: key.includes('Buy') ? 'Buy' : 'Sell',
+                    lots: 0,
+                    rowIndex: rowIndex,
+                    key: key,
+                    entryPrice: entryPrice
+                };
+                console.log(`[POSITION CREATION] Entry price captured: ₹${entryPrice} for ${positionKey}`);
+            }
+            const beforeLots = window.globalPositions[positionKey].lots;
+            window.globalPositions[positionKey].lots++;
+            const afterLots = window.globalPositions[positionKey].lots;
+            console.log(`[EXPIRY POSITION CHANGE] ADD: ${beforeLots} -> ${afterLots}`);
             
-            window.activeLots.push(newLot);
-            console.log(`[EXPIRY POSITION CHANGE] Added new lot to activeLots: ${newLot.id}`);
-            
-            // Update counter for current expiry display
+            // Update current expiry counter if this matches current expiry
+            const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
             if (targetExpiry === currentExpiry) {
                 if (!counters[rowIndex]) counters[rowIndex] = {};
                 if (!counters[rowIndex][key]) counters[rowIndex][key] = 0;
                 counters[rowIndex][key]++;
+                console.log(`[COUNTER UPDATE] Incremented counter for current expiry: ${counters[rowIndex][key]}`);
             }
             
         } else if (action === 'remove') {
-            // Find and remove from activeLots array
-            const relevantLots = window.activeLots.filter(lot => 
-                lot.strike === strike && 
-                lot.expiry === targetExpiry && 
-                lot.optionType === optionType && 
-                lot.action === actionType
-            ).sort((a, b) => b.timestamp - a.timestamp); // LIFO removal
-            
-            if (relevantLots.length > 0) {
-                const lotToRemove = relevantLots[0];
-                const lotIndex = window.activeLots.findIndex(lot => lot.id === lotToRemove.id);
-                if (lotIndex !== -1) {
-                    window.activeLots.splice(lotIndex, 1);
-                    console.log(`[EXPIRY POSITION CHANGE] Removed lot from activeLots: ${lotToRemove.id}`);
-                }
+            // Update global positions
+            if (window.globalPositions[positionKey] && window.globalPositions[positionKey].lots > 0) {
+                const beforeLots = window.globalPositions[positionKey].lots;
+                window.globalPositions[positionKey].lots--;
+                const afterLots = window.globalPositions[positionKey].lots;
+                console.log(`[EXPIRY POSITION CHANGE] REMOVE: ${beforeLots} -> ${afterLots}`);
                 
-                // Update counter for current expiry display
+                // Update current expiry counter if this matches current expiry
+                const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
                 if (targetExpiry === currentExpiry) {
                     if (counters[rowIndex] && counters[rowIndex][key] > 0) {
                         counters[rowIndex][key]--;
+                        console.log(`[COUNTER UPDATE] Decremented counter for current expiry: ${counters[rowIndex][key]}`);
                     }
                 }
+                
+                if (window.globalPositions[positionKey].lots <= 0) {
+                    delete window.globalPositions[positionKey];
+                    console.log(`[POSITION REMOVE] Deleted position key: ${positionKey}, remaining positions:`, Object.keys(window.globalPositions).length);
+                }
             } else {
-                console.log(`[EXPIRY POSITION CHANGE] No lots found to remove for ${strike}-${targetExpiry}-${optionType}-${actionType}`);
+                console.log(`[EXPIRY POSITION CHANGE] Cannot remove - position not found or lots already 0`);
+                return; // Exit early if nothing to remove
             }
         }
         
-        // **CRITICAL SYNCHRONIZATION FLOW**
-        // 1. Recalculate globalPositions from activeLots for backward compatibility
-        updateGlobalPositionsFromActiveLots();
+        // Close position card if no positions remain for this strike/option type/action combination
+        const currentStrike = strike;
+        const currentOptionType = key.includes('ce') ? 'CE' : 'PE';
+        const currentAction = key.includes('Buy') ? 'Buy' : 'Sell';
         
-        // 2. Calculate actual badge count for this specific position
-        const currentLots = window.activeLots.filter(lot => 
-            lot.strike === strike && 
-            lot.expiry === currentExpiry && 
-            lot.optionType === optionType && 
-            lot.action === actionType
-        ).length;
+        const remainingPositions = Object.values(window.globalPositions || {}).filter(pos => 
+            pos.strike === currentStrike && pos.optionType === currentOptionType && 
+            pos.action === currentAction && pos.lots > 0
+        );
         
-        // 3. Update button badge with correct count
-        updateButtonBadge(rowIndex, key, currentLots);
-        
-        // 4. Update button display
-        updateButtonDisplay(rowIndex, key);
-        
-        // 5. Update position card to reflect changes
-        updatePositionCard(rowIndex, key);
-        
-        // 6. Update current positions table
-        updateCurrentPositionsTable();
-        
-        // 7. Update payoff chart with new positions
-        if (typeof createPayoffChartFromOptionChain === 'function') {
-            createPayoffChartFromOptionChain();
+        if (remainingPositions.length === 0) {
+            closeAllPositionCards();
         }
         
-        // 8. Update real-time payoff chart lines if WebSocket handler exists
+        // Update button displays to reflect the counter changes
+        updateButtonDisplay(rowIndex, key);
+        
+        // Update the position management card content
+        updatePositionCard(rowIndex, key);
+        
+        // Update current positions table
+        updateCurrentPositionsTable();
+        
+        // Force update of button displays for all buttons to ensure proper synchronization
+        console.log(`[SYNC UPDATE] After changes - Global positions count: ${Object.keys(window.globalPositions || {}).length}`);
+        console.log(`[SYNC UPDATE] Current counter for ${key}: ${counters[rowIndex] && counters[rowIndex][key] ? counters[rowIndex][key] : 0}`);
+        
+        // Immediately create and update payoff chart using loaded option chain data
+        createPayoffChartFromOptionChain();
+        
+        // Update real-time payoff chart lines if WebSocket handler exists
         if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
             window.webSocketHandler.updatePayoffChartSpotPrice();
         }
         
-        console.log(`[EXPIRY POSITION CHANGE] END - All components synchronized. Badge count: ${currentLots}`);
+        console.log(`${action} ${key} for row ${rowIndex}, expiry ${targetExpiry}`);
     }
 
     // Global arrays to track positions and P&L
@@ -2312,14 +2322,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Professional netting system with proper trading terminology
+    // Handle button clicks with FIFO netting logic
     function handleButtonClick(rowIndex, key, action) {
-        console.log(`[PROFESSIONAL NETTING] handleButtonClick CALLED: row=${rowIndex}, key=${key}, action=${action}`);
-        
-        // Initialize tracking arrays if they don't exist
-        if (!window.activeLots) window.activeLots = [];
-        if (!window.exitedTrades) window.exitedTrades = [];
-        if (!window.realizedPnL) window.realizedPnL = 0;
+        console.log(`🔥 handleButtonClick CALLED: row=${rowIndex}, key=${key}, action=${action}`);
+        console.log(`🔥 Current activeLots BEFORE:`, window.activeLots);
+        console.log(`🔥 Current closedTrades BEFORE:`, window.closedTrades);
         
         // Get current expiry and strike information
         const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
@@ -2330,17 +2337,18 @@ document.addEventListener('DOMContentLoaded', function() {
             strike = parseFloat(strikeTd?.textContent || 0);
         }
         
-        console.log(`[PROFESSIONAL NETTING] Strike: ${strike}, Expiry: ${currentExpiry}`);
+        console.log(`🔥 Strike: ${strike}, Expiry: ${currentExpiry}`);
         
         if (action === 'add') {
             const optionType = key.includes('ce') ? 'CE' : 'PE';
-            const currentAction = key.includes('Buy') ? 'Buy' : 'Sell';
+            const isCurrentBuy = key.includes('Buy');
+            const currentAction = isCurrentBuy ? 'Buy' : 'Sell';
             
-            // Get current LTP as entry/exit price
+            // Get current LTP as price
             const currentLTP = getCurrentLTP(strike, optionType, currentExpiry);
-            console.log(`[PROFESSIONAL NETTING] Current LTP: ${currentLTP} for ${optionType} ${strike}`);
+            console.log(`🔥 Current LTP: ${currentLTP} for ${optionType} ${strike}`);
             
-            // Check for opposite positions to net against (FIFO)
+            // Check for opposite lots to net against (FIFO)
             const oppositeLots = window.activeLots.filter(lot => 
                 lot.strike === strike && 
                 lot.expiry === currentExpiry && 
@@ -2351,16 +2359,16 @@ document.addEventListener('DOMContentLoaded', function() {
             if (oppositeLots.length > 0) {
                 // NETTING: Close the oldest opposite lot
                 const oldestLot = oppositeLots[0];
-                console.log(`[PROFESSIONAL NETTING] NETTING: Closing lot opened at ${oldestLot.entryPrice}`);
+                console.log(`🔥 NETTING: Closing lot opened at ${oldestLot.entryPrice}`);
                 
                 // Calculate realized P&L
                 let sellPrice, buyPrice;
-                if (currentAction === 'Buy') {
-                    // Buying to close a sell position (Buy to Close)
+                if (isCurrentBuy) {
+                    // Buying to close a sell position
                     sellPrice = oldestLot.entryPrice; // Original sell price
                     buyPrice = currentLTP; // Current buy price
                 } else {
-                    // Selling to close a buy position (Sell to Close)
+                    // Selling to close a buy position  
                     buyPrice = oldestLot.entryPrice; // Original buy price
                     sellPrice = currentLTP; // Current sell price
                 }
@@ -2369,11 +2377,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const lotSize = 75;
                 const realizedPnLAmount = pnlPerLot * lotSize;
                 
-                console.log(`[PROFESSIONAL NETTING] REALIZED P&L: (${sellPrice} - ${buyPrice}) * ${lotSize} = ₹${realizedPnLAmount}`);
+                console.log(`🔥 REALIZED P&L: (${sellPrice} - ${buyPrice}) * ${lotSize} = ₹${realizedPnLAmount}`);
                 
-                // Create professional exited trade record
-                const exitedTrade = {
-                    id: Date.now() + Math.random(),
+                // Create closed trade record
+                const closedTrade = {
                     strike: strike,
                     expiry: currentExpiry,
                     optionType: optionType,
@@ -2385,11 +2392,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     closeTime: new Date(),
                     realizedPnL: realizedPnLAmount,
                     lotSize: lotSize,
-                    actionLabel: `${oldestLot.action === 'Buy' ? 'BUY TO OPEN' : 'SELL TO OPEN'} → ${currentAction === 'Buy' ? 'BUY TO CLOSE' : 'SELL TO CLOSE'}`,
-                    tradeType: 'COMPLETE'
+                    actionLabel: `${oldestLot.action} to Open → ${currentAction} to Close`
                 };
                 
-                window.exitedTrades.push(exitedTrade);
+                window.closedTrades.push(closedTrade);
                 window.realizedPnL += realizedPnLAmount;
                 
                 // Remove the closed lot from active lots
@@ -2398,18 +2404,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.activeLots.splice(lotIndex, 1);
                 }
                 
-                console.log(`[PROFESSIONAL NETTING] TRADE COMPLETED:`, exitedTrade);
-                console.log(`[PROFESSIONAL NETTING] Total Realized P&L: ₹${window.realizedPnL}`);
+                console.log(`🔥 TRADE CLOSED:`, closedTrade);
+                console.log(`🔥 Total Realized P&L: ₹${window.realizedPnL}`);
                 
                 // Update realized P&L display
                 updateRealizedPnLDisplay();
                 
-                // Don't increment counter - trade was netted
-                
             } else {
-                // NO NETTING: Create new active lot with proper terminology
-                const actionLabel = currentAction === 'Buy' ? 'BUY TO OPEN' : 'SELL TO OPEN';
-                
+                // NO NETTING: Create new lot
                 const newLot = {
                     id: Date.now() + Math.random(), // Unique ID
                     strike: strike,
@@ -2420,31 +2422,56 @@ document.addEventListener('DOMContentLoaded', function() {
                     timestamp: new Date(),
                     rowIndex: rowIndex,
                     key: key,
-                    actionLabel: actionLabel,
-                    lots: 1 // Each active lot is 1 lot
+                    actionLabel: isCurrentBuy ? 'Buy to Open' : 'Sell to Open'
                 };
                 
                 window.activeLots.push(newLot);
-                console.log(`[PROFESSIONAL NETTING] NEW POSITION OPENED:`, newLot);
+                console.log(`🔥 NEW LOT CREATED:`, newLot);
                 
-                // Increment counter
+                // Also add to globalPositions for position management card synchronization
+                const globalPositionKey = `${strike}-${currentExpiry}-${key}`;
+                if (!window.globalPositions[globalPositionKey]) {
+                    window.globalPositions[globalPositionKey] = {
+                        strike: strike,
+                        expiry: currentExpiry,
+                        optionType: optionType,
+                        action: currentAction,
+                        lots: 0,
+                        rowIndex: rowIndex,
+                        key: key,
+                        entryPrice: currentLTP
+                    };
+                }
+                window.globalPositions[globalPositionKey].lots++;
+                console.log(`🔥 ADDED TO GLOBAL POSITIONS:`, window.globalPositions[globalPositionKey]);
+                
+                // Update counter
                 counters[rowIndex][key]++;
             }
             
-            // Update globalPositions for synchronization with other components
-            updateGlobalPositionsFromActiveLots();
-            
-            // Update button badge based on active lots count
-            const activeLots = window.activeLots.filter(lot => 
+            // Update button badge based on remaining active lots for this type
+            const remainingLots = window.activeLots.filter(lot => 
                 lot.strike === strike && 
                 lot.expiry === currentExpiry && 
                 lot.optionType === optionType && 
                 lot.action === currentAction
             ).length;
             
-            updateButtonBadge(rowIndex, key, activeLots);
+            updateButtonBadge(rowIndex, key, remainingLots);
             
-            console.log(`[PROFESSIONAL NETTING] Active lots: ${window.activeLots.length}, Exited trades: ${window.exitedTrades.length}`);
+            // Update opposite button badge
+            const oppositeAction = isCurrentBuy ? 'Sell' : 'Buy';
+            const oppositeKey = key.replace(currentAction, oppositeAction);
+            const oppositeRemainingLots = window.activeLots.filter(lot => 
+                lot.strike === strike && 
+                lot.expiry === currentExpiry && 
+                lot.optionType === optionType && 
+                lot.action === oppositeAction
+            ).length;
+            
+            updateButtonBadge(rowIndex, oppositeKey, oppositeRemainingLots);
+            
+            console.log(`🔥 Active lots: ${window.activeLots.length}, Closed trades: ${window.closedTrades.length}`);
             
         } else if (action === 'remove') {
             // Handle manual position removal (remove youngest lot first - LIFO for manual removal)
@@ -2464,27 +2491,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (lotIndex !== -1) {
                     window.activeLots.splice(lotIndex, 1);
                     counters[rowIndex][key]--;
-                    console.log(`[PROFESSIONAL NETTING] MANUAL REMOVAL: Removed newest lot`);
+                    console.log(`🔥 MANUAL REMOVAL: Removed newest lot`);
                 }
-                
-                // Update globalPositions for synchronization
-                updateGlobalPositionsFromActiveLots();
                 
                 // Update button badge
                 updateButtonBadge(rowIndex, key, currentLots.length - 1);
             }
         }
         
-        // Update button display
+        console.log(`🔥 Current activeLots AFTER:`, window.activeLots);
+        console.log(`🔥 Current closedTrades AFTER:`, window.closedTrades);
+        console.log(`🔥 About to call updateCurrentPositionsTable()`);
+        
         updateButtonDisplay(rowIndex, key);
-        
-        // Update the position management card content
-        updatePositionCard(rowIndex, key);
-        
-        // Update current positions table
-        updateCurrentPositionsTable();
-        
-        // Close all position cards
+        updateCurrentPositionsTable(); // ✅ SYNC: Update positions table
         closeAllPositionCards();
         
         // Immediately create and update payoff chart using loaded option chain data
@@ -2495,88 +2515,11 @@ document.addEventListener('DOMContentLoaded', function() {
             window.webSocketHandler.updatePayoffChartSpotPrice();
         }
         
-        console.log(`[PROFESSIONAL NETTING] ${action} ${key} for row ${rowIndex}, new count: ${counters[rowIndex][key]}`);
-    }
-    
-    // Professional adjustLots function - works with both old globalPositions and new netting system
-    function adjustLots(positionKey, change, event) {
-        if (event) {
-            event.stopPropagation();
-        }
+        // *** UPDATED: Now calls updateCurrentPositionsTable() to sync position display ***
+        console.log(`🔥 CALLING updateCurrentPositionsTable() to sync positions`);
+        updateCurrentPositionsTable();
         
-        console.log(`[PROFESSIONAL ADJUST] adjustLots called: ${positionKey}, change: ${change}`);
-        
-        // Initialize professional netting arrays if they don't exist
-        if (!window.activeLots) window.activeLots = [];
-        if (!window.exitedTrades) window.exitedTrades = [];
-        if (!window.globalPositions) window.globalPositions = {};
-        
-        // Handle different position key formats
-        let targetPosition = null;
-        let rowIndex = null;
-        let key = null;
-        
-        // Check if it's a globalPositions key (backward compatibility)
-        if (window.globalPositions[positionKey]) {
-            targetPosition = window.globalPositions[positionKey];
-            rowIndex = targetPosition.rowIndex;
-            key = targetPosition.key;
-            console.log(`[PROFESSIONAL ADJUST] Found globalPosition: ${positionKey}`);
-        } else {
-            // Check if it's an active lot ID
-            const activeLot = window.activeLots.find(lot => `active_${lot.id}` === positionKey || lot.id.toString() === positionKey);
-            if (activeLot) {
-                rowIndex = activeLot.rowIndex;
-                key = activeLot.key;
-                console.log(`[PROFESSIONAL ADJUST] Found active lot: ${positionKey}`);
-            }
-        }
-        
-        if (!rowIndex || !key) {
-            console.log(`[PROFESSIONAL ADJUST] Position not found: ${positionKey}`);
-            return;
-        }
-        
-        const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
-        const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
-        let strike = 0;
-        if (row) {
-            const strikeTd = row.children[19]; // Strike column
-            strike = parseFloat(strikeTd?.textContent || 0);
-        }
-        
-        const optionType = key.includes('ce') ? 'CE' : 'PE';
-        const action = key.includes('Buy') ? 'Buy' : 'Sell';
-        
-        console.log(`[PROFESSIONAL ADJUST] Processing: Strike=${strike}, Type=${optionType}, Action=${action}, Change=${change}`);
-        
-        if (change > 0) {
-            // Adding lots - simulate button clicks
-            for (let i = 0; i < Math.abs(change); i++) {
-                console.log(`[PROFESSIONAL ADJUST] Adding lot ${i + 1}/${Math.abs(change)}`);
-                handleButtonClick(rowIndex, key, 'add');
-            }
-        } else if (change < 0) {
-            // Removing lots - simulate button clicks or remove active lots directly
-            const currentLots = window.activeLots.filter(lot => 
-                lot.strike === strike && 
-                lot.expiry === currentExpiry && 
-                lot.optionType === optionType && 
-                lot.action === action
-            ).sort((a, b) => b.timestamp - a.timestamp); // LIFO for removal
-            
-            const lotsToRemove = Math.min(Math.abs(change), currentLots.length);
-            console.log(`[PROFESSIONAL ADJUST] Removing ${lotsToRemove} lots out of ${currentLots.length} available`);
-            
-            for (let i = 0; i < lotsToRemove; i++) {
-                if (currentLots[i]) {
-                    console.log(`[PROFESSIONAL ADJUST] Removing lot ${i + 1}/${lotsToRemove}: ${currentLots[i].id}`);
-                    window.removeActiveLot(currentLots[i].id);
-                }
-            }
-        }
-        
-        console.log(`[PROFESSIONAL ADJUST] Adjustment complete for ${positionKey}`);
+        console.log(`${action} ${key} for row ${rowIndex}, new count: ${counters[rowIndex][key]}`);
     }
     
     // Global function to force payoff chart update with live spot price - called by WebSocket handler
@@ -2762,623 +2705,339 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Professional Position Table - AGGREGATED Active and Exited trades
+    // Update position card content
+    function updatePositionCard(rowIndex, key) {
+        const cardContent = document.getElementById(`${key}CardContent_${rowIndex}`);
+        if (!cardContent) return;
+        
+        // Get current expiry and strike information
+        const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
+        const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
+        let strike = 0;
+        if (row) {
+            const strikeTd = row.children[19]; // Strike column
+            strike = parseFloat(strikeTd?.textContent || 0);
+        }
+        
+        // Find all positions for this strike (across all expiries)
+        const strikePositions = Object.values(window.globalPositions).filter(pos => 
+            pos.strike === strike && pos.optionType === (key.includes('ce') ? 'CE' : 'PE') && 
+            pos.action === (key.includes('Buy') ? 'Buy' : 'Sell')
+        );
+        
+        // Clear existing content
+        cardContent.innerHTML = '';
+        
+        if (strikePositions.length === 0) {
+            const noPositionMsg = document.createElement('div');
+            noPositionMsg.className = 'no-position-message';
+            noPositionMsg.innerHTML = '<i class="fas fa-info-circle"></i> No positions found';
+            noPositionMsg.style.textAlign = 'center';
+            noPositionMsg.style.color = '#6c757d';
+            noPositionMsg.style.padding = '10px';
+            cardContent.appendChild(noPositionMsg);
+            return;
+        }
+        
+        // Group positions by expiry
+        const positionsByExpiry = {};
+        strikePositions.forEach(pos => {
+            if (!positionsByExpiry[pos.expiry]) {
+                positionsByExpiry[pos.expiry] = [];
+            }
+            positionsByExpiry[pos.expiry].push(pos);
+        });
+        
+        // Create position entries for each expiry
+        Object.entries(positionsByExpiry).forEach(([expiry, positions]) => {
+            positions.forEach(pos => {
+                const positionEntry = document.createElement('div');
+                positionEntry.className = 'position-entry';
+                
+                const expiryTag = document.createElement('div');
+                expiryTag.className = 'position-expiry-tag';
+                expiryTag.textContent = formatExpiryDisplay(expiry);
+                
+                const lotControl = document.createElement('div');
+                lotControl.className = 'position-lot-control';
+                
+                // Strike price display
+                const strikeInfo = document.createElement('div');
+                strikeInfo.className = 'position-strike-info';
+                strikeInfo.innerHTML = `<i class="fas fa-crosshairs"></i> Strike: ${pos.strike}`;
+                
+                // Entry and LTP info
+                const priceInfo = document.createElement('div');
+                priceInfo.className = 'position-price-info';
+                const entryPrice = pos.entryPrice || 0; // Default to 0 if not available
+                const ltp = getCurrentLTP(pos.strike, pos.optionType, pos.expiry) || 0;
+                priceInfo.innerHTML = `<span class="entry-price">Entry: ₹${entryPrice.toFixed(2)}</span> | <span class="ltp-price">LTP: ₹${ltp.toFixed(2)}</span>`;
+                
+                // Lots and Quantity display
+                const lotLabel = document.createElement('span');
+                lotLabel.className = 'position-lot-label';
+                const quantity = pos.lots * 75; // Standard lot size
+                lotLabel.innerHTML = `<i class="fas fa-layer-group"></i> ${pos.lots} lots (${quantity} qty)`;
+                
+                // P&L calculation
+                const pnlInfo = document.createElement('div');
+                pnlInfo.className = 'position-pnl-info';
+                let pnl = 0;
+                if (entryPrice > 0 && ltp > 0) {
+                    if (pos.action === 'Buy') {
+                        pnl = (ltp - entryPrice) * quantity;
+                    } else { // Sell
+                        pnl = (entryPrice - ltp) * quantity;
+                    }
+                }
+                const pnlColor = pnl >= 0 ? 'green' : 'red';
+                const pnlSign = pnl >= 0 ? '+' : '';
+                pnlInfo.innerHTML = `<span class="pnl-value" style="color: ${pnlColor}; font-weight: bold;">P&L: ${pnlSign}₹${pnl.toFixed(2)}</span>`;
+                
+                const controlButtons = document.createElement('div');
+                controlButtons.className = 'position-control-buttons';
+                
+                const decreaseBtn = document.createElement('button');
+                decreaseBtn.className = 'position-btn-decrease';
+                decreaseBtn.innerHTML = '<i class="fas fa-minus"></i>';
+                decreaseBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    console.log(`[POSITION CARD] Decrease button clicked - rowIndex: ${rowIndex}, key: ${key}, expiry: ${pos.expiry}`);
+                    handleExpirySpecificPositionChange(rowIndex, key, 'remove', pos.expiry);
+                };
+                
+                const increaseBtn = document.createElement('button');
+                increaseBtn.className = 'position-btn-increase';
+                increaseBtn.innerHTML = '<i class="fas fa-plus"></i>';
+                increaseBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    console.log(`[POSITION CARD] Increase button clicked - rowIndex: ${rowIndex}, key: ${key}, expiry: ${pos.expiry}`);
+                    handleExpirySpecificPositionChange(rowIndex, key, 'add', pos.expiry);
+                };
+                
+                controlButtons.appendChild(decreaseBtn);
+                controlButtons.appendChild(increaseBtn);
+                
+                lotControl.appendChild(lotLabel);
+                lotControl.appendChild(controlButtons);
+                
+                positionEntry.appendChild(expiryTag);
+                positionEntry.appendChild(strikeInfo);
+                positionEntry.appendChild(priceInfo);
+                positionEntry.appendChild(pnlInfo);
+                positionEntry.appendChild(lotControl);
+                
+                cardContent.appendChild(positionEntry);
+            });
+        });
+    }
+    
+    // Update Current Positions Table - synchronize with new lots system
     function updateCurrentPositionsTable() {
-        console.log(`[PROFESSIONAL TABLE] updateCurrentPositionsTable() called`);
-        console.log(`[PROFESSIONAL TABLE] Active lots:`, window.activeLots || []);
-        console.log(`[PROFESSIONAL TABLE] Exited trades:`, window.exitedTrades || []);
+        console.log(`🔥 updateCurrentPositionsTable() called`);
+        console.log(`🔥 Active lots LENGTH:`, (window.activeLots || []).length);
+        console.log(`🔥 Closed trades LENGTH:`, (window.closedTrades || []).length);
+        console.log(`🔥 Active lots CONTENT:`, window.activeLots);
+        console.log(`🔥 Closed trades CONTENT:`, window.closedTrades);
         
         const tableBody = document.getElementById('positionTableBody');
         if (!tableBody) {
-            console.log(`[PROFESSIONAL TABLE] ERROR: positionTableBody not found`);
+            console.log(`🔥 ERROR: positionTableBody not found`);
             return;
         }
         
         // Clear existing content
         tableBody.innerHTML = '';
         
-        // Initialize arrays if they don't exist
-        if (!window.activeLots) window.activeLots = [];
-        if (!window.exitedTrades) window.exitedTrades = [];
+        console.log(`🔥 Cleared table body, now building entries...`);
         
-        const activeCount = window.activeLots.length;
-        const exitedCount = window.exitedTrades.length;
+        // Combine active positions from globalPositions and closed trades for display
+        const allEntries = [];
         
-        if (activeCount === 0 && exitedCount === 0) {
-            console.log(`[PROFESSIONAL TABLE] No positions found, showing empty state...`);
+        // Add active positions from globalPositions (grouped by position)
+        console.log(`🔥 Processing ${Object.keys(window.globalPositions || {}).length} global positions...`);
+        Object.entries(window.globalPositions || {}).forEach(([positionKey, position]) => {
+            if (position.lots > 0) {
+                console.log(`🔥 Processing global position ${positionKey}:`, position);
+                try {
+                    const currentLTP = getCurrentLTP(position.strike, position.optionType, position.expiry);
+                    console.log(`🔥 Got currentLTP: ${currentLTP} for ${position.optionType} ${position.strike}`);
+                    
+                    allEntries.push({
+                        type: 'active',
+                        positionKey: positionKey,
+                        strike: position.strike,
+                        expiry: position.expiry,
+                        optionType: position.optionType,
+                        action: position.action,
+                        actionLabel: position.action + ' to Open',
+                        entryPrice: position.entryPrice,
+                        currentLTP: currentLTP,
+                        timestamp: new Date(), // Use current time for active positions
+                        lots: position.lots,
+                        isActive: true
+                    });
+                    console.log(`🔥 Successfully added global position ${positionKey} to allEntries`);
+                } catch (error) {
+                    console.error(`🔥 ERROR processing global position ${positionKey}:`, error);
+                }
+            }
+        });
+        
+        console.log(`🔥 Total allEntries after active lots: ${allEntries.length}`);
+        
+        // Add closed trades (showing as completed trades)
+        window.closedTrades.forEach(trade => {
+            allEntries.push({
+                type: 'closed',
+                strike: trade.strike,
+                expiry: trade.expiry,
+                optionType: trade.optionType,
+                actionLabel: trade.actionLabel,
+                openPrice: trade.openPrice,
+                closePrice: trade.closePrice,
+                realizedPnL: trade.realizedPnL,
+                openTime: trade.openTime,
+                closeTime: trade.closeTime,
+                lots: 1, // Each trade is 1 lot
+                isActive: false
+            });
+        });
+        
+        console.log(`🔥 Final allEntries length: ${allEntries.length}`);
+        if (allEntries.length === 0) {
+            console.log(`🔥 No entries found, showing empty state...`);
             // Show empty state
             const emptyRow = document.createElement('tr');
             emptyRow.innerHTML = `
-                <td colspan="16" class="text-center text-muted py-3">
+                <td colspan="15" class="text-center text-muted py-3">
                     <i class="fas fa-plus-circle me-2"></i>No positions yet. Start trading!
                 </td>
             `;
             tableBody.appendChild(emptyRow);
+            console.log(`🔥 Empty state added to table`);
             return;
         }
         
-        console.log(`[PROFESSIONAL TABLE] Building table rows...`);
+        console.log(`🔥 Building ${allEntries.length} table rows...`);
         
-        // ========== ACTIVE POSITIONS SECTION ==========
-        if (window.activeLots.length > 0) {
-            // Active positions header
-            const activeHeaderRow = document.createElement('tr');
-            activeHeaderRow.innerHTML = `
-                <td colspan="16" style="background-color: #e8f5e8; padding: 8px; font-weight: bold; color: #28a745; border-left: 4px solid #28a745;">
-                    <i class="fas fa-chart-line me-2"></i>Active Positions (${window.activeLots.length})
-                </td>
-            `;
-            tableBody.appendChild(activeHeaderRow);
+        // Sort entries by time (newest first)
+        allEntries.sort((a, b) => {
+            const aTime = a.closeTime || a.timestamp;
+            const bTime = b.closeTime || b.timestamp;
+            return new Date(bTime) - new Date(aTime);
+        });
+        
+        // Create rows for each entry
+        allEntries.forEach((entry, index) => {
+            // Build symbol name
+            const expiryFormatted = formatExpiryForSymbol(entry.expiry);
+            const symbol = `NSE:NIFTY${expiryFormatted}${entry.strike}${entry.optionType}`;
             
-            // Show each individual lot (simplified approach)
-            window.activeLots.forEach((lot) => {
-                // Build symbol name
-                const expiryFormatted = formatExpiryForSymbol(lot.expiry);
-                const symbol = `NSE:NIFTY${expiryFormatted}${lot.strike}${lot.optionType}`;
+            // P&L calculation and display
+            let pnl = 0;
+            let pnlLabel = '';
+            let displayPrice = '';
+            
+            if (entry.type === 'active') {
+                // Active lot: calculate unrealized P&L
+                const entry_price = entry.entryPrice || 0;
+                const current_ltp = entry.currentLTP || 0;
+                const quantity = 75; // 1 lot
                 
-                // Get current LTP and calculate P&L
-                const currentLTP = getCurrentLTP(lot.strike, lot.optionType, lot.expiry);
-                const entryPrice = lot.entryPrice || 0;
-                const quantity = 75; // 1 lot = 75 qty
-                
-                let pnl = 0;
-                if (entryPrice > 0 && currentLTP > 0) {
-                    if (lot.action === 'Buy') {
-                        pnl = (currentLTP - entryPrice) * quantity;
+                if (entry_price > 0 && current_ltp > 0) {
+                    if (entry.action === 'Buy') {
+                        pnl = (current_ltp - entry_price) * quantity;
                     } else {
-                        pnl = (entryPrice - currentLTP) * quantity;
+                        pnl = (entry_price - current_ltp) * quantity;
                     }
                 }
-                
-                // Style based on P&L
-                const pnlColor = pnl >= 0 ? 'text-success' : 'text-danger';
-                const pnlSign = pnl >= 0 ? '+' : '';
-                
-                // Action badge
-                const actionLabel = lot.action === 'Buy' ? 'BUY TO OPEN' : 'SELL TO OPEN';
-                const actionBadge = `<span class="badge bg-${lot.action === 'Buy' ? 'success' : 'danger'} text-white" style="font-size: 10px;">${actionLabel}</span>`;
-                
-                // Time display
-                const timeDisplay = new Date(lot.timestamp).toLocaleDateString() + ' ' + new Date(lot.timestamp).toLocaleTimeString();
-                
-                const row = document.createElement('tr');
-                row.className = 'position-row active-position';
-                row.style.cssText = 'border-left: 3px solid #28a745; background-color: #f8fff8;';
-                row.dataset.positionKey = `active_${lot.id}`;
-                
-                row.innerHTML = `
-                    <td style="padding: 8px 6px; text-align: center;">
-                        <input type="checkbox" class="position-checkbox" data-position-key="active_${lot.id}" style="transform: scale(0.8);">
-                    </td>
-                    <td style="padding: 8px 6px; text-align: center;">
-                        <span class="badge bg-${lot.optionType === 'CE' ? 'success' : 'primary'} text-white">${lot.optionType}</span>
-                        <span class="badge bg-success ms-1" style="font-size: 8px;">ACTIVE</span>
-                    </td>
-                    <td style="padding: 8px 6px; text-align: center;">${actionBadge}</td>
-                    <td style="padding: 8px 6px; text-align: center;" class="lots-cell">
-                        <div class="lots-container">
-                            <span class="lots-value">1</span>
-                            <div class="lots-controls">
-                                <button class="lots-btn lots-minus" onclick="removeActiveLot('${lot.id}')" title="Remove lot">-</button>
-                                <button class="lots-btn lots-plus" onclick="addSimilarLot('${lot.id}')" title="Add similar lot">+</button>
-                            </div>
+                pnlLabel = 'Unrealized P&L';
+                displayPrice = `₹${(current_ltp || 0).toFixed(2)}`;
+            } else {
+                // Closed trade: use realized P&L
+                pnl = entry.realizedPnL || 0;
+                pnlLabel = 'Realized P&L';
+                displayPrice = `₹${(entry.openPrice || 0).toFixed(2)} → ₹${(entry.closePrice || 0).toFixed(2)}`;
+            }
+            
+            // Style based on position type and status
+            const typeClass = entry.optionType === 'CE' ? 'text-success' : 'text-primary';
+            const pnlColor = pnl >= 0 ? 'text-success' : 'text-danger';
+            const pnlSign = pnl >= 0 ? '+' : '';
+            
+            // Action badge styling
+            let actionBadge;
+            if (entry.type === 'closed') {
+                actionBadge = `<span class="badge bg-secondary text-white">${entry.actionLabel.toUpperCase()}</span>`;
+            } else if (entry.actionLabel.includes('Buy')) {
+                actionBadge = `<span class="badge bg-success text-white">${entry.actionLabel.toUpperCase()}</span>`;
+            } else {
+                actionBadge = `<span class="badge bg-danger text-white">${entry.actionLabel.toUpperCase()}</span>`;
+            }
+            
+            // Row styling
+            const rowStyle = entry.type === 'closed' ? 'background-color: #f8f9fa; opacity: 0.8;' : '';
+            const statusBadge = entry.type === 'closed' ? '<span class="badge bg-info ms-2">CLOSED</span>' : '';
+            
+            // Format timestamps
+            const timeDisplay = entry.type === 'closed' ? 
+                `${new Date(entry.closeTime).toLocaleDateString()} ${new Date(entry.closeTime).toLocaleTimeString()}` :
+                `${new Date(entry.timestamp).toLocaleDateString()} ${new Date(entry.timestamp).toLocaleTimeString()}`;
+            
+            const row = document.createElement('tr');
+            row.style.cssText = rowStyle;
+            const positionKey = entry.positionKey || `${entry.strike}-${entry.expiry}-${entry.optionType}-${index}`;
+            row.dataset.positionKey = positionKey;
+            
+            row.innerHTML = `
+                <td style="padding: 8px 6px;">
+                    <span class="badge bg-${entry.optionType === 'CE' ? 'success' : 'primary'} text-white">${entry.optionType}</span>
+                    ${statusBadge}
+                </td>
+                <td style="padding: 8px 6px;">${actionBadge}</td>
+                <td style="padding: 8px 6px; text-align: center;" class="lots-cell">
+                    <div class="lots-container">
+                        <span class="lots-value">${entry.lots}</span>
+                        <div class="lots-controls">
+                            <button class="lots-btn lots-minus" onclick="adjustLots('${positionKey}', -1, event)" title="Decrease lots">-</button>
+                            <button class="lots-btn lots-plus" onclick="adjustLots('${positionKey}', 1, event)" title="Increase lots">+</button>
                         </div>
-                    </td>
-                    <td style="padding: 8px 6px; text-align: center;">${quantity}</td>
-                    <td style="padding: 8px 6px; font-size: 11px;">${symbol}</td>
-                    <td style="padding: 8px 6px; font-size: 11px;">${timeDisplay}</td>
-                    <td style="padding: 8px 6px; text-align: center;">${lot.strike}</td>
-                    <td style="padding: 8px 6px; font-size: 11px;">16-SEP-25</td>
-                    <td style="padding: 8px 6px; text-align: center;">₹${entryPrice.toFixed(2)}</td>
-                    <td style="padding: 8px 6px; text-align: center;">₹${(currentLTP || 0).toFixed(2)}</td>
-                    <td style="padding: 8px 6px; text-align: center;">0.00</td>
-                    <td style="padding: 8px 6px; text-align: center; font-weight: 600;" class="${pnlColor}">
-                        ${pnlSign}₹${Math.abs(pnl).toFixed(2)}
-                    </td>
-                    <td style="padding: 8px 6px; text-align: center;">
-                        <select class="form-select form-select-sm" style="font-size: 10px; width: 60px;">
-                            <option value="">Exit</option>
-                            <option value="1">1 lot</option>
-                        </select>
-                    </td>
-                    <td style="padding: 8px 6px; text-align: center;">
-                        <button class="btn btn-outline-secondary btn-sm" style="font-size: 9px; padding: 2px 6px;">
-                            <i class="fas fa-lock"></i>
-                        </button>
-                    </td>
-                    <td style="padding: 8px 6px; text-align: center;">
-                        <button class="btn btn-outline-danger btn-sm" style="font-size: 9px; padding: 2px 6px;" onclick="removeActiveLot('${lot.id}')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </td>
-                `;
-                
-                tableBody.appendChild(row);
-            });
-        }
-                    <td style="padding: 8px 6px; text-align: center; font-weight: 600;" class="${pnlColor}">
-                        ${pnlSign}₹${Math.abs(pnl).toFixed(2)}
-                    </td>
-                    <td style="padding: 8px 6px; text-align: center;">
-                        <select class="form-select form-select-sm" style="font-size: 10px; width: 60px;">
-                            <option value="">Exit</option>
-                            <option value="1">1 lot</option>
-                        </select>
-                    </td>
-                    <td style="padding: 8px 6px; text-align: center;">
-                        <button class="btn btn-outline-secondary btn-sm" style="font-size: 9px; padding: 2px 6px;">
-                            <i class="fas fa-lock"></i>
-                        </button>
-                    </td>
-                    <td style="padding: 8px 6px; text-align: center;">
-                        <button class="btn btn-outline-danger btn-sm" style="font-size: 9px; padding: 2px 6px;" onclick="removeActiveLot('${lot.id}')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </td>
-                `;
-                
-                tableBody.appendChild(row);
-            });
-        }
-        
-        // ========== EXITED TRADES SECTION ==========
-        if (exitedCount > 0) {
-            // Exited trades header
-            const exitedHeaderRow = document.createElement('tr');
-            exitedHeaderRow.innerHTML = `
-                <td colspan="16" style="background-color: #f8f9fa; padding: 8px; font-weight: bold; color: #6c757d; border-left: 4px solid #6c757d; margin-top: 10px;">
-                    <i class="fas fa-check-circle me-2"></i>Exited Trades (${exitedCount}) - Realized P&L: ₹${(window.realizedPnL || 0).toFixed(2)}
+                    </div>
+                </td>
+                <td style="padding: 8px 6px; text-align: center;" class="qty-cell" data-position-key="${positionKey}">${entry.lots * 75}</td>
+                <td style="padding: 8px 6px; font-size: 11px;">${symbol}</td>
+                <td style="padding: 8px 6px; font-size: 11px;">${timeDisplay}</td>
+                <td style="padding: 8px 6px; text-align: center;">${entry.strike}</td>
+                <td style="padding: 8px 6px; font-size: 11px;">09-SEP-25</td>
+                <td style="padding: 8px 6px; text-align: center;">${entry.entryPrice ? `₹${entry.entryPrice.toFixed(2)}` : '-'}</td>
+                <td style="padding: 8px 6px; text-align: center;">${displayPrice}</td>
+                <td style="padding: 8px 6px; text-align: center;">0.00</td>
+                <td style="padding: 8px 6px; text-align: center; font-weight: 600;" class="${pnlColor}">
+                    ${pnlSign}₹${Math.abs(pnl).toFixed(2)}
+                </td>
+                <td style="padding: 8px 6px;">
+                    <button class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </td>
             `;
-            tableBody.appendChild(exitedHeaderRow);
             
-            // Sort exited trades by close time (newest first)
-            const sortedExitedTrades = [...window.exitedTrades].sort((a, b) => new Date(b.closeTime) - new Date(a.closeTime));
-            
-            // Create rows for exited trades
-            sortedExitedTrades.forEach((trade, index) => {
-                // Build symbol name
-                const expiryFormatted = formatExpiryForSymbol(trade.expiry);
-                const symbol = `NSE:NIFTY${expiryFormatted}${trade.strike}${trade.optionType}`;
-                
-                // Professional action badge with complete trade cycle
-                const actionBadge = `<span class="badge bg-secondary text-white" style="font-size: 9px; white-space: nowrap;">${trade.actionLabel}</span>`;
-                
-                // Format timestamps
-                const openTimeDisplay = new Date(trade.openTime).toLocaleDateString() + ' ' + new Date(trade.openTime).toLocaleTimeString();
-                const closeTimeDisplay = new Date(trade.closeTime).toLocaleDateString() + ' ' + new Date(trade.closeTime).toLocaleTimeString();
-                
-                // P&L styling
-                const pnlColor = trade.realizedPnL >= 0 ? 'text-success' : 'text-danger';
-                const pnlSign = trade.realizedPnL >= 0 ? '+' : '';
-                
-                const row = document.createElement('tr');
-                row.className = 'position-row exited-position';
-                row.style.cssText = 'border-left: 3px solid #6c757d; background-color: #f8f9fa; opacity: 0.9;'; // Gray border for exited
-                row.dataset.positionKey = `exited_${trade.id}`;
-                
-                row.innerHTML = `
-                    <td style="padding: 8px 6px; text-align: center;">
-                        <input type="checkbox" class="position-checkbox" data-position-key="exited_${trade.id}" style="transform: scale(0.8);">
-                    </td>
-                    <td style="padding: 8px 6px; text-align: center;">
-                        <span class="badge bg-${trade.optionType === 'CE' ? 'success' : 'primary'} text-white">${trade.optionType}</span>
-                        <span class="badge bg-secondary ms-1" style="font-size: 8px;">EXITED</span>
-                    </td>
-                    <td style="padding: 8px 6px; text-align: center;">${actionBadge}</td>
-                    <td style="padding: 8px 6px; text-align: center;">1</td>
-                    <td style="padding: 8px 6px; text-align: center;">75</td>
-                    <td style="padding: 8px 6px; font-size: 11px;">${symbol}</td>
-                    <td style="padding: 8px 6px; font-size: 11px;">${closeTimeDisplay}</td>
-                    <td style="padding: 8px 6px; text-align: center;">${trade.strike}</td>
-                    <td style="padding: 8px 6px; font-size: 11px;">16-SEP-25</td>
-                    <td style="padding: 8px 6px; text-align: center;">₹${trade.openPrice.toFixed(2)}</td>
-                    <td style="padding: 8px 6px; text-align: center;">₹${trade.closePrice.toFixed(2)}</td>
-                    <td style="padding: 8px 6px; text-align: center;">0.00</td>
-                    <td style="padding: 8px 6px; text-align: center; font-weight: bold;" class="${pnlColor}">
-                        ${pnlSign}₹${Math.abs(trade.realizedPnL).toFixed(2)}
-                    </td>
-                    <td style="padding: 8px 6px; text-align: center;">-</td>
-                    <td style="padding: 8px 6px; text-align: center;">-</td>
-                    <td style="padding: 8px 6px; text-align: center;">
-                        <button class="btn btn-outline-danger btn-sm" style="font-size: 9px; padding: 2px 6px;" onclick="removeExitedTrade('${trade.id}')">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                `;
-                
-                tableBody.appendChild(row);
-            });
-        }
+            tableBody.appendChild(row);
+        });
         
-        // Update positions count in header with professional formatting
+        // Update positions count in header
+        const activeCount = Object.keys(window.globalPositions || {}).length;
+        const closedCount = (window.closedTrades || []).length;
         const positionsCount = document.querySelector('#positionCount');
         if (positionsCount) {
-            if (activeCount > 0 && exitedCount > 0) {
-                positionsCount.textContent = `${activeCount} Active (${exitedCount} Exited)`;
-            } else if (activeCount > 0) {
-                positionsCount.textContent = `${activeCount} Active`;
-            } else if (exitedCount > 0) {
-                positionsCount.textContent = `${exitedCount} Exited`;
-            } else {
-                positionsCount.textContent = '0 Positions';
-            }
-            positionsCount.className = activeCount > 0 ? 'badge bg-success text-white' : 'badge bg-light text-dark';
+            const activeText = activeCount === 1 ? '1 Active' : `${activeCount} Active`;
+            const closedText = closedCount > 0 ? ` (${closedCount} Closed)` : '';
+            positionsCount.textContent = `${activeText}${closedText}`;
         }
-        
-        console.log(`[PROFESSIONAL TABLE] Table updated - Active: ${activeCount}, Exited: ${exitedCount}`);
     }
-    
-    // Helper functions for professional netting system
-    window.removeActiveLot = function removeActiveLot(lotId) {
-        console.log(`[PROFESSIONAL NETTING] Removing active lot: ${lotId}`);
-        const lotIndex = window.activeLots.findIndex(lot => lot.id === lotId);
-        if (lotIndex !== -1) {
-            const removedLot = window.activeLots[lotIndex];
-            window.activeLots.splice(lotIndex, 1);
-            
-            const rowIndex = removedLot.rowIndex;
-            const key = removedLot.key;
-            const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
-            
-            console.log(`[TABLE BUTTON] Lot removed: ${lotId}, rowIndex: ${rowIndex}, key: ${key}`);
-            
-            // **COMPLETE SYNCHRONIZATION FLOW**
-            // 1. Update counters for current expiry
-            if (removedLot.expiry === currentExpiry) {
-                if (counters[rowIndex] && counters[rowIndex][key] > 0) {
-                    counters[rowIndex][key]--;
-                }
-            }
-            
-            // 2. Calculate actual badge count for this specific position
-            const currentLots = window.activeLots.filter(lot => 
-                lot.strike === removedLot.strike && 
-                lot.expiry === currentExpiry && 
-                lot.optionType === removedLot.optionType && 
-                lot.action === removedLot.action
-            ).length;
-            
-            // 3. Recalculate globalPositions from activeLots
-            updateGlobalPositionsFromActiveLots();
-            
-            // 4. Update button badge with correct count
-            updateButtonBadge(rowIndex, key, currentLots);
-            
-            // 5. Update button display
-            updateButtonDisplay(rowIndex, key);
-            
-            // 6. Update position card
-            updatePositionCard(rowIndex, key);
-            
-            // 7. Update current positions table
-            updateCurrentPositionsTable();
-            
-            // 8. Update payoff chart
-            if (typeof createPayoffChartFromOptionChain === 'function') {
-                createPayoffChartFromOptionChain();
-            }
-            
-            // 9. Update real-time payoff chart lines
-            if (window.webSocketHandler && typeof window.webSocketHandler.updatePayoffChartSpotPrice === 'function') {
-                window.webSocketHandler.updatePayoffChartSpotPrice();
-            }
-            
-            console.log(`[TABLE BUTTON] ✅ Complete synchronization finished. Current lots for ${key}: ${currentLots}`);
-        } else {
-            console.log(`[TABLE BUTTON] ❌ Lot ${lotId} not found in activeLots array`);
-        }
-    };
-    
-    // New functions for aggregated table lot management
-    window.removePositionLot = function removePositionLot(referenceLotId) {
-        console.log(`[AGGREGATED TABLE] Removing lot from position: ${referenceLotId}`);
-        const referenceLot = window.activeLots.find(lot => lot.id === referenceLotId);
-        if (!referenceLot) {
-            console.log(`[AGGREGATED TABLE] ❌ Reference lot not found: ${referenceLotId}`);
-            return;
-        }
-        
-        // Find any lot with same strike/expiry/type/action (LIFO removal)
-        const similarLots = window.activeLots.filter(lot => 
-            lot.strike === referenceLot.strike && 
-            lot.expiry === referenceLot.expiry && 
-            lot.optionType === referenceLot.optionType && 
-            lot.action === referenceLot.action
-        ).sort((a, b) => b.timestamp - a.timestamp);
-        
-        if (similarLots.length > 0) {
-            const lotToRemove = similarLots[0];
-            removeActiveLot(lotToRemove.id);
-            console.log(`[AGGREGATED TABLE] ✅ Removed lot: ${lotToRemove.id}`);
-        }
-    };
-    
-    window.addPositionLot = function addPositionLot(referenceLotId) {
-        console.log(`[AGGREGATED TABLE] Adding lot to position: ${referenceLotId}`);
-        const referenceLot = window.activeLots.find(lot => lot.id === referenceLotId);
-        if (!referenceLot) {
-            console.log(`[AGGREGATED TABLE] ❌ Reference lot not found: ${referenceLotId}`);
-            return;
-        }
-        
-        // **SIMPLE AUTOMATIC NETTING CHECK**
-        const oppositeAction = referenceLot.action === 'Buy' ? 'Sell' : 'Buy';
-        const oppositeLots = window.activeLots.filter(lot => 
-            lot.strike === referenceLot.strike && 
-            lot.expiry === referenceLot.expiry && 
-            lot.optionType === referenceLot.optionType && 
-            lot.action === oppositeAction
-        );
-        
-        if (oppositeLots.length > 0) {
-            // **AUTOMATIC NETTING**: Remove opposite lot and create exited trade
-            const oppositeLot = oppositeLots[0]; // Take first opposite lot
-            const currentLTP = getCurrentLTP(referenceLot.strike, referenceLot.optionType, referenceLot.expiry) || 100;
-            
-            // Remove opposite lot from active
-            const oppositeIndex = window.activeLots.findIndex(lot => lot.id === oppositeLot.id);
-            if (oppositeIndex !== -1) {
-                window.activeLots.splice(oppositeIndex, 1);
-            }
-            
-            // Calculate P&L for the exited trade
-            let pnl = 0;
-            if (oppositeLot.action === 'Buy') {
-                // Buy to Open -> Sell to Close
-                pnl = (currentLTP - oppositeLot.entryPrice) * 75;
-            } else {
-                // Sell to Open -> Buy to Close
-                pnl = (oppositeLot.entryPrice - currentLTP) * 75;
-            }
-            
-            // Create exited trade entry
-            const exitedTrade = {
-                id: Date.now() + Math.random(),
-                strike: oppositeLot.strike,
-                expiry: oppositeLot.expiry,
-                optionType: oppositeLot.optionType,
-                openAction: oppositeLot.action,
-                closeAction: referenceLot.action,
-                actionLabel: oppositeLot.action === 'Buy' ? 'BUY TO OPEN → SELL TO CLOSE' : 'SELL TO OPEN → BUY TO CLOSE',
-                entryPrice: oppositeLot.entryPrice,
-                exitPrice: currentLTP,
-                openTime: oppositeLot.timestamp,
-                closeTime: Date.now(),
-                realizedPnL: pnl
-            };
-            
-            // Add to exited trades
-            if (!window.exitedTrades) window.exitedTrades = [];
-            window.exitedTrades.push(exitedTrade);
-            
-            // Update realized P&L
-            if (!window.realizedPnL) window.realizedPnL = 0;
-            window.realizedPnL += pnl;
-            
-            console.log(`[AUTOMATIC NETTING] ✅ Netted ${oppositeLot.action} vs ${referenceLot.action} for ${referenceLot.strike} ${referenceLot.optionType}. P&L: ₹${pnl.toFixed(2)}`);
-            
-            // Update all components
-            updateGlobalPositionsFromActiveLots();
-            updateCurrentPositionsTable();
-            updateAllPositionCards();
-            updateAllButtonBadges();
-            
-            if (typeof createPayoffChartFromOptionChain === 'function') {
-                createPayoffChartFromOptionChain();
-            }
-            
-            return; // Exit without adding new lot
-        }
-        
-        // No netting - add normal lot
-        addSimilarLot(referenceLotId);
-    };
-    
-    // Legacy function for compatibility
-    window.addSimilarLot = function addSimilarLot(lotId) {
-        console.log(`[COMPATIBILITY] Adding similar lot to: ${lotId}`);
-        const referenceLot = window.activeLots.find(lot => lot.id === lotId);
-        if (referenceLot) {
-            const rowIndex = referenceLot.rowIndex;
-            const key = referenceLot.key;
-            const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
-            
-            // Create new lot with same properties
-            const newLot = {
-                id: Date.now() + Math.random(),
-                strike: referenceLot.strike,
-                expiry: referenceLot.expiry,
-                optionType: referenceLot.optionType,
-                action: referenceLot.action,
-                entryPrice: getCurrentLTP(referenceLot.strike, referenceLot.optionType, referenceLot.expiry) || referenceLot.entryPrice,
-                rowIndex: rowIndex,
-                key: key,
-                timestamp: Date.now()
-            };
-            
-            // Add to activeLots
-            window.activeLots.push(newLot);
-            
-            // Update counters for current expiry
-            if (newLot.expiry === currentExpiry) {
-                if (!counters[rowIndex]) counters[rowIndex] = {};
-                if (!counters[rowIndex][key]) counters[rowIndex][key] = 0;
-                counters[rowIndex][key]++;
-            }
-            
-            // Calculate badge count
-            const currentLots = window.activeLots.filter(lot => 
-                lot.strike === newLot.strike && 
-                lot.expiry === currentExpiry && 
-                lot.optionType === newLot.optionType && 
-                lot.action === newLot.action
-            ).length;
-            
-            // Complete synchronization
-            updateGlobalPositionsFromActiveLots();
-            updateButtonBadge(rowIndex, key, currentLots);
-            updateButtonDisplay(rowIndex, key);
-            updatePositionCard(rowIndex, key);
-            updateCurrentPositionsTable();
-            
-            if (typeof createPayoffChartFromOptionChain === 'function') {
-                createPayoffChartFromOptionChain();
-            }
-            
-            console.log(`[COMPATIBILITY] ✅ Similar lot added: ${newLot.id}`);
-        }
-    };
-    
-    window.removeExitedTrade = function removeExitedTrade(tradeId) {
-        console.log(`[PROFESSIONAL NETTING] Removing exited trade: ${tradeId}`);
-        const tradeIndex = window.exitedTrades.findIndex(trade => trade.id === tradeId);
-        if (tradeIndex !== -1) {
-            const removedTrade = window.exitedTrades[tradeIndex];
-            window.exitedTrades.splice(tradeIndex, 1);
-            
-            // Update realized P&L
-            window.realizedPnL -= removedTrade.realizedPnL;
-            updateRealizedPnLDisplay();
-            updateCurrentPositionsTable();
-            
-            console.log(`[PROFESSIONAL NETTING] Exited trade removed successfully`);
-        }
-    };
-    
-    window.updateButtonBadge = function updateButtonBadge(rowIndex, key, count) {
-        // Try multiple selectors to find the badge - most comprehensive approach
-        let badge = null;
-        
-        // 1. Try direct ID selector (most reliable)
-        badge = document.getElementById(`${key}Badge_${rowIndex}`);
-        
-        if (!badge) {
-            // 2. Try finding via button container
-            const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
-            if (row) {
-                const btnContainer = row.querySelector(`[data-key="${key}"]`);
-                if (btnContainer) {
-                    badge = btnContainer.querySelector('.count_badge');
-                }
-            }
-        }
-        
-        if (!badge) {
-            // 3. Try finding via button ID then badge
-            const button = document.getElementById(`${key}Btn_${rowIndex}`);
-            if (button) {
-                badge = button.querySelector('.count_badge') || button.querySelector('.badge');
-            }
-        }
-        
-        if (!badge) {
-            // 4. Try more general selector
-            badge = document.querySelector(`#row-${rowIndex} .btn-container[data-key="${key}"] .count_badge`);
-        }
-        
-        if (badge) {
-            if (count > 0) {
-                badge.textContent = count;
-                badge.style.display = 'inline-block';
-                badge.style.visibility = 'visible';
-            } else {
-                badge.style.display = 'none';
-                badge.style.visibility = 'hidden';
-            }
-            console.log(`[BADGE UPDATE] ✅ Updated badge for ${key} row ${rowIndex}: ${count}`);
-        } else {
-            console.log(`[BADGE UPDATE] ❌ Badge element not found for ${key} row ${rowIndex} - checked multiple selectors`);
-            
-            // Debug: log available elements
-            const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
-            if (row) {
-                const containers = row.querySelectorAll('.btn-container');
-                console.log(`[BADGE DEBUG] Found ${containers.length} button containers in row ${rowIndex}`);
-                containers.forEach((container, idx) => {
-                    const dataKey = container.getAttribute('data-key');
-                    const badges = container.querySelectorAll('.count_badge, .badge');
-                    console.log(`[BADGE DEBUG] Container ${idx}: data-key="${dataKey}", badges: ${badges.length}`);
-                });
-            }
-        }
-    };
-    
-    // Synchronization function - keeps globalPositions in sync with activeLots for backward compatibility
-    window.updateGlobalPositionsFromActiveLots = function updateGlobalPositionsFromActiveLots() {
-        console.log(`[SYNC] Updating globalPositions from activeLots`);
-        
-        if (!window.activeLots) window.activeLots = [];
-        if (!window.globalPositions) window.globalPositions = {};
-        
-        // Clear existing globalPositions
-        window.globalPositions = {};
-        
-        // Group active lots by strike, expiry, optionType, and action
-        const grouped = {};
-        window.activeLots.forEach(lot => {
-            const groupKey = `${lot.strike}-${lot.expiry}-${lot.key}`;
-            if (!grouped[groupKey]) {
-                grouped[groupKey] = {
-                    strike: lot.strike,
-                    expiry: lot.expiry,
-                    optionType: lot.optionType,
-                    action: lot.action,
-                    lots: 0,
-                    rowIndex: lot.rowIndex,
-                    key: lot.key,
-                    entryPrice: lot.entryPrice
-                };
-            }
-            grouped[groupKey].lots++;
-        });
-        
-        // Calculate net positions for each group
-        Object.entries(grouped).forEach(([groupKey, group]) => {
-            const { strike, expiry, optionType } = group;
-            
-            // Count buy and sell lots for this strike/expiry/optionType
-            const buyLots = window.activeLots.filter(lot => 
-                lot.strike === strike && 
-                lot.expiry === expiry && 
-                lot.optionType === optionType && 
-                lot.action === 'Buy'
-            ).length;
-            
-            const sellLots = window.activeLots.filter(lot => 
-                lot.strike === strike && 
-                lot.expiry === expiry && 
-                lot.optionType === optionType && 
-                lot.action === 'Sell'
-            ).length;
-            
-            const netLots = buyLots - sellLots;
-            
-            if (netLots !== 0) {
-                const netAction = netLots > 0 ? 'Buy' : 'Sell';
-                const netKey = `${optionType.toLowerCase()}${netAction}`;
-                const globalKey = `${strike}-${expiry}-${netKey}`;
-                
-                window.globalPositions[globalKey] = {
-                    strike: strike,
-                    expiry: expiry,
-                    optionType: optionType,
-                    action: netAction,
-                    lots: Math.abs(netLots),
-                    rowIndex: group.rowIndex,
-                    key: netKey,
-                    entryPrice: group.entryPrice
-                };
-                
-                console.log(`[SYNC] Created globalPosition: ${globalKey} with ${Math.abs(netLots)} ${netAction} lots`);
-            }
-        });
-        
-        console.log(`[SYNC] GlobalPositions updated:`, Object.keys(window.globalPositions).length, 'net positions');
-    };
-    
-    // Update live LTP and P&L in Current Positions table
-    
     
     // Update live LTP and P&L in Current Positions table
     window.updatePositionTableLivePrices = function updatePositionTableLivePrices() {
@@ -4457,7 +4116,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Update position management card content - FIXED to use activeLots
+    // Update position management card content
     function updatePositionCard(rowIndex, key) {
         const cardContent = document.getElementById(`${key}CardContent_${rowIndex}`);
         if (!cardContent) return;
@@ -4473,26 +4132,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const optionType = key.includes('ce') ? 'CE' : 'PE';
         const action = key.includes('Buy') ? 'Buy' : 'Sell';
         
-        // Group positions by expiry from activeLots (primary data source)
-        const relevantLots = window.activeLots.filter(lot => 
-            lot.strike === currentStrike && 
-            lot.optionType === optionType && 
-            lot.action === action
-        );
+        // Group positions by expiry for this strike, option type, and action
+        const relevantPositions = {};
         
-        // Group by expiry
-        const lotsByExpiry = {};
-        relevantLots.forEach(lot => {
-            if (!lotsByExpiry[lot.expiry]) {
-                lotsByExpiry[lot.expiry] = [];
+        Object.entries(window.globalPositions || {}).forEach(([posKey, position]) => {
+            if (position.strike === currentStrike && 
+                position.optionType === optionType && 
+                position.action === action && 
+                position.lots > 0) {
+                
+                const expiry = position.expiry;
+                if (!relevantPositions[expiry]) {
+                    relevantPositions[expiry] = [];
+                }
+                relevantPositions[expiry].push(position);
             }
-            lotsByExpiry[lot.expiry].push(lot);
         });
         
         // Build card content
         let content = '';
         
-        if (Object.keys(lotsByExpiry).length === 0) {
+        if (Object.keys(relevantPositions).length === 0) {
             content = `
                 <div class="text-center text-muted py-3">
                     <i class="fas fa-info-circle me-2"></i>No positions found
@@ -4500,10 +4160,9 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         } else {
             // Group by expiry dates
-            Object.entries(lotsByExpiry).forEach(([expiry, lots]) => {
-                const totalLots = lots.length;
+            Object.entries(relevantPositions).forEach(([expiry, positions]) => {
+                const totalLots = positions.reduce((sum, pos) => sum + pos.lots, 0);
                 const expiryDisplay = formatExpiryDisplay(expiry);
-                const referenceLotId = lots[0].id; // Use first lot as reference
                 
                 content += `
                     <div class="position-expiry-tag">${expiryDisplay}</div>
@@ -4513,10 +4172,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             <span>${totalLots} lots</span>
                         </div>
                         <div class="position-control-buttons">
-                            <button class="position-btn-decrease" onclick="removePositionLot('${referenceLotId}')">
+                            <button class="position-btn-decrease" onclick="handleExpirySpecificPositionChange(${rowIndex}, '${key}', 'remove', '${expiry}')">
                                 <i class="fas fa-minus"></i>
                             </button>
-                            <button class="position-btn-increase" onclick="addPositionLot('${referenceLotId}')">
+                            <button class="position-btn-increase" onclick="handleExpirySpecificPositionChange(${rowIndex}, '${key}', 'add', '${expiry}')">
                                 <i class="fas fa-plus"></i>
                             </button>
                         </div>
@@ -4525,9 +4184,8 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // Add "Add Position" button for new expiry
-            const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
             content += `
-                <div class="position-add-btn" onclick="handleExpirySpecificPositionChange(${rowIndex}, '${key}', 'add', '${currentExpiry}')">
+                <div class="position-add-btn" onclick="showAddPositionDialog(${rowIndex}, '${key}', ${currentStrike}, '${optionType}', '${action}')">
                     <i class="fas fa-plus"></i>
                     Add Position
                 </div>
@@ -4536,56 +4194,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         cardContent.innerHTML = content;
     }
-    
-    // Helper functions for complete synchronization
-    window.updateAllPositionCards = function updateAllPositionCards() {
-        console.log(`[SYNC] Updating all position cards`);
-        // Update all visible position cards
-        document.querySelectorAll('.position-management-card[style*="block"]').forEach(card => {
-            const cardId = card.id;
-            const match = cardId.match(/(.+)Card_(\d+)/);
-            if (match) {
-                const key = match[1];
-                const rowIndex = parseInt(match[2]);
-                updatePositionCard(rowIndex, key);
-            }
-        });
-    };
-    
-    window.updateAllButtonBadges = function updateAllButtonBadges() {
-        console.log(`[SYNC] Updating all button badges`);
-        const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
-        
-        // Group active lots by position key for current expiry
-        const badgeCounts = {};
-        window.activeLots.forEach(lot => {
-            if (lot.expiry === currentExpiry) {
-                const badgeKey = `${lot.rowIndex}_${lot.key}`;
-                badgeCounts[badgeKey] = (badgeCounts[badgeKey] || 0) + 1;
-            }
-        });
-        
-        // Update all badges
-        Object.entries(badgeCounts).forEach(([badgeKey, count]) => {
-            const [rowIndex, key] = badgeKey.split('_');
-            updateButtonBadge(parseInt(rowIndex), key, count);
-        });
-        
-        // Clear badges for positions with no lots
-        const allBadges = document.querySelectorAll('.count_badge');
-        allBadges.forEach(badge => {
-            const badgeId = badge.id;
-            const match = badgeId.match(/(.+)Badge_(\d+)/);
-            if (match) {
-                const key = match[1];
-                const rowIndex = parseInt(match[2]);
-                const badgeKey = `${rowIndex}_${key}`;
-                if (!badgeCounts[badgeKey]) {
-                    updateButtonBadge(rowIndex, key, 0);
-                }
-            }
-        });
-    };
     
     // Close all position management cards
     function closeAllPositionCards() {
