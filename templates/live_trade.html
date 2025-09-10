@@ -2886,25 +2886,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        console.log(`🔥 Total allEntries after active lots: ${allEntries.length}`);
-        
-        // Add closed trades (showing as completed trades)
-        window.closedTrades.forEach(trade => {
-            allEntries.push({
-                type: 'closed',
-                strike: trade.strike,
-                expiry: trade.expiry,
-                optionType: trade.optionType,
-                actionLabel: trade.actionLabel,
-                openPrice: trade.openPrice,
-                closePrice: trade.closePrice,
-                realizedPnL: trade.realizedPnL,
-                openTime: trade.openTime,
-                closeTime: trade.closeTime,
-                lots: 1, // Each trade is 1 lot
-                isActive: false
-            });
-        });
+        console.log(`🔥 Total allEntries after active positions: ${allEntries.length}`);
         
         console.log(`🔥 Final allEntries length: ${allEntries.length}`);
         if (allEntries.length === 0) {
@@ -2936,56 +2918,39 @@ document.addEventListener('DOMContentLoaded', function() {
             const expiryFormatted = formatExpiryForSymbol(entry.expiry);
             const symbol = `NSE:NIFTY${expiryFormatted}${entry.strike}${entry.optionType}`;
             
-            // P&L calculation and display
+            // P&L calculation and display (only for active positions)
             let pnl = 0;
-            let pnlLabel = '';
             let displayPrice = '';
             
-            if (entry.type === 'active') {
-                // Active lot: calculate unrealized P&L
-                const entry_price = entry.entryPrice || 0;
-                const current_ltp = entry.currentLTP || 0;
-                const quantity = 75; // 1 lot
-                
-                if (entry_price > 0 && current_ltp > 0) {
-                    if (entry.action === 'Buy') {
-                        pnl = (current_ltp - entry_price) * quantity;
-                    } else {
-                        pnl = (entry_price - current_ltp) * quantity;
-                    }
+            // Active position: calculate unrealized P&L
+            const entry_price = entry.entryPrice || 0;
+            const current_ltp = entry.currentLTP || 0;
+            const quantity = entry.lots * 75; // Multiple lots
+            
+            if (entry_price > 0 && current_ltp > 0) {
+                if (entry.action === 'Buy') {
+                    pnl = (current_ltp - entry_price) * quantity;
+                } else {
+                    pnl = (entry_price - current_ltp) * quantity;
                 }
-                pnlLabel = 'Unrealized P&L';
-                displayPrice = `₹${(current_ltp || 0).toFixed(2)}`;
-            } else {
-                // Closed trade: use realized P&L
-                pnl = entry.realizedPnL || 0;
-                pnlLabel = 'Realized P&L';
-                displayPrice = `₹${(entry.openPrice || 0).toFixed(2)} → ₹${(entry.closePrice || 0).toFixed(2)}`;
             }
+            displayPrice = `₹${(current_ltp || 0).toFixed(2)}`;
             
             // Style based on position type and status
             const typeClass = entry.optionType === 'CE' ? 'text-success' : 'text-primary';
             const pnlColor = pnl >= 0 ? 'text-success' : 'text-danger';
             const pnlSign = pnl >= 0 ? '+' : '';
             
-            // Action badge styling
+            // Action badge styling (only for active positions)
             let actionBadge;
-            if (entry.type === 'closed') {
-                actionBadge = `<span class="badge bg-secondary text-white">${entry.actionLabel.toUpperCase()}</span>`;
-            } else if (entry.actionLabel.includes('Buy')) {
+            if (entry.actionLabel.includes('Buy')) {
                 actionBadge = `<span class="badge bg-success text-white">${entry.actionLabel.toUpperCase()}</span>`;
             } else {
                 actionBadge = `<span class="badge bg-danger text-white">${entry.actionLabel.toUpperCase()}</span>`;
             }
             
-            // Row styling
-            const rowStyle = entry.type === 'closed' ? 'background-color: #f8f9fa; opacity: 0.8;' : '';
-            const statusBadge = entry.type === 'closed' ? '<span class="badge bg-info ms-2">CLOSED</span>' : '';
-            
             // Format timestamps
-            const timeDisplay = entry.type === 'closed' ? 
-                `${new Date(entry.closeTime).toLocaleDateString()} ${new Date(entry.closeTime).toLocaleTimeString()}` :
-                `${new Date(entry.timestamp).toLocaleDateString()} ${new Date(entry.timestamp).toLocaleTimeString()}`;
+            const timeDisplay = `${new Date(entry.timestamp).toLocaleDateString()} ${new Date(entry.timestamp).toLocaleTimeString()}`;
             
             const row = document.createElement('tr');
             row.style.cssText = rowStyle;
@@ -2998,7 +2963,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 </td>
                 <td style="padding: 8px 6px;">
                     <span class="badge bg-${entry.optionType === 'CE' ? 'success' : 'primary'} text-white">${entry.optionType}</span>
-                    ${statusBadge}
                 </td>
                 <td style="padding: 8px 6px;">${actionBadge}</td>
                 <td style="padding: 8px 6px; text-align: center;" class="lots-cell">
@@ -3044,12 +3008,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update positions count in header
         const activeCount = Object.keys(window.globalPositions || {}).length;
-        const closedCount = (window.closedTrades || []).length;
         const positionsCount = document.querySelector('#positionCount');
         if (positionsCount) {
             const activeText = activeCount === 1 ? '1 Active' : `${activeCount} Active`;
-            const closedText = closedCount > 0 ? ` (${closedCount} Closed)` : '';
-            positionsCount.textContent = `${activeText}${closedText}`;
+            positionsCount.textContent = activeText;
         }
     }
     
