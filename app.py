@@ -137,10 +137,6 @@ app.add_url_rule('/api/market-times/initialize', 'api_initialize_default_markets
 def live_trade():
     return render_template("live_trade.html")
 
-@app.route("/option-trader")
-def option_trader():
-    return render_template("option_trader.html")
-
 
 @app.route('/get_access_token', methods=['GET'])
 def get_access_token():
