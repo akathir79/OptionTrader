@@ -4774,8 +4774,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Global click handler to close position cards
-    document.addEventListener('click', closeAllPositionCards);
+    // **FIX: Global click handler to close position cards only when clicking outside
+    document.addEventListener('click', function(event) {
+        // Don't close if clicking on a position card or its contents
+        const positionCard = event.target.closest('.position-management-card');
+        const positionButton = event.target.closest('.position-management-btn');
+        const isPositionCardClick = positionCard || positionButton;
+        
+        // Only close position cards if clicking outside of them
+        if (!isPositionCardClick) {
+            closeAllPositionCards();
+        }
+    });
     
     // Calculate breakeven points for current positions
     function calculateBreakevens() {
