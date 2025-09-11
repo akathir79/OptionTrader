@@ -1,0 +1,229 @@
+/* ========== TYPOGRAPHY SYSTEM ========== */
+/* Centralized font management with CSS variables and utility classes */
+
+:root {
+  /* Font Family Variables */
+  --ff-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  --ff-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', 'Courier New', monospace;
+  
+  /* Font Size Scale */
+  --fs-xxs: 10px;  /* badges, micro text */
+  --fs-xs: 11px;   /* labels, help text */
+  --fs-sm: 12px;   /* body, default */
+  --fs-md: 14px;   /* subheaders, buttons */
+  --fs-lg: 16px;   /* card headers */
+  --fs-xl: 18px;   /* section titles */
+  
+  /* Line Heights */
+  --lh-base: 1.35;
+  --lh-tight: 1.25;
+  --lh-relaxed: 1.5;
+  
+  /* Bootstrap Variable Overrides */
+  --bs-body-font-family: var(--ff-base);
+  --bs-body-font-size: var(--fs-sm);
+  --bs-body-line-height: var(--lh-base);
+  
+  /* Optional Global Font Scaler (for future tuning) */
+  --font-scale: 1;
+}
+
+/* ===== BASE TYPOGRAPHY ===== */
+body {
+  font-family: var(--ff-base);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-base);
+}
+
+/* ===== UTILITY CLASSES ===== */
+
+/* Font Size Utilities */
+.text-xxs { font-size: var(--fs-xxs) !important; }
+.text-xs { font-size: var(--fs-xs) !important; }
+.text-sm { font-size: var(--fs-sm) !important; }
+.text-md { font-size: var(--fs-md) !important; }
+.text-lg { font-size: var(--fs-lg) !important; }
+.text-xl { font-size: var(--fs-xl) !important; }
+
+/* Font Family Utilities */
+.font-base { font-family: var(--ff-base) !important; }
+.font-mono { 
+  font-family: var(--ff-mono) !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Specialized Utilities */
+.numbers {
+  font-family: var(--ff-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.text-muted-small {
+  font-size: var(--fs-xs);
+  color: #6c757d;
+  font-weight: 500;
+}
+
+/* Line Height Utilities */
+.lh-tight { line-height: var(--lh-tight) !important; }
+.lh-base { line-height: var(--lh-base) !important; }
+.lh-relaxed { line-height: var(--lh-relaxed) !important; }
+
+/* ===== COMPONENT-SPECIFIC TYPOGRAPHY ===== */
+
+/* Table Cells with Numbers */
+.table td.numbers,
+.table th.numbers,
+td[data-numeric="true"],
+th[data-numeric="true"] {
+  font-family: var(--ff-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Strike Prices */
+.strike-price {
+  font-family: var(--ff-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Option Chain Data */
+.option-data {
+  font-family: var(--ff-mono);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Badges and Labels */
+.badge {
+  font-size: var(--fs-xxs);
+  font-weight: 600;
+}
+
+.form-label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+}
+
+/* Button Typography */
+.btn {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+}
+
+.btn-sm {
+  font-size: var(--fs-xs);
+}
+
+.btn-lg {
+  font-size: var(--fs-md);
+}
+
+/* Card Typography */
+.card-header {
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+
+.card-title {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+}
+
+/* Symbol Display */
+.symbol-display {
+  font-family: var(--ff-mono);
+  font-size: var(--fs-xxs);
+  font-variant-numeric: tabular-nums;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+/* Price Display */
+.price-display {
+  font-family: var(--ff-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Market Data */
+.market-data {
+  font-family: var(--ff-mono);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Position Information */
+.position-info {
+  font-size: var(--fs-xs);
+  color: #666;
+}
+
+/* Status Text */
+.status-text {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
+
+/* Help Text */
+.help-text {
+  font-size: var(--fs-xs);
+  color: #6c757d;
+  line-height: var(--lh-relaxed);
+}
+
+/* ===== RESPONSIVE FONT SCALING ===== */
+@media (max-width: 768px) {
+  :root {
+    --font-scale: 0.9;
+    --fs-xxs: 9px;
+    --fs-xs: 10px;
+    --fs-sm: 11px;
+    --fs-md: 12px;
+    --fs-lg: 14px;
+    --fs-xl: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  :root {
+    --font-scale: 0.85;
+    --fs-xxs: 8px;
+    --fs-xs: 9px;
+    --fs-sm: 10px;
+    --fs-md: 11px;
+    --fs-lg: 13px;
+    --fs-xl: 15px;
+  }
+}
+
+/* ===== ACCESSIBILITY IMPROVEMENTS ===== */
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    transition: font-size 0.2s ease;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .text-muted-small {
+    color: #495057;
+  }
+  
+  .help-text {
+    color: #495057;
+  }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  :root {
+    --fs-xxs: 8pt;
+    --fs-xs: 9pt;
+    --fs-sm: 10pt;
+    --fs-md: 11pt;
+    --fs-lg: 12pt;
+    --fs-xl: 14pt;
+  }
+}
