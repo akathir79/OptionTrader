@@ -336,7 +336,7 @@ document.addEventListener("DOMContentLoaded", () => {
       fyersSymbolDisplay.style.setProperty('display', 'inline-block', 'important');
       fyersSymbolDisplay.style.setProperty('visibility', 'visible', 'important');
       fyersSymbolDisplay.style.setProperty('color', '#ffffff', 'important');
-      fyersSymbolDisplay.style.setProperty('font-size', '14px', 'important');
+      fyersSymbolDisplay.style.setProperty('font-size', '10px', 'important');
       fyersSymbolDisplay.style.setProperty('font-weight', '700', 'important');
       fyersSymbolDisplay.style.setProperty('background', 'rgba(0, 123, 255, 0.9)', 'important');
       fyersSymbolDisplay.style.setProperty('padding', '6px 12px', 'important');
