@@ -134,7 +134,7 @@ th[data-numeric="true"] {
 /* Symbol Display */
 .symbol-display {
   font-family: var(--ff-mono);
-  font-size: var(--fs-xxs);
+  font-size: 8px;
   font-variant-numeric: tabular-nums;
   color: #6c757d;
   font-weight: 500;
