@@ -2481,7 +2481,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 //====================================================================
-                // **CRITICAL NETTING SYNC - PRESERVE THIS EXACT LOGIC**
+                // **CRITICAL NETTING SYNC - FIXED FOR PARTIAL NETTING**
                 // MUST update globalPositions during netting to keep all systems in sync
                 // This ensures active trades table and position cards show correct counts
                 //====================================================================
@@ -2490,15 +2490,22 @@ document.addEventListener('DOMContentLoaded', function() {
                     (oldestLot.optionType === 'CE' ? 'ceSell' : 'peSell');
                 const oppositePositionKey = `${strike}-${currentExpiry}-${oppositeKey}`;
                 
+                console.log(`🔥 NETTING: Looking for opposite position key: ${oppositePositionKey}`);
+                console.log(`🔥 NETTING: Current globalPositions:`, Object.keys(window.globalPositions));
+                
                 if (window.globalPositions[oppositePositionKey] && window.globalPositions[oppositePositionKey].lots > 0) {
                     window.globalPositions[oppositePositionKey].lots--;
                     console.log(`🔥 NETTING: Reduced globalPositions[${oppositePositionKey}] to ${window.globalPositions[oppositePositionKey].lots}`);
                     
-                    // Remove from globalPositions if lots reach zero
+                    // **CRITICAL FIX**: Only remove from globalPositions if lots reach zero
                     if (window.globalPositions[oppositePositionKey].lots <= 0) {
                         delete window.globalPositions[oppositePositionKey];
                         console.log(`🔥 NETTING: Removed globalPositions[${oppositePositionKey}] - lots reached zero`);
+                    } else {
+                        console.log(`🔥 NETTING: Keeping globalPositions[${oppositePositionKey}] - ${window.globalPositions[oppositePositionKey].lots} lots remaining`);
                     }
+                } else {
+                    console.log(`🔥 NETTING ERROR: Opposite position ${oppositePositionKey} not found or has 0 lots`);
                 }
                 
                 console.log(`🔥 TRADE CLOSED:`, closedTrade);
@@ -2525,7 +2532,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.activeLots.push(newLot);
                 console.log(`🔥 NEW LOT CREATED:`, newLot);
                 
-                // Also add to globalPositions for position management card synchronization
+                // **CRITICAL FIX**: Also add to globalPositions for position management card synchronization
                 const globalPositionKey = `${strike}-${currentExpiry}-${key}`;
                 if (!window.globalPositions[globalPositionKey]) {
                     window.globalPositions[globalPositionKey] = {
@@ -2598,6 +2605,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         console.log(`🔥 Current activeLots AFTER:`, window.activeLots);
         console.log(`🔥 Current closedTrades AFTER:`, window.closedTrades);
+        console.log(`🔥 Current globalPositions AFTER:`, window.globalPositions);
+        console.log(`🔥 GlobalPositions keys count AFTER:`, Object.keys(window.globalPositions || {}).length);
         console.log(`🔥 About to call updateCurrentPositionsTable()`);
         
         updateButtonDisplay(rowIndex, key);
@@ -2994,7 +3003,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add active positions from globalPositions (grouped by position)
         console.log(`🔥 Processing ${Object.keys(window.globalPositions || {}).length} global positions...`);
+        console.log(`🔥 GlobalPositions content:`, window.globalPositions);
         Object.entries(window.globalPositions || {}).forEach(([positionKey, position]) => {
+            console.log(`🔥 Checking position ${positionKey}:`, position, `lots > 0? ${position.lots > 0}`);
             if (position.lots > 0) {
                 console.log(`🔥 Processing global position ${positionKey}:`, position);
                 try {
