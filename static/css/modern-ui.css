@@ -567,49 +567,6 @@ button.btn-modern-icon-xs {
   background: linear-gradient(135deg, #fffef8 0%, #fffaf0 100%) !important;
 }
 
-/* Fix Current Positions Card Padding Issues */
-#currentPositionsCard .card-body {
-  padding: 0 !important;
-}
-
-#currentPositionsCard .table-responsive,
-#currentPositionsCard .table {
-  margin: 0 !important;
-}
-
-/* Ensure section headers in Current Positions card don't create visual left indentation */
-#currentPositionsCard .border-bottom {
-  padding: 8px 0 8px 12px !important;
-}
-
-/* Fix Right Panel - Remove All Unwanted Padding for Full Width Cards */
-.right-panel {
-  padding: 0 !important;
-  margin: 0 !important;
-}
-
-.right-panel > * {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-
-.right-panel .card {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-
-.right-panel .card .card-body {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
-/* Fix gap between splitter and right panel - ensure content starts at edge */
-.right-panel > *:first-child {
-  margin-left: 0 !important;
-  padding-left: 0 !important;
-  border-left: none !important;
-}
-
 /* Active Trades Card - Light Rose */
 .card:has(#activeTradesTable) {
   background: linear-gradient(135deg, #fffafa 0%, #fff5f5 100%) !important;
