@@ -146,7 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
     expiries.forEach(exp => {
       const dte = dteStr(parseDate(exp));
       expiryView.insertAdjacentHTML("beforeend", `
-        <div class="expiry_button flex-shrink-0" style="min-width:100px;">
+        <div class="expiry_button flex-shrink-0" style="min-width:85px;">
           <button class="expiry-btn btn btn-outline-primary btn-sm w-100"
                   value="${exp}" style="font-size:10px;">${exp}</button>
           <small class="text-muted d-block text-center" style="font-size:8px;">

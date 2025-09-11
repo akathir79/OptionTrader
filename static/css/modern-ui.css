@@ -605,9 +605,9 @@ button.btn-modern-icon-xs {
   margin-right: 4px !important;
 }
 
-/* Ensure expiry buttons have adequate spacing */
+/* Ensure expiry buttons have adequate spacing for 4 dates */
 .expiry_button {
-  min-width: 95px !important;
+  min-width: 85px !important;
   flex-shrink: 0 !important;
 }
 
