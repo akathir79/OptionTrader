@@ -599,6 +599,26 @@ button.btn-modern-icon-xs {
   border: none !important;
 }
 
+/* Expiry Dates Container - More Space */
+.d-flex:has(#expiryViewerCarousel) .flex-grow-1 {
+  margin-left: 4px !important;
+  margin-right: 4px !important;
+}
+
+/* Ensure expiry buttons have adequate spacing */
+.expiry_button {
+  min-width: 95px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Adjust expiry area to give more room for dates */
+.d-flex:has(#expiryViewerCarousel) {
+  margin-left: -10px !important;
+  margin-right: -10px !important;
+  padding-left: 10px !important;
+  padding-right: 10px !important;
+}
+
 /* Fallback for cards without specific targeting - Very Light Gray */
 .card {
   background: linear-gradient(135deg, #fdfdfd 0%, #fafafa 100%) !important;
