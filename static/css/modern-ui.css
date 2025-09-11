@@ -487,6 +487,38 @@ button.btn-modern-icon-xs {
   outline: none !important;
 }
 
+/* ===== SPECIFIC HEADER BUTTON OVERRIDES ===== */
+/* Target specific option chain header buttons by ID */
+#refreshBtn, 
+#fullscreenOptionChain, 
+#columnVisibilityDropdown,
+#maximizeChart,
+#minimizeChart {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0.25rem !important;
+  width: 30px !important;
+  height: 30px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 6px !important;
+  color: var(--secondary-gray) !important;
+  transition: var(--transition) !important;
+}
+
+#refreshBtn:hover, 
+#fullscreenOptionChain:hover, 
+#columnVisibilityDropdown:hover,
+#maximizeChart:hover,
+#minimizeChart:hover {
+  background: rgba(255,255,255,0.08) !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--secondary-gray-hover) !important;
+}
+
 .nav-btn-modern:focus,
 .btn-modern-icon:focus,
 .btn-modern-icon-sm:focus,
