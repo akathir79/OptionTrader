@@ -589,6 +589,16 @@ button.btn-modern-icon-xs {
   background: linear-gradient(135deg, #fcfaff 0%, #f7f3ff 100%) !important;
 }
 
+/* Expiry Selection Area - White Background */
+.d-flex:has(#expiryViewerCarousel),
+#expiryViewerCarousel,
+.d-flex:has([id*="expiry"]) {
+  background: white !important;
+  padding: 8px !important;
+  border-radius: 6px !important;
+  border: 1px solid #e9ecef !important;
+}
+
 /* Fallback for cards without specific targeting - Very Light Gray */
 .card {
   background: linear-gradient(135deg, #fdfdfd 0%, #fafafa 100%) !important;
