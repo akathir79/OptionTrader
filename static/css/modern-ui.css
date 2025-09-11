@@ -601,7 +601,7 @@ button.btn-modern-icon-xs {
 
 /* Expiry Dates Container - More Space */
 .d-flex:has(#expiryViewerCarousel) .flex-grow-1 {
-  margin-left: 4px !important;
+  margin-left: 2px !important;
   margin-right: 4px !important;
 }
 
