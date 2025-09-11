@@ -572,6 +572,155 @@
   margin-bottom: 8px;
   font-size: 12px;
   color: #333;
+}
+
+/* Smart Position Management Styles */
+.position-strike-header {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.strike-info, .ltp-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.strike-label, .ltp-label {
+  font-size: 11px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.strike-value, .ltp-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.option-type {
+  background: #007bff;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.position-expiry-section {
+  margin-bottom: 16px;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.position-details {
+  padding: 12px;
+}
+
+.position-breakdown {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 11px;
+}
+
+.buy-lots {
+  color: #28a745;
+  font-weight: 600;
+}
+
+.sell-lots {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+.net-position {
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+}
+
+.net-long {
+  background: #d4edda;
+  color: #155724;
+}
+
+.net-short {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.net-flat {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.smart-position-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.smart-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.2s;
+  min-width: 80px;
+}
+
+.smart-btn .btn-label {
+  font-size: 10px;
+}
+
+.smart-btn.position-btn-decrease {
+  background: #dc3545;
+  color: white;
+}
+
+.smart-btn.position-btn-decrease:hover {
+  background: #c82333;
+}
+
+.smart-btn.position-btn-increase {
+  background: #28a745;
+  color: white;
+}
+
+.smart-btn.position-btn-increase:hover {
+  background: #218838;
+}
+
+.position-add-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+  transition: background 0.2s;
+}
+
+.position-add-btn:hover {
+  background: #0056b3;
   font-weight: 600;
 }
 
@@ -4404,7 +4553,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Update position management card content
+    // **ENHANCED: Smart Position Management Card with Intelligent +/- Buttons**
     function updatePositionCard(rowIndex, key) {
         const cardContent = document.getElementById(`${key}CardContent_${rowIndex}`);
         if (!cardContent) return;
@@ -4418,64 +4567,127 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const optionType = key.includes('ce') ? 'CE' : 'PE';
-        const action = key.includes('Buy') ? 'Buy' : 'Sell';
+        const originalAction = key.includes('Buy') ? 'Buy' : 'Sell';
         
-        // Group positions by expiry for this strike, option type, and action
-        const relevantPositions = {};
+        // **SMART POSITION LOGIC**: Get ALL positions for this strike+optionType (both buy and sell)
+        const allPositionsByExpiry = {};
         
         Object.entries(window.globalPositions || {}).forEach(([posKey, position]) => {
             if (position.strike === currentStrike && 
                 position.optionType === optionType && 
-                position.action === action && 
                 position.lots > 0) {
                 
                 const expiry = position.expiry;
-                if (!relevantPositions[expiry]) {
-                    relevantPositions[expiry] = [];
+                if (!allPositionsByExpiry[expiry]) {
+                    allPositionsByExpiry[expiry] = { buyLots: 0, sellLots: 0, positions: [] };
                 }
-                relevantPositions[expiry].push(position);
+                
+                if (position.action === 'Buy') {
+                    allPositionsByExpiry[expiry].buyLots += position.lots;
+                } else {
+                    allPositionsByExpiry[expiry].sellLots += position.lots;
+                }
+                allPositionsByExpiry[expiry].positions.push(position);
             }
         });
         
-        // Build card content
-        let content = '';
+        // Get current LTP for display
+        const currentLTP = getCurrentLTP(currentStrike, optionType, window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry);
         
-        if (Object.keys(relevantPositions).length === 0) {
-            content = `
+        // Build card content with strike and LTP info
+        let content = `
+            <div class="position-strike-header">
+                <div class="strike-info">
+                    <span class="strike-label">Strike:</span>
+                    <span class="strike-value">${currentStrike}</span>
+                    <span class="option-type">${optionType}</span>
+                </div>
+                <div class="ltp-info">
+                    <span class="ltp-label">LTP:</span>
+                    <span class="ltp-value">₹${currentLTP.toFixed(2)}</span>
+                </div>
+            </div>
+        `;
+        
+        if (Object.keys(allPositionsByExpiry).length === 0) {
+            content += `
                 <div class="text-center text-muted py-3">
                     <i class="fas fa-info-circle me-2"></i>No positions found
                 </div>
+                <div class="position-add-btn" onclick="handleSmartPositionAction(${rowIndex}, ${currentStrike}, '${optionType}', 'add')">
+                    <i class="fas fa-plus"></i>
+                    Add Position
+                </div>
             `;
         } else {
-            // Group by expiry dates
-            Object.entries(relevantPositions).forEach(([expiry, positions]) => {
-                const totalLots = positions.reduce((sum, pos) => sum + pos.lots, 0);
+            // Display positions grouped by expiry with smart controls
+            Object.entries(allPositionsByExpiry).forEach(([expiry, data]) => {
+                const { buyLots, sellLots } = data;
+                const netLots = buyLots - sellLots; // Positive = net long, Negative = net short
+                const netDirection = netLots > 0 ? 'Long' : netLots < 0 ? 'Short' : 'Flat';
+                const netAmount = Math.abs(netLots);
+                
                 const expiryDisplay = formatExpiryDisplay(expiry);
                 
+                // Smart button logic
+                let minusAction, minusLabel, plusAction, plusLabel;
+                if (netLots > 0) {
+                    // Net Long position: - button sells to close, + button buys more
+                    minusAction = 'sell';
+                    minusLabel = 'Sell to Close';
+                    plusAction = 'buy';
+                    plusLabel = 'Buy More';
+                } else if (netLots < 0) {
+                    // Net Short position: - button buys to close, + button sells more
+                    minusAction = 'buy';
+                    minusLabel = 'Buy to Close';
+                    plusAction = 'sell';
+                    plusLabel = 'Sell More';
+                } else {
+                    // Flat position: default to buy/sell based on original button
+                    minusAction = originalAction.toLowerCase();
+                    minusLabel = `${originalAction} Position`;
+                    plusAction = originalAction.toLowerCase();
+                    plusLabel = `Add ${originalAction}`;
+                }
+                
                 content += `
-                    <div class="position-expiry-tag">${expiryDisplay}</div>
-                    <div class="position-lot-control">
-                        <div class="position-lot-label">
-                            <i class="fas fa-layer-group"></i>
-                            <span>${totalLots} lots</span>
-                        </div>
-                        <div class="position-control-buttons">
-                            <button class="position-btn-decrease" onclick="handleExpirySpecificPositionChange(${rowIndex}, '${key}', 'remove', '${expiry}')">
-                                <i class="fas fa-minus"></i>
-                            </button>
-                            <button class="position-btn-increase" onclick="handleExpirySpecificPositionChange(${rowIndex}, '${key}', 'add', '${expiry}')">
-                                <i class="fas fa-plus"></i>
-                            </button>
+                    <div class="position-expiry-section">
+                        <div class="position-expiry-tag">${expiryDisplay}</div>
+                        <div class="position-details">
+                            <div class="position-breakdown">
+                                <span class="buy-lots">Buy: ${buyLots}</span>
+                                <span class="sell-lots">Sell: ${sellLots}</span>
+                                <span class="net-position net-${netDirection.toLowerCase()}">
+                                    Net: ${netDirection} ${netAmount}
+                                </span>
+                            </div>
+                            <div class="position-lot-control">
+                                <div class="smart-position-buttons">
+                                    <button class="position-btn-decrease smart-btn" 
+                                            onclick="handleSmartPositionAction(${rowIndex}, ${currentStrike}, '${optionType}', '${minusAction}', '${expiry}')"
+                                            title="${minusLabel}">
+                                        <i class="fas fa-minus"></i>
+                                        <span class="btn-label">${minusLabel.split(' ')[0]}</span>
+                                    </button>
+                                    <button class="position-btn-increase smart-btn" 
+                                            onclick="handleSmartPositionAction(${rowIndex}, ${currentStrike}, '${optionType}', '${plusAction}', '${expiry}')"
+                                            title="${plusLabel}">
+                                        <i class="fas fa-plus"></i>
+                                        <span class="btn-label">${plusLabel.split(' ')[0]}</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 `;
             });
             
-            // Add "Add Position" button for new expiry
+            // Add "Add Position" button for new positions
             content += `
-                <div class="position-add-btn" onclick="showAddPositionDialog(${rowIndex}, '${key}', ${currentStrike}, '${optionType}', '${action}')">
+                <div class="position-add-btn" onclick="handleSmartPositionAction(${rowIndex}, ${currentStrike}, '${optionType}', 'add')">
                     <i class="fas fa-plus"></i>
-                    Add Position
+                    Add New Position
                 </div>
             `;
         }
@@ -4508,8 +4720,54 @@ document.addEventListener('DOMContentLoaded', function() {
         return expiry;
     }
     
+    // **NEW: Smart Position Action Handler**
+    window.handleSmartPositionAction = function(rowIndex, strike, optionType, action, expiry = null) {
+        console.log(`🎯 SMART POSITION ACTION: ${action} for ${optionType} ${strike}, expiry: ${expiry}`);
+        
+        if (action === 'add') {
+            // Show add position dialog
+            showAddPositionDialog(rowIndex, strike, optionType);
+            return;
+        }
+        
+        // Use current expiry if not specified
+        if (!expiry) {
+            expiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
+        }
+        
+        // Find the appropriate row and button to trigger
+        const buyKey = optionType.toLowerCase() + 'Buy';
+        const sellKey = optionType.toLowerCase() + 'Sell';
+        const targetKey = action === 'buy' ? buyKey : sellKey;
+        
+        console.log(`🎯 SMART ACTION: Triggering ${targetKey} for row ${rowIndex}`);
+        
+        // Trigger the handleButtonClick function directly
+        handleButtonClick(rowIndex, targetKey, 'add');
+        
+        // Update the position card to reflect changes
+        setTimeout(() => {
+            updatePositionCard(rowIndex, targetKey);
+        }, 100);
+    };
+    
+    // **ENHANCED: Add Position Dialog**
+    function showAddPositionDialog(rowIndex, strike, optionType) {
+        const action = prompt(`Add position for ${optionType} ${strike}\n\nEnter action (buy/sell):`, 'buy');
+        if (!action) return;
+        
+        const normalizedAction = action.toLowerCase();
+        if (!['buy', 'sell'].includes(normalizedAction)) {
+            alert('Invalid action. Please enter "buy" or "sell".');
+            return;
+        }
+        
+        // Trigger the smart position action
+        handleSmartPositionAction(rowIndex, strike, optionType, normalizedAction);
+    }
+    
     // Show dialog for adding new position with different expiry
-    function showAddPositionDialog(rowIndex, key, strike, optionType, action) {
+    function showAddPositionDialogOld(rowIndex, key, strike, optionType, action) {
         // Get available expiry dates from the expiry selector
         const expirySelect = document.getElementById('expirySelect');
         const availableExpiries = Array.from(expirySelect.options)
@@ -4695,6 +4953,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.closeAllPositionCards = closeAllPositionCards;
     window.updatePositionCard = updatePositionCard;
     window.handleExpirySpecificPositionChange = handleExpirySpecificPositionChange;
+    window.handleSmartPositionAction = handleSmartPositionAction;
     window.updateCurrentPositionsTable = updateCurrentPositionsTable;
     window.updatePositionTableLivePrices = updatePositionTableLivePrices;
     window.removePosition = removePosition;
