@@ -11,6 +11,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Typography System -->
     <link href="{{ url_for('static', filename='css/typography.css') }}" rel="stylesheet">
+    <!-- Modern UI System -->
+    <link href="{{ url_for('static', filename='css/modern-ui.css') }}" rel="stylesheet">
     <style>
         /* Full viewport layout with flexbox - eliminates white space */
         html, body {
@@ -104,7 +106,7 @@
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="fas fa-user-cog me-2"></i>Broker Settings</h5>
+        <h5 class="modal-title"><span class="icon-modern icon-settings me-2"></span>Broker Settings</h5>
         <button class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
@@ -176,7 +178,7 @@
               <div class="input-group input-group-sm">
                 <input name="access_token" class="form-control form-control-sm" placeholder="Optional">
                 <button type="button" class="btn btn-outline-secondary copy-token" data-target="access_token" title="Copy">
-                  <i class="fas fa-copy"></i>
+                  <span class="icon-modern icon-copy"></span>
                 </button>
               </div>
             </div>
@@ -186,7 +188,7 @@
               <div class="input-group input-group-sm">
                 <input name="refresh_token" class="form-control form-control-sm" placeholder="Optional">
                 <button type="button" class="btn btn-outline-secondary copy-token" data-target="refresh_token" title="Copy">
-                  <i class="fas fa-copy"></i>
+                  <span class="icon-modern icon-copy"></span>
                 </button>
               </div>
             </div>

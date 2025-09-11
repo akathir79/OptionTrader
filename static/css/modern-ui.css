@@ -1,0 +1,473 @@
+/* ========== MODERN UI SYSTEM ========== */
+/* Replit-inspired icons and buttons for better UX */
+
+:root {
+  /* Modern Color Palette */
+  --primary-blue: #0969da;
+  --primary-blue-hover: #0860ca;
+  --secondary-gray: #656d76;
+  --secondary-gray-hover: #424a53;
+  --success-green: #1a7f37;
+  --success-green-hover: #116329;
+  --warning-orange: #fb8500;
+  --warning-orange-hover: #e07600;
+  --danger-red: #cf222e;
+  --danger-red-hover: #a40e26;
+  --neutral-bg: #f6f8fa;
+  --border-color: #d1d9e0;
+  --border-radius-sm: 4px;
+  --border-radius-md: 6px;
+  --border-radius-lg: 8px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  --shadow-md: 0 3px 6px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.12);
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== MODERN BUTTON SYSTEM ===== */
+
+/* Base button reset */
+.btn-modern {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: var(--border-radius-md);
+  border: 1px solid transparent;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.4;
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+  user-select: none;
+  outline: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-modern:focus {
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
+}
+
+.btn-modern:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Modern Button Variants */
+.btn-modern-primary {
+  background: var(--primary-blue);
+  color: white;
+  border-color: var(--primary-blue);
+}
+
+.btn-modern-primary:hover:not(:disabled) {
+  background: var(--primary-blue-hover);
+  border-color: var(--primary-blue-hover);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-modern-secondary {
+  background: var(--neutral-bg);
+  color: var(--secondary-gray);
+  border-color: var(--border-color);
+}
+
+.btn-modern-secondary:hover:not(:disabled) {
+  background: #ffffff;
+  border-color: var(--secondary-gray);
+  color: var(--secondary-gray-hover);
+  transform: translateY(-1px);
+}
+
+.btn-modern-success {
+  background: var(--success-green);
+  color: white;
+  border-color: var(--success-green);
+}
+
+.btn-modern-success:hover:not(:disabled) {
+  background: var(--success-green-hover);
+  border-color: var(--success-green-hover);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.btn-modern-warning {
+  background: var(--warning-orange);
+  color: white;
+  border-color: var(--warning-orange);
+}
+
+.btn-modern-warning:hover:not(:disabled) {
+  background: var(--warning-orange-hover);
+  border-color: var(--warning-orange-hover);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.btn-modern-danger {
+  background: var(--danger-red);
+  color: white;
+  border-color: var(--danger-red);
+}
+
+.btn-modern-danger:hover:not(:disabled) {
+  background: var(--danger-red-hover);
+  border-color: var(--danger-red-hover);
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* Ghost/Outline variants */
+.btn-modern-ghost {
+  background: transparent;
+  color: var(--secondary-gray);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.btn-modern-ghost:hover:not(:disabled) {
+  background: var(--neutral-bg);
+  color: var(--secondary-gray-hover);
+}
+
+.btn-modern-ghost-primary {
+  background: transparent;
+  color: var(--primary-blue);
+  border-color: var(--primary-blue);
+  box-shadow: none;
+}
+
+.btn-modern-ghost-primary:hover:not(:disabled) {
+  background: rgba(9, 105, 218, 0.1);
+  color: var(--primary-blue-hover);
+}
+
+/* Button Sizes */
+.btn-modern-xs {
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: var(--border-radius-sm);
+}
+
+.btn-modern-sm {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.btn-modern-lg {
+  padding: 12px 16px;
+  font-size: 16px;
+  border-radius: var(--border-radius-lg);
+}
+
+/* Icon-only buttons */
+.btn-modern-icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: var(--border-radius-md);
+}
+
+.btn-modern-icon-sm {
+  width: 28px;
+  height: 28px;
+}
+
+.btn-modern-icon-xs {
+  width: 24px;
+  height: 24px;
+}
+
+/* ===== MODERN ICONS ===== */
+
+/* Icon base styling */
+.icon-modern {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.icon-modern-sm {
+  width: 14px;
+  height: 14px;
+}
+
+.icon-modern-lg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Modern icon replacements using CSS shapes and pseudo-elements */
+.icon-calendar::before {
+  content: "📅";
+  font-size: 14px;
+}
+
+.icon-chart::before {
+  content: "📊";
+  font-size: 14px;
+}
+
+.icon-refresh::before {
+  content: "🔄";
+  font-size: 14px;
+}
+
+.icon-settings::before {
+  content: "⚙️";
+  font-size: 14px;
+}
+
+.icon-copy::before {
+  content: "📋";
+  font-size: 14px;
+}
+
+.icon-expand::before {
+  content: "⛶";
+  font-size: 14px;
+}
+
+.icon-plus::before {
+  content: "+";
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.icon-minus::before {
+  content: "−";
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.icon-chevron-left::before {
+  content: "‹";
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.icon-chevron-right::before {
+  content: "›";
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.icon-close::before {
+  content: "×";
+  font-weight: bold;
+  font-size: 18px;
+}
+
+/* Alternative: Clean SVG-style icons using CSS */
+.icon-svg {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* ===== ENHANCED UI COMPONENTS ===== */
+
+/* Modern Dropdown/Select */
+.select-modern {
+  appearance: none;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--secondary-gray);
+  cursor: pointer;
+  transition: var(--transition);
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 8px center;
+  background-repeat: no-repeat;
+  background-size: 16px;
+  padding-right: 32px;
+}
+
+.select-modern:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+}
+
+.select-modern:hover {
+  border-color: var(--secondary-gray);
+}
+
+/* Modern Input Fields */
+.input-modern {
+  appearance: none;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--secondary-gray);
+  transition: var(--transition);
+  width: 100%;
+}
+
+.input-modern:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+}
+
+.input-modern:hover {
+  border-color: var(--secondary-gray);
+}
+
+/* Modern Cards */
+.card-modern {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.card-modern:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Modern Navigation Buttons */
+.nav-btn-modern {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--border-radius-md);
+  background: transparent;
+  border: none;
+  color: var(--secondary-gray);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.nav-btn-modern:hover {
+  background: var(--neutral-bg);
+  color: var(--secondary-gray-hover);
+}
+
+.nav-btn-modern:active {
+  transform: scale(0.95);
+}
+
+/* Trading Action Buttons */
+.trade-btn-buy {
+  background: linear-gradient(135deg, var(--success-green) 0%, var(--success-green-hover) 100%);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  padding: 6px 12px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.trade-btn-buy:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.trade-btn-sell {
+  background: linear-gradient(135deg, var(--danger-red) 0%, var(--danger-red-hover) 100%);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-md);
+  padding: 6px 12px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.trade-btn-sell:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s infinite;
+}
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+@media (max-width: 768px) {
+  .btn-modern {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  
+  .btn-modern-lg {
+    padding: 10px 14px;
+    font-size: 15px;
+  }
+}
+
+/* ===== ACCESSIBILITY IMPROVEMENTS ===== */
+@media (prefers-reduced-motion: reduce) {
+  .btn-modern,
+  .nav-btn-modern,
+  .trade-btn-buy,
+  .trade-btn-sell {
+    transition: none;
+  }
+  
+  .btn-modern:hover,
+  .trade-btn-buy:hover,
+  .trade-btn-sell:hover {
+    transform: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  :root {
+    --border-color: #000000;
+    --secondary-gray: #000000;
+  }
+}
+
+/* ===== UTILITY CLASSES ===== */
+.modern-shadow-sm { box-shadow: var(--shadow-sm); }
+.modern-shadow-md { box-shadow: var(--shadow-md); }
+.modern-rounded { border-radius: var(--border-radius-md); }
+.modern-rounded-lg { border-radius: var(--border-radius-lg); }
+.modern-transition { transition: var(--transition); }

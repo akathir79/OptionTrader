@@ -1209,18 +1209,18 @@
           <!-- Expiry Dates Row -->
           <div class="d-flex align-items-center mb-3">
             <label class="form-label small fw-semibold me-3 mb-0" style="min-width: 80px;">
-              <i class="fas fa-calendar-alt me-1"></i>Expiry:
+              <span class="icon-modern icon-calendar me-1"></span>Expiry:
             </label>
-            <button id="expiryPrevBtn" class="btn btn-link text-secondary p-1 me-2" style="min-width: 30px; border: none; background: none;">
-              <i class="fas fa-chevron-left"></i>
+            <button id="expiryPrevBtn" class="nav-btn-modern me-2">
+              <span class="icon-modern icon-chevron-left"></span>
             </button>
             <div class="flex-grow-1 position-relative overflow-hidden">
               <div id="expiryViewerCarousel" class="d-flex gap-2 transition-all" style="transition: transform 0.3s ease;">
                 <!-- Populated by JavaScript -->
               </div>
             </div>
-            <button id="expiryNextBtn" class="btn btn-link text-secondary p-1 ms-2" style="min-width: 30px; border: none; background: none;">
-              <i class="fas fa-chevron-right"></i>
+            <button id="expiryNextBtn" class="nav-btn-modern ms-2">
+              <span class="icon-modern icon-chevron-right"></span>
             </button>
           </div>
 
@@ -1229,8 +1229,8 @@
 
           <!-- Market Data Carousel -->
           <div class="d-flex align-items-center">
-            <button id="marketDataPrevBtn" class="btn btn-link text-secondary p-1 me-2" style="min-width: 30px; border: none; background: none;">
-              <i class="fas fa-chevron-left"></i>
+            <button id="marketDataPrevBtn" class="nav-btn-modern me-2">
+              <span class="icon-modern icon-chevron-left"></span>
             </button>
             <div class="flex-grow-1 position-relative overflow-hidden carousel-container">
               <div id="marketDataCarousel" class="d-flex" style="transition: transform 0.3s ease; width: 700%;">
@@ -1240,10 +1240,10 @@
                     <div class="text-center">
                       <small class="text-muted me-1">Spot Price:</small>
                       <strong id="spotPrice" class="text-muted">Select Symbol</strong>
-                      <i id="chartIcon" class="fas fa-chart-line text-primary ms-2" 
-                         style="cursor: pointer; font-size: 14px; display: none;" 
+                      <span id="chartIcon" class="icon-modern icon-chart text-primary ms-2" 
+                         style="cursor: pointer; display: none;" 
                          title="Open Candlestick Chart"
-                         onclick="openCandlestickChart()"></i>
+                         onclick="openCandlestickChart()"></span>
                     </div>
                     <div class="text-center">
                       <small class="text-muted me-1">Day Open:</small><strong class="text-secondary">23,649</strong>
@@ -1360,8 +1360,8 @@
                 </div>
               </div>
             </div>
-            <button id="marketDataNextBtn" class="btn btn-link text-secondary p-1 ms-2" style="min-width: 30px; border: none; background: none;">
-              <i class="fas fa-chevron-right"></i>
+            <button id="marketDataNextBtn" class="nav-btn-modern ms-2">
+              <span class="icon-modern icon-chevron-right"></span>
             </button>
           </div>
         </div>
@@ -1398,7 +1398,7 @@
             <div id="selectedDetailsDisplay" class="text-xs text-muted status-text">
             </div>
             <div class="d-flex align-items-center gap-2">
-              <button id="refreshBtn" class="btn btn-outline-light btn-sm p-1" style="width: 30px; height: 30px;">
+              <button id="refreshBtn" class="btn-modern-secondary btn-modern-icon-sm">
                 <i class="fas fa-sync"></i>
               </button>
               <button id="fullscreenOptionChain" class="btn btn-outline-light btn-sm p-1" style="width: 30px; height: 30px;" title="Fullscreen View">
