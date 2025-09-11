@@ -45,7 +45,7 @@
   white-space: nowrap;
   user-select: none;
   outline: none;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 
 .btn-modern:focus {
@@ -174,16 +174,22 @@
   height: 32px;
   padding: 0;
   border-radius: var(--border-radius-md);
+  border: none;
+  box-shadow: none;
 }
 
 .btn-modern-icon-sm {
   width: 28px;
   height: 28px;
+  border: none;
+  box-shadow: none;
 }
 
 .btn-modern-icon-xs {
   width: 24px;
   height: 24px;
+  border: none;
+  box-shadow: none;
 }
 
 /* ===== MODERN ICONS ===== */
@@ -338,7 +344,7 @@
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-lg);
   padding: 16px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   transition: var(--transition);
 }
 
@@ -360,6 +366,7 @@
   color: var(--secondary-gray);
   cursor: pointer;
   transition: var(--transition);
+  box-shadow: none;
 }
 
 .nav-btn-modern:hover {
@@ -382,7 +389,7 @@
   font-size: 12px;
   cursor: pointer;
   transition: var(--transition);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 
 .trade-btn-buy:hover {
@@ -400,7 +407,7 @@
   font-size: 12px;
   cursor: pointer;
   transition: var(--transition);
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
 }
 
 .trade-btn-sell:hover {
@@ -463,6 +470,41 @@
     --border-color: #000000;
     --secondary-gray: #000000;
   }
+}
+
+/* ===== BUTTON ICON OVERRIDES ===== */
+/* Ensure all icon buttons are completely borderless */
+.nav-btn-modern,
+.btn-modern-icon,
+.btn-modern-icon-sm,
+.btn-modern-icon-xs,
+button.nav-btn-modern,
+button.btn-modern-icon,
+button.btn-modern-icon-sm,
+button.btn-modern-icon-xs {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.nav-btn-modern:focus,
+.btn-modern-icon:focus,
+.btn-modern-icon-sm:focus,
+.btn-modern-icon-xs:focus {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Remove Bootstrap button styling for modern buttons */
+.nav-btn-modern.btn,
+.btn-modern-icon.btn,
+.btn-modern-icon-sm.btn,
+.btn-modern-icon-xs.btn {
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  background: transparent !important;
 }
 
 /* ===== UTILITY CLASSES ===== */
