@@ -1,0 +1,237 @@
+/* ========== COLOR-CODED RISK VISUALIZATION SYSTEM ========== */
+/* Comprehensive risk visualization for active positions */
+
+/* CSS Variables for consistent color palette */
+:root {
+  --risk-profit: rgba(40, 167, 69, 0.15);
+  --risk-profit-border: #28a745;
+  --risk-profit-text: #155724;
+  
+  --risk-loss: rgba(220, 53, 69, 0.15);
+  --risk-loss-border: #dc3545;
+  --risk-loss-text: #721c24;
+  
+  --risk-neutral: rgba(255, 193, 7, 0.15);
+  --risk-neutral-border: #ffc107;
+  --risk-neutral-text: #856404;
+  
+  --risk-expiry-urgent: #dc3545;
+  --risk-expiry-moderate: #fd7e14;
+  --risk-expiry-safe: #28a745;
+  
+  --risk-size-small: rgba(0, 123, 255, 0.3);
+  --risk-size-medium: rgba(0, 123, 255, 0.6);
+  --risk-size-large: #007bff;
+}
+
+/* ===== PROFIT/LOSS RISK CLASSIFICATIONS ===== */
+.risk-enabled .riskable.risk-pnl-profit {
+  background: linear-gradient(90deg, var(--risk-profit) 0%, transparent 100%) !important;
+  border-left: 4px solid var(--risk-profit-border) !important;
+}
+
+.risk-enabled .riskable.risk-pnl-profit-high {
+  background: linear-gradient(90deg, rgba(40, 167, 69, 0.25) 0%, var(--risk-profit) 100%) !important;
+  border-left: 6px solid var(--risk-profit-border) !important;
+  font-weight: 600 !important;
+}
+
+.risk-enabled .riskable.risk-pnl-loss {
+  background: linear-gradient(90deg, var(--risk-loss) 0%, transparent 100%) !important;
+  border-left: 4px solid var(--risk-loss-border) !important;
+}
+
+.risk-enabled .riskable.risk-pnl-loss-high {
+  background: linear-gradient(90deg, rgba(220, 53, 69, 0.25) 0%, var(--risk-loss) 100%) !important;
+  border-left: 6px solid var(--risk-loss-border) !important;
+  font-weight: 600 !important;
+}
+
+.risk-enabled .riskable.risk-pnl-neutral {
+  background: linear-gradient(90deg, var(--risk-neutral) 0%, transparent 100%) !important;
+  border-left: 4px solid var(--risk-neutral-border) !important;
+}
+
+/* ===== EXPIRY RISK CLASSIFICATIONS ===== */
+.risk-enabled .riskable.risk-expiry-urgent {
+  border-top: 3px solid var(--risk-expiry-urgent) !important;
+  box-shadow: inset 0 3px 0 rgba(220, 53, 69, 0.1) !important;
+}
+
+.risk-enabled .riskable.risk-expiry-urgent::before {
+  content: "⚠️" !important;
+  position: absolute !important;
+  top: 2px !important;
+  right: 2px !important;
+  font-size: 10px !important;
+  z-index: 1 !important;
+}
+
+.risk-enabled .riskable.risk-expiry-moderate {
+  border-top: 2px solid var(--risk-expiry-moderate) !important;
+  box-shadow: inset 0 2px 0 rgba(253, 126, 20, 0.1) !important;
+}
+
+.risk-enabled .riskable.risk-expiry-safe {
+  border-top: 1px solid var(--risk-expiry-safe) !important;
+  box-shadow: inset 0 1px 0 rgba(40, 167, 69, 0.05) !important;
+}
+
+/* ===== POSITION SIZE RISK CLASSIFICATIONS ===== */
+.risk-enabled .riskable.risk-size-s {
+  border-right: 2px solid var(--risk-size-small) !important;
+}
+
+.risk-enabled .riskable.risk-size-m {
+  border-right: 4px solid var(--risk-size-medium) !important;
+  box-shadow: inset -2px 0 0 rgba(0, 123, 255, 0.05) !important;
+}
+
+.risk-enabled .riskable.risk-size-l {
+  border-right: 6px solid var(--risk-size-large) !important;
+  box-shadow: inset -4px 0 0 rgba(0, 123, 255, 0.1) !important;
+  font-weight: 500 !important;
+}
+
+/* ===== MONEYNESS RISK CLASSIFICATIONS ===== */
+.risk-enabled .riskable.risk-money-deep-itm {
+  outline: 2px solid rgba(40, 167, 69, 0.6) !important;
+  outline-offset: -2px !important;
+}
+
+.risk-enabled .riskable.risk-money-itm {
+  outline: 1px solid rgba(40, 167, 69, 0.4) !important;
+  outline-offset: -1px !important;
+}
+
+.risk-enabled .riskable.risk-money-atm {
+  outline: 2px solid rgba(255, 193, 7, 0.8) !important;
+  outline-offset: -2px !important;
+  font-weight: 600 !important;
+}
+
+.risk-enabled .riskable.risk-money-otm {
+  opacity: 0.85 !important;
+}
+
+.risk-enabled .riskable.risk-money-deep-otm {
+  opacity: 0.6 !important;
+  filter: grayscale(0.2) !important;
+}
+
+/* ===== ACTIVE POSITION HIGHLIGHTING ===== */
+.risk-enabled .riskable.risk-active-position {
+  position: relative !important;
+}
+
+.risk-enabled .riskable.risk-active-position::after {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 4px !important;
+  background: linear-gradient(180deg, #007bff 0%, #0056b3 100%) !important;
+  z-index: 1 !important;
+}
+
+/* ===== COMBINATION RISK SCENARIOS ===== */
+.risk-enabled .riskable.risk-pnl-profit.risk-expiry-urgent {
+  background: linear-gradient(135deg, var(--risk-profit) 0%, rgba(220, 53, 69, 0.1) 100%) !important;
+}
+
+.risk-enabled .riskable.risk-pnl-loss.risk-expiry-urgent {
+  background: rgba(220, 53, 69, 0.25) !important;
+  animation: risk-pulse-danger 2s infinite !important;
+}
+
+@keyframes risk-pulse-danger {
+  0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}
+
+/* ===== ENHANCED TABLE/CARD STYLING ===== */
+.risk-enabled .riskable.risk-visualization {
+  transition: all 0.3s ease !important;
+  position: relative !important;
+}
+
+.risk-enabled .riskable.risk-visualization:hover {
+  transform: scale(1.01) !important;
+  z-index: 2 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+/* ===== POSITION MANAGEMENT CARDS ===== */
+.risk-enabled .position-management-card.riskable {
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+.risk-enabled .position-management-card.riskable:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15) !important;
+}
+
+/* ===== OPTION CHAIN ENHANCEMENTS ===== */
+.risk-enabled .option-chain-row.riskable {
+  position: relative !important;
+}
+
+.risk-enabled .option-chain-row.riskable.risk-active-position {
+  background: linear-gradient(90deg, rgba(0, 123, 255, 0.05) 0%, transparent 50%, rgba(0, 123, 255, 0.05) 100%) !important;
+}
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+@media (max-width: 768px) {
+  .risk-enabled .riskable {
+    border-left-width: 2px !important;
+    border-right-width: 2px !important;
+    border-top-width: 1px !important;
+  }
+  
+  .risk-enabled .riskable.risk-pnl-profit-high,
+  .risk-enabled .riskable.risk-pnl-loss-high {
+    border-left-width: 3px !important;
+  }
+}
+
+/* ===== UTILITY CLASSES ===== */
+.risk-enabled .risk-indicator {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 0.75em !important;
+}
+
+.risk-enabled .risk-badge {
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  font-size: 0.7em !important;
+  font-weight: 500 !important;
+}
+
+.risk-enabled .risk-badge.profit { background: var(--risk-profit-border); color: white; }
+.risk-enabled .risk-badge.loss { background: var(--risk-loss-border); color: white; }
+.risk-enabled .risk-badge.neutral { background: var(--risk-neutral-border); color: white; }
+.risk-enabled .risk-badge.urgent { background: var(--risk-expiry-urgent); color: white; }
+.risk-enabled .risk-badge.moderate { background: var(--risk-expiry-moderate); color: white; }
+.risk-enabled .risk-badge.safe { background: var(--risk-expiry-safe); color: white; }
+
+/* ===== ACCESSIBILITY ENHANCEMENTS ===== */
+.risk-enabled .riskable[aria-label] {
+  cursor: help !important;
+}
+
+.risk-enabled .sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}

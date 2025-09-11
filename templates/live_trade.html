@@ -2080,8 +2080,14 @@ window.addEventListener('DOMContentLoaded', function() {
 <!-- Broker settings -->
 <script src="{{ url_for('static', filename='js/broker_settings.js') }}"></script>
 
+<!-- Risk Visualization System -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/risk.css') }}">
+
 <!-- Column visibility controller -->
 <script src="{{ url_for('static', filename='js/column_visibility.js') }}"></script>
+
+<!-- Risk Visualization Controller -->
+<script src="{{ url_for('static', filename='js/risk_viz.js') }}" defer></script>
 
 <script>
 // Initialize components when DOM is ready
