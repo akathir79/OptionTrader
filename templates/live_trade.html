@@ -2767,7 +2767,8 @@ document.addEventListener('DOMContentLoaded', function() {
         //====================================================================
         updateActiveTradesTable();     // ✅ SYNC: Update active trades table
         updateClosedTradesTable();     // ✅ SYNC: Update closed trades table
-        closeAllPositionCards();
+        // **FIX: Don't close position cards automatically - let user keep them open
+        // closeAllPositionCards();
         
         //====================================================================
         // **MANDATORY PAYOFF CHART UPDATE - PRESERVE THIS**
