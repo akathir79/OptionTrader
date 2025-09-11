@@ -603,6 +603,13 @@ button.btn-modern-icon-xs {
   padding-right: 0 !important;
 }
 
+/* Fix gap between splitter and right panel - ensure content starts at edge */
+.right-panel > *:first-child {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  border-left: none !important;
+}
+
 /* Active Trades Card - Light Rose */
 .card:has(#activeTradesTable) {
   background: linear-gradient(135deg, #fffafa 0%, #fff5f5 100%) !important;
