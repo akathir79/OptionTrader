@@ -45,5 +45,9 @@ externalPort = 3001
 localPort = 41295
 externalPort = 3000
 
+[[ports]]
+localPort = 46113
+externalPort = 3003
+
 [agent]
 integrations = ["python_database==1.0.0"]

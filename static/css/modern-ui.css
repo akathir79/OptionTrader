@@ -555,16 +555,16 @@ button.btn-modern-icon-xs {
   background: linear-gradient(135deg, #f8fdf9 0%, #f0fcf2 100%) !important;
 }
 
-/* Analysis/Payoff Chart Card - Light Purple */
+/* Analysis/Payoff Chart Card - White */
 .card:has(#payoffChart),
 .card:has(#payoffCardBody) {
-  background: linear-gradient(135deg, #faf9ff 0%, #f3f0ff 100%) !important;
+  background: white !important;
 }
 
-/* Current Positions Card - Light Amber */
+/* Current Positions Card - White */
 .card:has([id*="position"]),
 .card:has(#currentPositionsTable) {
-  background: linear-gradient(135deg, #fffef8 0%, #fffaf0 100%) !important;
+  background: white !important;
 }
 
 /* Active Trades Card - Light Rose */
