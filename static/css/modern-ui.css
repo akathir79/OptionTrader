@@ -567,6 +567,21 @@ button.btn-modern-icon-xs {
   background: linear-gradient(135deg, #fffef8 0%, #fffaf0 100%) !important;
 }
 
+/* Fix Current Positions Card Padding Issues */
+#currentPositionsCard .card-body {
+  padding: 0 !important;
+}
+
+#currentPositionsCard .table-responsive,
+#currentPositionsCard .table {
+  margin: 0 !important;
+}
+
+/* Ensure section headers in Current Positions card don't create visual left indentation */
+#currentPositionsCard .border-bottom {
+  padding: 8px 0 8px 12px !important;
+}
+
 /* Active Trades Card - Light Rose */
 .card:has(#activeTradesTable) {
   background: linear-gradient(135deg, #fffafa 0%, #fff5f5 100%) !important;
