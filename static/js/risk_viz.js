@@ -212,7 +212,8 @@ class RiskVisualization {
     applyRiskClasses(element, data) {
         if (!element || !this.enabled) return;
         
-        // Remove existing risk classes\n        const riskClasses = Array.from(element.classList).filter(cls => cls.startsWith('risk-'));
+        // Remove existing risk classes
+        const riskClasses = Array.from(element.classList).filter(cls => cls.startsWith('risk-'));
         riskClasses.forEach(cls => element.classList.remove(cls));
         
         // Add base risk visualization class

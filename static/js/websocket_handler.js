@@ -911,24 +911,13 @@ class WebSocketHandler {
         
         console.log('Auto-loading NIFTY option chain for live updates...');
         
-        // Set default values
+        // Set default values ONLY if user hasn't made a selection
         const indexSelect = document.getElementById('indexSelect');
         const expirySelect = document.getElementById('expirySelect');
         
-        if (indexSelect) {
-            indexSelect.value = 'NIFTY 50';
-            indexSelect.dispatchEvent(new Event('change'));
-            
-            // Wait for expiry to load, then select first option
-            setTimeout(() => {
-                if (expirySelect && expirySelect.options.length > 1) {
-                    expirySelect.selectedIndex = 1; // Select first actual expiry (not placeholder)
-                    expirySelect.dispatchEvent(new Event('change'));
-                    
-                    console.log('Default option chain loaded for live updates');
-                }
-            }, 1000);
-        }
+        // Don't auto-set the dropdown value - let it stay as "Select Index"
+        // User can manually select when they want to load data
+        console.log('Index dropdown will remain as "Select Index" until user makes selection');
     }
 
     updateCellValue(row, selector, value) {
