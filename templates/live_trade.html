@@ -1169,7 +1169,7 @@
               <select id="indexSelect" class="form-select form-select-sm flex-grow-1">
                 <option value="">Select Index</option>
                 <optgroup label="NSE">
-                  <option value="NIFTY" selected>NIFTY 50</option>
+                  <option value="NIFTY">NIFTY 50</option>
                   <option value="BANKNIFTY">BANK NIFTY</option>
                   <option value="FINNIFTY">FIN NIFTY</option>
                   <option value="MIDCPNIFTY">MIDCAP NIFTY</option>
@@ -1971,26 +1971,8 @@ window.addEventListener('DOMContentLoaded', function() {
         const indexSelect = document.getElementById('indexSelect');
         const expirySelect = document.getElementById('expirySelect');
         
-        if (indexSelect && !indexSelect.value) {
-            console.log('Auto-loading NIFTY 50 for live updates...');
-            indexSelect.value = 'NIFTY 50';
-            indexSelect.dispatchEvent(new Event('change'));
-            
-            // Wait for expiry options to load
-            setTimeout(function() {
-                if (expirySelect && expirySelect.options.length > 1) {
-                    expirySelect.selectedIndex = 1; // First actual expiry
-                    expirySelect.dispatchEvent(new Event('change'));
-                    console.log('Auto-loaded option chain for live streaming');
-                    
-                    // Wait for option chain to load, then update subscriptions
-                    setTimeout(function() {
-                        console.log('🔄 Triggering subscription update for auto-loaded option chain');
-                        updateSubscriptionsFromTable();
-                    }, 3000);
-                }
-            }, 2000);
-        }
+        // Auto-loading disabled - let user manually select when ready
+        console.log('Index dropdown ready for user selection');
         
         // Function to update subscriptions based on current table content
         async function updateSubscriptionsFromTable() {
