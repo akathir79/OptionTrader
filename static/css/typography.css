@@ -120,6 +120,25 @@ th[data-numeric="true"] {
   font-size: var(--fs-md);
 }
 
+/* Form Controls Typography */
+.form-select,
+.form-control {
+  font-size: var(--fs-xs);
+}
+
+.form-select option {
+  font-size: var(--fs-xs);
+}
+
+/* Smaller font for all select dropdowns */
+select {
+  font-size: var(--fs-xs) !important;
+}
+
+select option {
+  font-size: var(--fs-xs) !important;
+}
+
 /* Card Typography */
 .card-header {
   font-size: var(--fs-md);
