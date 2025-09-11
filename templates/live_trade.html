@@ -1747,6 +1747,7 @@
                   <th style="padding: 6px 4px; border-right: 1px solid #dee2e6; width: 80px; text-align: center;">Action</th>
                   <th style="padding: 6px 4px; border-right: 1px solid #dee2e6; width: 60px; text-align: center;">Strike</th>
                   <th style="padding: 6px 4px; border-right: 1px solid #dee2e6; width: 80px; text-align: center;">Expiry</th>
+                  <th style="padding: 6px 4px; border-right: 1px solid #dee2e6; width: 50px; text-align: center;">Lots Exited</th>
                   <th style="padding: 6px 4px; border-right: 1px solid #dee2e6; width: 50px; text-align: center;">Entry</th>
                   <th style="padding: 6px 4px; border-right: 1px solid #dee2e6; width: 50px; text-align: center;">Exit</th>
                   <th style="padding: 6px 4px; border-right: 1px solid #dee2e6; width: 50px; text-align: center;">P&L</th>
@@ -1756,7 +1757,7 @@
               
               <tbody id="closedTradesTableBody">
                 <tr>
-                  <td colspan="8" class="text-center text-muted py-2">
+                  <td colspan="9" class="text-center text-muted py-2">
                     <i class="fas fa-archive me-2"></i>No closed trades yet.
                   </td>
                 </tr>
@@ -3337,6 +3338,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add closed trades (showing as completed trades)
         (window.closedTrades || []).forEach(trade => {
+            // **CORRECT: Each closedTrade record represents 1 lot closure**
+            // Since netting closes one lot at a time, each record = 1 lot exited
+            console.log(`🔥 CLOSED TRADE - Strike: ${trade.strike}, Lots Exited: 1, Action: ${trade.actionLabel}`);
+            
             closedEntries.push({
                 type: 'closed',
                 strike: trade.strike,
@@ -3348,7 +3353,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 realizedPnL: trade.realizedPnL,
                 openTime: trade.openTime,
                 closeTime: trade.closeTime,
-                lots: 1, // Each trade is 1 lot
+                lots: 1, // **CORRECT: Each trade record = 1 lot closure**
                 isActive: false
             });
         });
@@ -3360,7 +3365,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show empty state
             const emptyRow = document.createElement('tr');
             emptyRow.innerHTML = `
-                <td colspan="16" class="text-center text-muted py-3">
+                <td colspan="9" class="text-center text-muted py-3">
                     <i class="fas fa-archive me-2"></i>No closed trades yet.
                 </td>
             `;
@@ -3378,60 +3383,36 @@ document.addEventListener('DOMContentLoaded', function() {
             return new Date(bTime) - new Date(aTime);
         });
         
-        // Create rows for each closed entry
+        // **UPDATED: Create simple rows for closed trades table (9 columns)**
         closedEntries.forEach((entry, index) => {
-            // Build symbol name
-            const expiryFormatted = formatExpiryForSymbol(entry.expiry);
-            const symbol = `NSE:NIFTY${expiryFormatted}${entry.strike}${entry.optionType}`;
-            
             // P&L calculation and display for closed positions
             const pnl = entry.realizedPnL || 0;
-            const displayPrice = `₹${(entry.openPrice || 0).toFixed(2)} → ₹${(entry.closePrice || 0).toFixed(2)}`;
-            
-            // Style based on position type and status
-            const typeClass = entry.optionType === 'CE' ? 'text-success' : 'text-primary';
             const pnlColor = pnl >= 0 ? 'text-success' : 'text-danger';
             const pnlSign = pnl >= 0 ? '+' : '';
-            
-            // Action badge styling for closed positions
-            const actionBadge = `<span class="badge bg-secondary text-white">${entry.actionLabel.toUpperCase()}</span>`;
             
             // Format timestamps for closed positions
             const timeDisplay = `${new Date(entry.closeTime).toLocaleDateString()} ${new Date(entry.closeTime).toLocaleTimeString()}`;
             
             const row = document.createElement('tr');
             row.style.cssText = 'background-color: #f8f9fa; opacity: 0.8;';
-            const positionKey = `${entry.strike}-${entry.expiry}-${entry.optionType}-${index}-closed`;
-            row.dataset.positionKey = positionKey;
             
+            // **NEW STRUCTURE: Type | Action | Strike | Expiry | Lots Exited | Entry | Exit | P&L | Close Time**
             row.innerHTML = `
-                <td style="padding: 8px 6px; text-align: center;">
-                    <input type="checkbox" class="form-check-input">
+                <td style="padding: 6px 4px; text-align: center;">
+                    <span class="badge bg-${entry.optionType === 'CE' ? 'success' : 'primary'} text-white" style="font-size: 9px;">${entry.optionType}</span>
                 </td>
-                <td style="padding: 8px 6px;">
-                    <span class="badge bg-${entry.optionType === 'CE' ? 'success' : 'primary'} text-white">${entry.optionType}</span>
-                    <span class="badge bg-info ms-2">CLOSED</span>
+                <td style="padding: 6px 4px; text-align: center;">
+                    <span class="badge bg-secondary text-white" style="font-size: 9px;">${entry.actionLabel}</span>
                 </td>
-                <td style="padding: 8px 6px;">${actionBadge}</td>
-                <td style="padding: 8px 6px; text-align: center;">${entry.lots}</td>
-                <td style="padding: 8px 6px; text-align: center;">${entry.lots * 75}</td>
-                <td style="padding: 8px 6px; font-size: 11px;">${symbol}</td>
-                <td style="padding: 8px 6px; font-size: 11px;">${timeDisplay}</td>
-                <td style="padding: 8px 6px; text-align: center;">${entry.strike}</td>
-                <td style="padding: 8px 6px; font-size: 11px;">${formatExpiryDisplay(entry.expiry)}</td>
-                <td style="padding: 8px 6px; text-align: center;">₹${(entry.openPrice || 0).toFixed(2)}</td>
-                <td style="padding: 8px 6px; text-align: center;">₹${(entry.closePrice || 0).toFixed(2)}</td>
-                <td style="padding: 8px 6px; text-align: center;">₹0.00</td>
-                <td style="padding: 8px 6px; text-align: center; font-weight: 600;" class="${pnlColor}">
+                <td style="padding: 6px 4px; text-align: center; font-weight: 600;">${entry.strike}</td>
+                <td style="padding: 6px 4px; text-align: center; font-size: 10px;">${formatExpiryDisplay(entry.expiry)}</td>
+                <td style="padding: 6px 4px; text-align: center; font-weight: 600;">${entry.lots}</td>
+                <td style="padding: 6px 4px; text-align: center;">₹${(entry.openPrice || 0).toFixed(2)}</td>
+                <td style="padding: 6px 4px; text-align: center;">₹${(entry.closePrice || 0).toFixed(2)}</td>
+                <td style="padding: 6px 4px; text-align: center; font-weight: 600;" class="${pnlColor}">
                     ${pnlSign}₹${Math.abs(pnl).toFixed(2)}
                 </td>
-                <td style="padding: 8px 6px; text-align: center;">-</td>
-                <td style="padding: 8px 6px; text-align: center;">-</td>
-                <td style="padding: 8px 6px; text-align: center;">
-                    <button class="btn btn-outline-danger btn-sm" style="padding: 2px 8px;">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
+                <td style="padding: 6px 4px; text-align: center; font-size: 10px;">${timeDisplay}</td>
             `;
             
             tableBody.appendChild(row);
