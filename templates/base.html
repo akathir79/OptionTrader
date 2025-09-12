@@ -88,6 +88,17 @@
                     <li class="nav-item">
                         <a class="nav-link" href="#">Settings</a>
                     </li>
+                    <!-- Token Expiry Bell Notification -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle position-relative" href="#" id="tokenBellDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-bell"></i>
+                            <span id="tokenBadge" class="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-pill" style="display: none;">0</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="tokenBellDropdown" id="tokenNotificationsDropdown" style="min-width: 350px;">
+                            <li><h6 class="dropdown-header">Token Expiry Notifications</h6></li>
+                            <li id="noNotifications" class="dropdown-item-text text-muted">No expiring tokens</li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
         </div>
