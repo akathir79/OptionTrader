@@ -122,7 +122,8 @@ app.register_blueprint(historical_bp)
 # Import market times functions
 from APP_Routes.market_times import (
     api_list_market_times, api_create_market_time, api_update_market_time,
-    api_delete_market_time, api_get_current_market_status, api_initialize_default_markets
+    api_delete_market_time, api_get_current_market_status, api_initialize_default_markets,
+    api_get_simple_markets
 )
 
 # Market times API routes
@@ -132,6 +133,7 @@ app.add_url_rule('/api/market-times/<int:market_id>', 'api_update_market_time', 
 app.add_url_rule('/api/market-times/<int:market_id>', 'api_delete_market_time', api_delete_market_time, methods=['DELETE'])
 app.add_url_rule('/api/market-times/status', 'api_get_current_market_status', api_get_current_market_status, methods=['GET'])
 app.add_url_rule('/api/market-times/initialize', 'api_initialize_default_markets', api_initialize_default_markets, methods=['POST'])
+app.add_url_rule('/api/markets/simple', 'api_get_simple_markets', api_get_simple_markets, methods=['GET'])
 
 @app.route("/")
 def live_trade():

@@ -114,43 +114,11 @@ class MarketClock {
           </div>
         </div>
 
-        <!-- Market Management Table -->
+        <!-- Simple Market Cards -->
         <div class="row">
           <div class="col-12">
-            <div class="card">
-              <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="fas fa-cog me-2"></i>Manage Market Times</h6>
-                <div class="btn-group btn-group-sm">
-                  <button id="selectAllNotifications" class="btn btn-outline-success btn-sm">
-                    <i class="fas fa-check-double me-1"></i>All Notifications
-                  </button>
-                  <button id="selectAllSounds" class="btn btn-outline-info btn-sm">
-                    <i class="fas fa-volume-up me-1"></i>All Sounds
-                  </button>
-                  <button id="deselectAll" class="btn btn-outline-secondary btn-sm">
-                    <i class="fas fa-times me-1"></i>Disable All
-                  </button>
-                </div>
-              </div>
-              <div class="card-body">
-                <div class="table-responsive">
-                  <table id="marketTimesTable" class="table table-striped table-sm">
-                    <thead>
-                      <tr>
-                        <th>Market</th>
-                        <th>Country</th>
-                        <th>Trading Hours</th>
-                        <th>Status</th>
-                        <th style="min-width: 200px;">Individual Controls</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <!-- Market data will be populated here -->
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+            <div id="simpleMarketCards" class="row">
+              <!-- Market cards will be populated here -->
             </div>
           </div>
         </div>
@@ -694,7 +662,7 @@ class MarketClock {
 
     async loadMarkets() {
         try {
-            const response = await fetch('/api/market-times');
+            const response = await fetch('/api/markets/simple');
             if (response.ok) {
                 this.markets = await response.json();
                 
@@ -704,14 +672,14 @@ class MarketClock {
                     await this.initializeDefaultMarkets();
                     
                     // Reload markets after initialization
-                    const retryResponse = await fetch('/api/market-times');
+                    const retryResponse = await fetch('/api/markets/simple');
                     if (retryResponse.ok) {
                         this.markets = await retryResponse.json();
                         console.log(`Loaded ${this.markets.length} default markets including IST markets`);
                     }
                 }
                 
-                this.renderMarketTable();
+                this.renderSimpleMarketCards();
             }
         } catch (error) {
             console.error('Error loading markets:', error);
@@ -818,6 +786,117 @@ class MarketClock {
             console.error('Error initializing markets:', error);
             this.showNotification('Error initializing markets', 'danger');
         }
+    }
+
+    renderSimpleMarketCards() {
+        const container = document.getElementById('simpleMarketCards');
+        if (!container) return;
+
+        if (this.markets.length === 0) {
+            container.innerHTML = `
+                <div class="col-12 text-center">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        No markets configured. Click "Load Defaults" to add common markets including IST markets.
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = this.markets.map(market => {
+            const nextEventText = market.next_event === 'opening' ? 'Opens' : 
+                                  market.next_event === 'closing' ? 'Closes' : 
+                                  market.next_event === 'weekend' ? 'Weekend' : 'Closed';
+            
+            const nextEventTime = market.next_event_ist || 'N/A';
+            const nextEventClass = market.next_event === 'opening' ? 'success' : 
+                                   market.next_event === 'closing' ? 'warning' : 'secondary';
+
+            return `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0">${market.market_name}</h6>
+                                <small class="text-muted">${market.country}</small>
+                            </div>
+                            <button class="btn btn-outline-danger btn-sm" onclick="window.marketClock.deleteMarket(${market.id})" title="Remove Market">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <!-- Current Times -->
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <div class="text-center p-2 bg-light rounded">
+                                        <small class="text-muted d-block">Local Time</small>
+                                        <strong class="fs-5">${market.local_now}</strong>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center p-2 bg-primary text-white rounded">
+                                        <small class="d-block">IST Time</small>
+                                        <strong class="fs-5">${market.ist_now}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Market Hours -->
+                            <div class="mb-3">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <small class="text-muted">Market Hours (Local)</small>
+                                        <div class="fw-bold">${market.local_open} - ${market.local_close}</div>
+                                    </div>
+                                </div>
+                                <div class="row mt-1">
+                                    <div class="col-12">
+                                        <small class="text-muted">Market Hours (IST)</small>
+                                        <div class="fw-bold text-primary">${market.ist_open} - ${market.ist_close}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Next Event -->
+                            <div class="mb-3">
+                                <span class="badge bg-${nextEventClass}">${nextEventText}: ${nextEventTime} IST</span>
+                            </div>
+                            
+                            <!-- Controls -->
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="notify_${market.id}" 
+                                               ${market.notify_open || market.notify_close ? 'checked' : ''}
+                                               onchange="window.marketClock.toggleMarketNotifications(${market.id}, this.checked)">
+                                        <label class="form-check-label small" for="notify_${market.id}">
+                                            <i class="fas fa-bell me-1"></i>Notify
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="sound_${market.id}" 
+                                               ${market.sound_enabled ? 'checked' : ''}
+                                               onchange="window.marketClock.toggleMarketSound(${market.id}, this.checked)">
+                                        <label class="form-check-label small" for="sound_${market.id}">
+                                            <i class="fas fa-volume-up me-1"></i>Sound
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    toggleMarketNotifications(marketId, enabled) {
+        // Update both open and close notifications
+        this.toggleMarketNotification(marketId, 'open', enabled);
+        this.toggleMarketNotification(marketId, 'close', enabled);
     }
 
     renderMarketStatus(marketStatus) {
@@ -975,26 +1054,26 @@ class MarketClock {
     }
 
     checkMarketNotification(market) {
-        // Use the market's local time (already converted to correct timezone by backend API)
-        const marketCurrentTime = market.local_time; // This is already in market timezone (IST, etc.)
+        // Use precise timing from new simplified API
+        const marketCurrentTime = market.local_now;
         
-        // Log for debugging IST notifications
+        // Log for debugging IST notifications with correct field names
         if (market.timezone === 'Asia/Kolkata') {
-            console.log(`IST Market ${market.market_name}: Current time=${marketCurrentTime}, Open=${market.local_open_time}, Close=${market.local_close_time}, Trading day=${market.is_trading_day}`);
+            console.log(`IST Market ${market.market_name}: Current time=${marketCurrentTime}, Open=${market.local_open}, Close=${market.local_close}, Trading day=${market.is_trading_day}, IST Open=${market.ist_open}, IST Close=${market.ist_close}`);
         }
         
-        // Check if market is opening
-        if (market.notify_open && marketCurrentTime === market.local_open_time && market.is_trading_day) {
-            console.log(`🔔 Market opening notification triggered for ${market.market_name} at ${marketCurrentTime}`);
+        // Check for exact time match (opening)
+        if (market.notify_open && marketCurrentTime === market.local_open && market.is_trading_day) {
+            console.log(`🔔 Market opening notification: ${market.market_name} opened at ${marketCurrentTime} (IST: ${market.ist_open})`);
             this.showMarketNotification(market, 'opening');
             if (market.sound_enabled && this.isGlobalSoundEnabled()) {
                 this.playNotificationSound();
             }
         }
         
-        // Check if market is closing
-        if (market.notify_close && marketCurrentTime === market.local_close_time && market.is_trading_day) {
-            console.log(`🔔 Market closing notification triggered for ${market.market_name} at ${marketCurrentTime}`);
+        // Check for exact time match (closing)
+        if (market.notify_close && marketCurrentTime === market.local_close && market.is_trading_day) {
+            console.log(`🔔 Market closing notification: ${market.market_name} closed at ${marketCurrentTime} (IST: ${market.ist_close})`);
             this.showMarketNotification(market, 'closing');
             if (market.sound_enabled && this.isGlobalSoundEnabled()) {
                 this.playNotificationSound();
@@ -1003,8 +1082,10 @@ class MarketClock {
     }
 
     showMarketNotification(market, event) {
-        const title = `${market.market_name} ${event}`;
-        const message = `${market.market_name} (${market.country}) is ${event} now at ${market.local_time}`;
+        const title = `${market.market_name} ${event === 'opening' ? 'Opened' : 'Closed'}`;
+        const istTime = event === 'opening' ? market.ist_open : market.ist_close;
+        const localTime = event === 'opening' ? market.local_open : market.local_close;
+        const message = `${market.market_name} (${market.country}) ${event === 'opening' ? 'opened' : 'closed'} at ${localTime} local time (${istTime} IST)`;
         
         this.showNotification(message, event === 'opening' ? 'success' : 'warning', title);
         

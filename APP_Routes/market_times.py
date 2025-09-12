@@ -210,6 +210,94 @@ def api_get_current_market_status():
         return jsonify({"error": str(e)}), 500
 
 
+def api_get_simple_markets():
+    """Get simplified market information with IST conversions for easy user understanding"""
+    try:
+        market_times = MarketTime.query.filter_by(user_id=0, is_active=True).all()
+        current_utc = datetime.utcnow()
+        ist_tz = pytz.timezone('Asia/Kolkata')
+        
+        simple_markets = []
+        
+        for market in market_times:
+            try:
+                # Convert to market timezone
+                market_tz = pytz.timezone(market.timezone)
+                market_time = current_utc.replace(tzinfo=pytz.UTC).astimezone(market_tz)
+                
+                # Convert to IST
+                ist_time = current_utc.replace(tzinfo=pytz.UTC).astimezone(ist_tz)
+                
+                # Check if current day is a trading day
+                current_weekday = market_time.weekday() + 1  # Monday = 1
+                trading_days = [int(d) for d in market.trading_days.split(',')]
+                is_trading_day = current_weekday in trading_days
+                
+                # Parse market times
+                open_time = datetime.strptime(market.local_open_time, '%H:%M').time()
+                close_time = datetime.strptime(market.local_close_time, '%H:%M').time()
+                current_local_time = market_time.time()
+                
+                # Convert market open/close times to IST
+                market_date = market_time.date()
+                market_open_dt = market_tz.localize(datetime.combine(market_date, open_time))
+                market_close_dt = market_tz.localize(datetime.combine(market_date, close_time))
+                
+                ist_open_dt = market_open_dt.astimezone(ist_tz)
+                ist_close_dt = market_close_dt.astimezone(ist_tz)
+                
+                # Determine next event
+                next_event = None
+                next_event_at_utc = None
+                next_event_ist = None
+                
+                if is_trading_day:
+                    if current_local_time < open_time:
+                        next_event = "opening"
+                        next_event_at_utc = market_open_dt.astimezone(pytz.UTC).isoformat()
+                        next_event_ist = ist_open_dt.strftime('%H:%M')
+                    elif current_local_time < close_time:
+                        next_event = "closing"
+                        next_event_at_utc = market_close_dt.astimezone(pytz.UTC).isoformat()
+                        next_event_ist = ist_close_dt.strftime('%H:%M')
+                    else:
+                        next_event = "closed"
+                else:
+                    next_event = "weekend"
+                
+                simple_markets.append({
+                    'id': market.id,
+                    'market_name': market.market_name,
+                    'country': market.country,
+                    'timezone': market.timezone,
+                    'local_now': market_time.strftime('%H:%M'),
+                    'local_date': market_time.strftime('%Y-%m-%d'),
+                    'local_open': market.local_open_time,
+                    'local_close': market.local_close_time,
+                    'ist_now': ist_time.strftime('%H:%M'),
+                    'ist_open': ist_open_dt.strftime('%H:%M'),
+                    'ist_close': ist_close_dt.strftime('%H:%M'),
+                    'ist_open_date': ist_open_dt.strftime('%Y-%m-%d'),
+                    'ist_close_date': ist_close_dt.strftime('%Y-%m-%d'),
+                    'next_event': next_event,
+                    'next_event_at_utc': next_event_at_utc,
+                    'next_event_ist': next_event_ist,
+                    'is_trading_day': is_trading_day,
+                    'notify_open': market.notify_open,
+                    'notify_close': market.notify_close,
+                    'sound_enabled': market.sound_enabled
+                })
+                
+            except Exception as e:
+                # Skip this market if there's an error processing it
+                continue
+        
+        return jsonify(simple_markets)
+    
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 def api_initialize_default_markets():
     """Initialize default market times from the provided data"""
     try:
