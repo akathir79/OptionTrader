@@ -922,11 +922,14 @@ class MarketClock {
             
             const hours = Math.floor(diffMs / (1000 * 60 * 60));
             const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
             
             if (hours > 0) {
-                return `${hours}h ${minutes}m`;
+                return `${hours}h ${minutes}m ${seconds}s`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${seconds}s`;
             } else {
-                return `${minutes}m`;
+                return `${seconds}s`;
             }
         } catch (error) {
             return 'N/A';
@@ -934,14 +937,14 @@ class MarketClock {
     }
     
     startCountdownUpdates() {
-        // Update countdown timers every 30 seconds
+        // Update countdown timers every second for real-time display
         if (this.countdownInterval) {
             clearInterval(this.countdownInterval);
         }
         
         this.countdownInterval = setInterval(() => {
             this.updateCountdownTimers();
-        }, 30000); // Update every 30 seconds
+        }, 1000); // Update every second for real-time countdown
     }
     
     updateCountdownTimers() {
