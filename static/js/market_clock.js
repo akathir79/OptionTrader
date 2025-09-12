@@ -1108,40 +1108,148 @@ class MarketClock {
     }
 
     checkMarketNotification(market) {
-        // Use precise timing from new simplified API
-        const marketCurrentTime = market.local_now;
+        if (!market.next_event_at_utc) return;
         
-        // Log for debugging IST notifications with correct field names
-        if (market.timezone === 'Asia/Kolkata') {
-            console.log(`IST Market ${market.market_name}: Current time=${marketCurrentTime}, Open=${market.local_open}, Close=${market.local_close}, Trading day=${market.is_trading_day}, IST Open=${market.ist_open}, IST Close=${market.ist_close}`);
-        }
+        const now = new Date();
+        const eventTime = new Date(market.next_event_at_utc);
+        const timeDiff = eventTime - now;
+        const minutesUntilEvent = Math.floor(timeDiff / (1000 * 60));
         
-        // Check for exact time match (opening)
-        if (market.notify_open && marketCurrentTime === market.local_open && market.is_trading_day) {
-            console.log(`🔔 Market opening notification: ${market.market_name} opened at ${marketCurrentTime} (IST: ${market.ist_open})`);
-            this.showMarketNotification(market, 'opening');
-            if (market.sound_enabled && this.isGlobalSoundEnabled()) {
-                this.playNotificationSound();
+        const marketName = market.market_name;
+        let notificationKey = '';
+        let message = '';
+        let voiceMessage = '';
+        
+        // 10 minutes before opening
+        if (market.next_event === 'opening' && minutesUntilEvent === 10 && market.notify_open) {
+            notificationKey = `${market.id}_opening_pre10_${Math.floor(eventTime.getTime() / 1000)}`;
+            message = `📢 ${marketName} opening in 10 minutes`;
+            voiceMessage = `${marketName} opening in 10 minutes`;
+            
+            if (!this.sentNotifications || !this.sentNotifications.has(notificationKey)) {
+                this.sendTimedNotification(message, voiceMessage, notificationKey);
             }
         }
-        
-        // Check for exact time match (closing)
-        if (market.notify_close && marketCurrentTime === market.local_close && market.is_trading_day) {
-            console.log(`🔔 Market closing notification: ${market.market_name} closed at ${marketCurrentTime} (IST: ${market.ist_close})`);
-            this.showMarketNotification(market, 'closing');
-            if (market.sound_enabled && this.isGlobalSoundEnabled()) {
-                this.playNotificationSound();
+        // At opening time (within 1 minute)
+        else if (market.next_event === 'opening' && minutesUntilEvent <= 0 && minutesUntilEvent >= -1 && market.notify_open) {
+            notificationKey = `${market.id}_opening_at0_${Math.floor(eventTime.getTime() / 1000)}`;
+            message = `🟢 ${marketName} is now OPEN`;
+            voiceMessage = `${marketName} opened`;
+            
+            if (!this.sentNotifications || !this.sentNotifications.has(notificationKey)) {
+                this.sendTimedNotification(message, voiceMessage, notificationKey);
+            }
+        }
+        // 10 minutes before closing
+        else if (market.next_event === 'closing' && minutesUntilEvent === 10 && market.notify_close) {
+            notificationKey = `${market.id}_closing_pre10_${Math.floor(eventTime.getTime() / 1000)}`;
+            message = `⚠️ ${marketName} closing in 10 minutes`;
+            voiceMessage = `${marketName} closing in 10 minutes`;
+            
+            if (!this.sentNotifications || !this.sentNotifications.has(notificationKey)) {
+                this.sendTimedNotification(message, voiceMessage, notificationKey);
+            }
+        }
+        // At closing time (within 1 minute)
+        else if (market.next_event === 'closing' && minutesUntilEvent <= 0 && minutesUntilEvent >= -1 && market.notify_close) {
+            notificationKey = `${market.id}_closing_at0_${Math.floor(eventTime.getTime() / 1000)}`;
+            message = `🔴 ${marketName} is now CLOSED`;
+            voiceMessage = `${marketName} closed`;
+            
+            if (!this.sentNotifications || !this.sentNotifications.has(notificationKey)) {
+                this.sendTimedNotification(message, voiceMessage, notificationKey);
             }
         }
     }
 
-    showMarketNotification(market, event) {
-        const title = `${market.market_name} ${event === 'opening' ? 'Opened' : 'Closed'}`;
-        const istTime = event === 'opening' ? market.ist_open : market.ist_close;
-        const localTime = event === 'opening' ? market.local_open : market.local_close;
-        const message = `${market.market_name} (${market.country}) ${event === 'opening' ? 'opened' : 'closed'} at ${localTime} local time (${istTime} IST)`;
+    sendTimedNotification(message, voiceMessage, notificationKey) {
+        // Initialize sent notifications tracker
+        if (!this.sentNotifications) {
+            this.sentNotifications = new Set();
+        }
         
-        this.showNotification(message, event === 'opening' ? 'success' : 'warning', title);
+        // Mark as sent to prevent duplicates
+        this.sentNotifications.add(notificationKey);
+        
+        // Show visual notification
+        this.showMarketNotification(message);
+        
+        // Play voice alert if sound is enabled
+        if (this.isGlobalSoundEnabled()) {
+            this.speakNotification(voiceMessage);
+        }
+        
+        // Clean up old notifications after 1 hour
+        setTimeout(() => {
+            if (this.sentNotifications) {
+                this.sentNotifications.delete(notificationKey);
+            }
+        }, 3600000);
+    }
+    
+    speakNotification(message) {
+        if ('speechSynthesis' in window && message) {
+            try {
+                // Cancel any ongoing speech
+                window.speechSynthesis.cancel();
+                
+                // Small delay to ensure cancellation completes
+                setTimeout(() => {
+                    const utterance = new SpeechSynthesisUtterance(message);
+                    utterance.rate = 0.9;
+                    utterance.pitch = 1.0;
+                    utterance.volume = 0.8;
+                    
+                    // Load voices if not already loaded
+                    let voices = window.speechSynthesis.getVoices();
+                    if (voices.length === 0) {
+                        // Wait for voices to load
+                        window.speechSynthesis.addEventListener('voiceschanged', function() {
+                            voices = window.speechSynthesis.getVoices();
+                            const englishVoice = voices.find(voice => 
+                                voice.lang.startsWith('en-') && !voice.name.toLowerCase().includes('google')
+                            ) || voices.find(voice => voice.lang.startsWith('en'));
+                            
+                            if (englishVoice) {
+                                utterance.voice = englishVoice;
+                            }
+                            
+                            window.speechSynthesis.speak(utterance);
+                        }, { once: true });
+                    } else {
+                        const englishVoice = voices.find(voice => 
+                            voice.lang.startsWith('en-') && !voice.name.toLowerCase().includes('google')
+                        ) || voices.find(voice => voice.lang.startsWith('en'));
+                        
+                        if (englishVoice) {
+                            utterance.voice = englishVoice;
+                        }
+                        
+                        window.speechSynthesis.speak(utterance);
+                    }
+                }, 100);
+                
+            } catch (error) {
+                console.warn('Speech synthesis error:', error);
+                // Fallback to beep sound only
+                this.playNotificationSound();
+            }
+        } else {
+            // Fallback to beep if speech synthesis not available
+            this.playNotificationSound();
+        }
+    }
+
+    showMarketNotification(message) {
+        const title = 'Market Alert';
+        
+        // Show visual notification
+        this.showNotification(message, 'info', title);
+        
+        // Also play beep if enabled (in addition to voice)
+        if (this.isGlobalSoundEnabled()) {
+            setTimeout(() => this.playNotificationSound(), 200);
+        }
         
         // Also show browser notification if permission granted
         if (Notification.permission === 'granted') {
