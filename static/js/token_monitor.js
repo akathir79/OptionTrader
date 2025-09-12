@@ -104,7 +104,7 @@ class TokenMonitor {
                             <small>${notification.message}</small>
                         </div>
                         <div class="d-flex gap-2">
-                            ${this.getActionButton(notification)}
+                            ${this.getActionButtons(notification)}
                         </div>
                     </div>
                     <li><hr class="dropdown-divider"></li>
@@ -115,21 +115,28 @@ class TokenMonitor {
         }
     }
     
-    getActionButton(notification) {
+    getActionButtons(notification) {
         const brokerId = notification.broker_id;
-        const action = notification.action;
+        const supportsRefresh = notification.supports_refresh_token;
+        const supportsAccess = notification.supports_access_token;
         
-        if (action === 'refresh_access') {
-            return `<button class="btn btn-sm btn-primary refresh-token-btn" data-broker-id="${brokerId}">
-                        <i class="fas fa-sync-alt"></i> Refresh Token
-                    </button>`;
-        } else if (action === 'create_access') {
-            return `<button class="btn btn-sm btn-success create-token-btn" data-broker-id="${brokerId}">
-                        <i class="fas fa-key"></i> Create Access Token  
-                    </button>`;
+        let buttons = [];
+        
+        // Show Access Token button if broker supports it
+        if (supportsAccess) {
+            buttons.push(`<button class="btn btn-sm btn-success create-token-btn" data-broker-id="${brokerId}">
+                            <i class="fas fa-key"></i> Access Token
+                         </button>`);
         }
         
-        return '';
+        // Show Refresh Token button if broker supports it and has a valid refresh token
+        if (supportsRefresh) {
+            buttons.push(`<button class="btn btn-sm btn-primary refresh-token-btn" data-broker-id="${brokerId}">
+                            <i class="fas fa-sync-alt"></i> Refresh Token
+                         </button>`);
+        }
+        
+        return buttons.join(' ');
     }
     
     setupEventListeners() {

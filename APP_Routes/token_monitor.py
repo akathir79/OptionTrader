@@ -62,7 +62,9 @@ def get_token_notifications():
                     'broker_user_id': status['broker_user_id'],
                     'message': f"{status['brokername']} ({status['broker_user_id']}) access token has expired",
                     'action': 'refresh_access',
-                    'priority': 'high'
+                    'priority': 'high',
+                    'supports_refresh_token': bool(broker.refresh_token),
+                    'supports_access_token': True
                 })
             elif status['access_token_expires_in_minutes'] <= 60:  # Warning 1 hour before expiry
                 notifications.append({
@@ -72,7 +74,9 @@ def get_token_notifications():
                     'broker_user_id': status['broker_user_id'],
                     'message': f"{status['brokername']} ({status['broker_user_id']}) access token expires in {status['access_token_expires_in_minutes']} minutes",
                     'action': 'refresh_access',
-                    'priority': 'medium'
+                    'priority': 'medium',
+                    'supports_refresh_token': bool(broker.refresh_token),
+                    'supports_access_token': True
                 })
             
             # Refresh token notifications (if broker supports refresh tokens)
@@ -85,7 +89,9 @@ def get_token_notifications():
                         'broker_user_id': status['broker_user_id'],
                         'message': f"{status['brokername']} ({status['broker_user_id']}) refresh token has expired - need new access token",
                         'action': 'create_access',
-                        'priority': 'high'
+                        'priority': 'high',
+                        'supports_refresh_token': True,
+                        'supports_access_token': True
                     })
                 elif status['refresh_token_expires_in_days'] <= 2:  # Warning 2 days before expiry
                     notifications.append({
@@ -95,7 +101,9 @@ def get_token_notifications():
                         'broker_user_id': status['broker_user_id'],
                         'message': f"{status['brokername']} ({status['broker_user_id']}) refresh token expires in {status['refresh_token_expires_in_days']} days",
                         'action': 'create_access',
-                        'priority': 'medium'
+                        'priority': 'medium',
+                        'supports_refresh_token': True,
+                        'supports_access_token': True
                     })
         
         return jsonify({
