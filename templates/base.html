@@ -124,7 +124,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title"><span class="icon-modern icon-settings me-2"></span>Broker Settings</h5>
-        <button class="btn-close" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
       <div class="modal-body">
@@ -251,6 +251,15 @@
                     // Load broker settings data if function exists
                     if (typeof window.loadBrokerSettings === 'function') {
                         window.loadBrokerSettings();
+                    }
+                    
+                    // Ensure close buttons work properly
+                    const modal = document.getElementById('brokerSettingsModal');
+                    if (modal) {
+                        const closeButtons = modal.querySelectorAll('[data-bs-dismiss="modal"]');
+                        closeButtons.forEach(btn => {
+                            btn.onclick = () => brokerModal.hide();
+                        });
                     }
                 });
             }

@@ -2,6 +2,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnOpen = document.getElementById("brokerSettingsBtn");
   const modalEl = document.getElementById("brokerSettingsModal");
   const modal = new bootstrap.Modal(modalEl);
+
+  // Ensure modal close functionality works properly
+  const modalCloseButtons = modalEl.querySelectorAll('[data-bs-dismiss="modal"]');
+  modalCloseButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      console.log('Closing modal via close button');
+      modal.hide();
+    });
+  });
   const tbody = document.getElementById("brokerTableBody");
   const form = document.getElementById("brokerForm");
   // const userSelect = document.getElementById("userSelect"); // Element doesn't exist
@@ -440,6 +449,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Make load function globally accessible
   window.loadBrokerSettings = load;
+  window.closeBrokerSettings = () => {
+    modal.hide();
+  };
   
   load(); // Initial load
 });
