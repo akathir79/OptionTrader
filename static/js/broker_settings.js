@@ -4,8 +4,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const modal = new bootstrap.Modal(modalEl);
   const tbody = document.getElementById("brokerTableBody");
   const form = document.getElementById("brokerForm");
-  const userSelect = document.getElementById("userSelect");
-  const brokerSelect = document.getElementById("brokerSelect");
+  // const userSelect = document.getElementById("userSelect"); // Element doesn't exist
+  // const brokerSelect = document.getElementById("brokerSelect"); // Element doesn't exist
   const tokenStatus = document.getElementById("tokenStatus");
 
   const toast = (msg, cls = "bg-danger") => {
@@ -47,7 +47,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const snippet = (str) => str ? `${str.slice(0, 3)}...${str.slice(-3)}` : "";
 
+  const getSelects = () => ({
+    userSelect: document.getElementById("userSelect"),
+    brokerSelect: document.getElementById("brokerSelect")
+  });
+
   const populateDropdowns = (data) => {
+    const { userSelect, brokerSelect } = getSelects();
+    if (!userSelect || !brokerSelect) {
+      console.log('Broker settings loaded:', data);
+      return; // Dropdowns don't exist, skip population
+    }
+
     userSelect.innerHTML = '<option value="">Select</option>';
     brokerSelect.innerHTML = '<option value="">Select</option>';
 
@@ -78,6 +89,17 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const updateTokenStatus = (data) => {
+    const { userSelect, brokerSelect } = getSelects();
+    const tokenStatus = document.getElementById("tokenStatus");
+    
+    if (!userSelect || !brokerSelect || !tokenStatus) {
+      if (tokenStatus) {
+        tokenStatus.textContent = "No Token";
+        tokenStatus.className = "badge bg-secondary ms-1";
+      }
+      return;
+    }
+    
     const selectedUser = userSelect.value;
     const selectedBroker = brokerSelect.value;
     if (!selectedUser || !selectedBroker) {
@@ -389,18 +411,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  [userSelect, brokerSelect].forEach(select => {
-    select.addEventListener("change", () => {
-      fetch("/api/broker_settings/")
-        .then(r => safe(r))
-        .then(([ok, result]) => {
-          if (ok) {
-            updateTokenStatus(result);
-          }
-        })
-        .catch(e => console.error("Error fetching data for token status:", e));
+  // Replace problematic event listeners with safer approach
+  const attachSelectListeners = () => {
+    const { userSelect, brokerSelect } = getSelects();
+    if (!userSelect || !brokerSelect) return;
+    
+    [userSelect, brokerSelect].forEach(select => {
+      select.addEventListener("change", () => {
+        fetch("/api/broker_settings/")
+          .then(r => safe(r))
+          .then(([ok, result]) => {
+            if (ok) {
+              updateTokenStatus(result);
+            }
+          })
+          .catch(e => console.error("Error fetching data for token status:", e));
+      });
     });
-  });
+  };
+
+  attachSelectListeners(); // Initialize
 
   btnOpen?.addEventListener("click", () => {
     console.log("Opening modal and loading data");
@@ -408,5 +438,8 @@ document.addEventListener("DOMContentLoaded", () => {
     modal.show();
   });
 
+  // Make load function globally accessible
+  window.loadBrokerSettings = load;
+  
   load(); // Initial load
 });

@@ -249,8 +249,8 @@
                     brokerModal.show();
                     
                     // Load broker settings data if function exists
-                    if (typeof loadBrokerSettings === 'function') {
-                        loadBrokerSettings();
+                    if (typeof window.loadBrokerSettings === 'function') {
+                        window.loadBrokerSettings();
                     }
                 });
             }
