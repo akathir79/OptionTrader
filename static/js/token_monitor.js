@@ -39,7 +39,7 @@ class TokenMonitor {
             const data = await response.json();
             this.notifications = data.notifications || [];
             
-            console.log(`🔔 Loaded ${this.notifications.length} token notifications`);
+            console.log(`🔔 Loaded ${this.notifications.length} token notifications`, data);
             this.updateBellUI();
             
         } catch (error) {

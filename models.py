@@ -44,27 +44,27 @@ class BrokerSettings(db.Model):
         return f"<BrokerSettings {self.brokername}:{self.broker_user_id}>"
     
     def is_access_token_expired(self):
-        """Check if access token is expired (8 hours from creation, expires at 8 AM IST)"""
+        """Check if access token is expired (8 hours from creation OR at 8 AM IST, whichever is earlier)"""
         if not self.access_token_created_at:
             return True
         
         ist_tz = pytz.timezone('Asia/Kolkata')
         token_created_ist = self.access_token_created_at.replace(tzinfo=pytz.utc).astimezone(ist_tz)
-        
-        # Access tokens expire at 8 AM IST daily
         current_time_ist = datetime.now(ist_tz)
         
-        # If created today and it's before 8 AM, it expires at 8 AM today
-        # If created yesterday and it's after 8 AM today, it's expired
-        # Tokens are valid for 8 hours from 8 AM IST
-        today_8am = current_time_ist.replace(hour=8, minute=0, second=0, microsecond=0)
+        # Calculate expiry as minimum of: 8 hours from creation OR next 8 AM IST
+        eight_hours_later = token_created_ist + timedelta(hours=8)
         
-        if token_created_ist.date() == current_time_ist.date():
-            # Token created today - expires at next 8 AM (tomorrow)
-            expiry_time = today_8am + timedelta(days=1)
+        # Find next 8 AM IST after token creation
+        if token_created_ist.hour < 8:
+            # If created before 8 AM, expires at 8 AM same day
+            next_8am = token_created_ist.replace(hour=8, minute=0, second=0, microsecond=0)
         else:
-            # Token created on previous day - expires at 8 AM today
-            expiry_time = today_8am
+            # If created after 8 AM, expires at 8 AM next day
+            next_8am = (token_created_ist + timedelta(days=1)).replace(hour=8, minute=0, second=0, microsecond=0)
+        
+        # Expiry is whichever comes first: 8 hours OR next 8 AM
+        expiry_time = min(eight_hours_later, next_8am)
         
         return current_time_ist > expiry_time
     
@@ -77,19 +77,27 @@ class BrokerSettings(db.Model):
         return datetime.utcnow() > expiry_time
     
     def access_token_expires_in_minutes(self):
-        """Get minutes until access token expiry"""
+        """Get minutes until access token expiry (8 hours from creation OR next 8 AM IST, whichever is earlier)"""
         if not self.access_token_created_at:
             return 0
         
         ist_tz = pytz.timezone('Asia/Kolkata')
+        token_created_ist = self.access_token_created_at.replace(tzinfo=pytz.utc).astimezone(ist_tz)
         current_time_ist = datetime.now(ist_tz)
-        today_8am = current_time_ist.replace(hour=8, minute=0, second=0, microsecond=0)
         
-        # Determine next expiry (8 AM IST)
-        if current_time_ist.hour < 8:
-            expiry_time = today_8am  # Expires today at 8 AM
+        # Calculate expiry as minimum of: 8 hours from creation OR next 8 AM IST
+        eight_hours_later = token_created_ist + timedelta(hours=8)
+        
+        # Find next 8 AM IST after token creation
+        if token_created_ist.hour < 8:
+            # If created before 8 AM, expires at 8 AM same day
+            next_8am = token_created_ist.replace(hour=8, minute=0, second=0, microsecond=0)
         else:
-            expiry_time = today_8am + timedelta(days=1)  # Expires tomorrow at 8 AM
+            # If created after 8 AM, expires at 8 AM next day
+            next_8am = (token_created_ist + timedelta(days=1)).replace(hour=8, minute=0, second=0, microsecond=0)
+        
+        # Expiry is whichever comes first: 8 hours OR next 8 AM
+        expiry_time = min(eight_hours_later, next_8am)
         
         time_diff = expiry_time - current_time_ist
         return max(0, int(time_diff.total_seconds() / 60))

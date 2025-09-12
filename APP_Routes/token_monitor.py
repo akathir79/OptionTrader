@@ -13,6 +13,8 @@ def _json_error(msg: str, status: int = 400):
     return jsonify(error=msg), status
 
 def _rows():
+    # TODO: Replace with proper user session filtering when authentication is implemented
+    # For now, use user_id=0 as per existing broker_settings pattern
     return BrokerSettings.query.filter_by(user_id=0)
 
 @bp.get("/status")
@@ -47,10 +49,9 @@ def get_token_notifications():
         notifications = []
         
         for broker in brokers:
-            if not broker.access_token:
-                continue
-                
             status = broker.get_token_status()
+            
+            # Include broker even if no access token (for "create token" notifications)
             
             # Access token notifications
             if status['access_token_expired']:
