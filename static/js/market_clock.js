@@ -680,6 +680,7 @@ class MarketClock {
                 }
                 
                 this.renderSimpleMarketCards();
+                this.startCountdownUpdates();
             }
         } catch (error) {
             console.error('Error loading markets:', error);
@@ -805,6 +806,7 @@ class MarketClock {
         }
 
         container.innerHTML = this.markets.map(market => {
+            // Add guards for undefined values
             const nextEventText = market.next_event === 'opening' ? 'Opens' : 
                                   market.next_event === 'closing' ? 'Closes' : 
                                   market.next_event === 'weekend' ? 'Weekend' : 'Closed';
@@ -812,6 +814,13 @@ class MarketClock {
             const nextEventTime = market.next_event_ist || 'N/A';
             const nextEventClass = market.next_event === 'opening' ? 'success' : 
                                    market.next_event === 'closing' ? 'warning' : 'secondary';
+                                   
+            // Guard against undefined values
+            const localNow = market.local_now || 'N/A';
+            const localOpen = market.local_open || 'N/A';
+            const localClose = market.local_close || 'N/A';
+            const istOpen = market.ist_open || 'N/A';
+            const istClose = market.ist_close || 'N/A';
 
             return `
                 <div class="col-md-6 col-lg-4 mb-3">
@@ -826,18 +835,20 @@ class MarketClock {
                             </button>
                         </div>
                         <div class="card-body">
-                            <!-- Current Times -->
+                            <!-- Current Time and Countdown -->
                             <div class="row mb-3">
                                 <div class="col-6">
                                     <div class="text-center p-2 bg-light rounded">
                                         <small class="text-muted d-block">Local Time</small>
-                                        <strong class="fs-5">${market.local_now}</strong>
+                                        <strong class="fs-5">${localNow}</strong>
                                     </div>
                                 </div>
                                 <div class="col-6">
-                                    <div class="text-center p-2 bg-primary text-white rounded">
-                                        <small class="d-block">IST Time</small>
-                                        <strong class="fs-5">${market.ist_now}</strong>
+                                    <div class="text-center p-2 ${nextEventClass === 'success' ? 'bg-success' : nextEventClass === 'warning' ? 'bg-warning' : 'bg-secondary'} text-white rounded">
+                                        <small class="d-block">${nextEventText}</small>
+                                        <strong class="fs-6 countdown-timer" ${market.next_event_at_utc ? `data-target-utc="${market.next_event_at_utc}"` : ''} data-market-id="${market.id}">
+                                            ${market.next_event_at_utc ? this.getCountdownText(market.next_event_at_utc) : 'N/A'}
+                                        </strong>
                                     </div>
                                 </div>
                             </div>
@@ -847,13 +858,13 @@ class MarketClock {
                                 <div class="row">
                                     <div class="col-12">
                                         <small class="text-muted">Market Hours (Local)</small>
-                                        <div class="fw-bold">${market.local_open} - ${market.local_close}</div>
+                                        <div class="fw-bold">${localOpen} - ${localClose}</div>
                                     </div>
                                 </div>
                                 <div class="row mt-1">
                                     <div class="col-12">
                                         <small class="text-muted">Market Hours (IST)</small>
-                                        <div class="fw-bold text-primary">${market.ist_open} - ${market.ist_close}</div>
+                                        <div class="fw-bold text-primary">${istOpen} - ${istClose}</div>
                                     </div>
                                 </div>
                             </div>
@@ -897,6 +908,50 @@ class MarketClock {
         // Update both open and close notifications
         this.toggleMarketNotification(marketId, 'open', enabled);
         this.toggleMarketNotification(marketId, 'close', enabled);
+    }
+    
+    getCountdownText(targetUtc) {
+        if (!targetUtc) return 'N/A';
+        
+        try {
+            const now = new Date();
+            const target = new Date(targetUtc);
+            const diffMs = target - now;
+            
+            if (diffMs <= 0) return 'Now';
+            
+            const hours = Math.floor(diffMs / (1000 * 60 * 60));
+            const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            } else {
+                return `${minutes}m`;
+            }
+        } catch (error) {
+            return 'N/A';
+        }
+    }
+    
+    startCountdownUpdates() {
+        // Update countdown timers every 30 seconds
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+        }
+        
+        this.countdownInterval = setInterval(() => {
+            this.updateCountdownTimers();
+        }, 30000); // Update every 30 seconds
+    }
+    
+    updateCountdownTimers() {
+        const countdownElements = document.querySelectorAll('.countdown-timer');
+        countdownElements.forEach(element => {
+            const targetUtc = element.getAttribute('data-target-utc');
+            if (targetUtc) {
+                element.textContent = this.getCountdownText(targetUtc);
+            }
+        });
     }
 
     renderMarketStatus(marketStatus) {
@@ -1038,12 +1093,14 @@ class MarketClock {
         }
         
         try {
-            const response = await fetch('/api/market-times/status');
+            const response = await fetch('/api/markets/simple');
             if (response.ok) {
-                const marketStatus = await response.json();
+                const markets = await response.json();
                 
-                marketStatus.forEach(market => {
-                    if (market.notify_open || market.notify_close) {
+                markets.forEach(market => {
+                    // Only check notifications if market has valid timing data and next event
+                    if (market && market.local_now && market.local_open && market.local_close && 
+                        market.next_event_at_utc && (market.notify_open || market.notify_close)) {
                         this.checkMarketNotification(market);
                     }
                 });
