@@ -5378,74 +5378,81 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ Option Chain fullscreen initialized');
     });
 
-    // Step 2: Payoff Chart Fullscreen
+    // Step 2: Payoff Chart Fullscreen - Fixed
     document.addEventListener('DOMContentLoaded', function() {
-        const payoffBtn = document.getElementById('fullscreenPayoff');
-        
-        if (payoffBtn) {
-            payoffBtn.addEventListener('click', function() {
-                console.log('Payoff chart fullscreen clicked');
-                togglePayoffChartFullscreen();
-            });
-        }
-
-        function togglePayoffChartFullscreen() {
-            // Find the payoff chart container
-            const payoffContainer = document.querySelector('.card:has(#chartContainer)') || 
-                                  document.querySelector('#chartContainer').closest('.card') ||
-                                  document.querySelector('.right-panel .card:nth-child(2)');
+        // Wait a moment for all elements to load
+        setTimeout(() => {
+            console.log('Looking for payoff chart fullscreen button...');
+            const payoffBtn = document.getElementById('fullscreenPayoff');
             
-            if (!payoffContainer) {
-                console.log('Payoff chart container not found');
-                return;
-            }
-
-            console.log('Payoff chart container found:', payoffContainer);
-
-            if (payoffContainer.classList.contains('payoff-chart-fullscreen')) {
-                // Exit fullscreen
-                payoffContainer.classList.remove('payoff-chart-fullscreen');
-                payoffBtn.innerHTML = '<i class="fas fa-expand"></i>';
-                payoffBtn.title = 'Fullscreen View';
-                
-                // Remove exit button if exists
-                const exitBtn = payoffContainer.querySelector('.fullscreen-exit-btn');
-                if (exitBtn) exitBtn.remove();
-                
-                // Resize chart after exiting fullscreen
-                setTimeout(() => {
-                    if (window.payoffChart && window.payoffChart.reflow) {
-                        window.payoffChart.reflow();
-                    }
-                }, 100);
-                
-                console.log('Exited payoff chart fullscreen');
+            if (payoffBtn) {
+                console.log('Payoff chart fullscreen button found!');
+                payoffBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('🎯 Payoff chart fullscreen button clicked!');
+                    togglePayoffChartFullscreen();
+                });
             } else {
-                // Enter fullscreen
-                payoffContainer.classList.add('payoff-chart-fullscreen');
-                payoffBtn.innerHTML = '<i class="fas fa-compress"></i>';
-                payoffBtn.title = 'Exit Fullscreen';
+                console.log('❌ Payoff chart fullscreen button NOT found');
+            }
+
+            function togglePayoffChartFullscreen() {
+                console.log('🔍 Finding payoff chart container...');
                 
-                // Add close button
-                const exitBtn = document.createElement('button');
-                exitBtn.className = 'fullscreen-exit-btn btn btn-outline-dark btn-sm';
-                exitBtn.innerHTML = '<i class="fas fa-times"></i>';
-                exitBtn.style.cssText = 'position: absolute; top: 10px; right: 10px; z-index: 10001;';
-                exitBtn.onclick = togglePayoffChartFullscreen;
-                payoffContainer.appendChild(exitBtn);
+                // Try multiple methods to find the container
+                let payoffContainer = document.querySelector('[id*="chartContainer"]')?.closest('.card');
+                if (!payoffContainer) {
+                    payoffContainer = document.querySelector('.right-panel');
+                }
+                if (!payoffContainer) {
+                    payoffContainer = document.querySelector('.card:nth-child(2)');
+                }
                 
-                // Resize chart after entering fullscreen
+                console.log('Payoff container found:', payoffContainer);
+                
+                if (!payoffContainer) {
+                    console.log('❌ Payoff chart container not found');
+                    return;
+                }
+
+                if (payoffContainer.classList.contains('payoff-chart-fullscreen')) {
+                    // Exit fullscreen
+                    payoffContainer.classList.remove('payoff-chart-fullscreen');
+                    payoffBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                    payoffBtn.title = 'Fullscreen View';
+                    
+                    // Remove exit button if exists
+                    const exitBtn = payoffContainer.querySelector('.fullscreen-exit-btn');
+                    if (exitBtn) exitBtn.remove();
+                    
+                    console.log('✅ Exited payoff chart fullscreen');
+                } else {
+                    // Enter fullscreen
+                    payoffContainer.classList.add('payoff-chart-fullscreen');
+                    payoffBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                    payoffBtn.title = 'Exit Fullscreen';
+                    
+                    // Add close button
+                    const exitBtn = document.createElement('button');
+                    exitBtn.className = 'fullscreen-exit-btn btn btn-outline-dark btn-sm';
+                    exitBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    exitBtn.style.cssText = 'position: absolute; top: 10px; right: 10px; z-index: 10001;';
+                    exitBtn.onclick = togglePayoffChartFullscreen;
+                    payoffContainer.appendChild(exitBtn);
+                    
+                    console.log('✅ Entered payoff chart fullscreen');
+                }
+                
+                // Resize chart after toggle
                 setTimeout(() => {
                     if (window.payoffChart && window.payoffChart.reflow) {
                         window.payoffChart.reflow();
                     }
-                }, 100);
-                
-                console.log('Entered payoff chart fullscreen');
+                }, 200);
             }
-        }
 
-        console.log('✅ Payoff Chart fullscreen initialized');
+            console.log('✅ Payoff Chart fullscreen initialized (fixed)');
+        }, 2000); // Wait 2 seconds for page to fully load
     });
     </script>
 {% endblock %}
