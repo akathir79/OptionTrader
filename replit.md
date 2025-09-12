@@ -2,162 +2,234 @@
 
 ## Overview
 
-This is a Flask-based trading platform that provides live trading functionality with support for multiple brokers, options chain analysis, and market data visualization. The application features a modular architecture with separate components for broker management, symbol selection, and trading interfaces.
-
-## System Architecture
-
-### Backend Architecture
-- **Framework**: Flask web application with SQLAlchemy ORM
-- **Database**: PostgreSQL (configurable via DATABASE_URL environment variable)
-- **Modular Design**: Blueprint-based routing system for organized code structure
-- **API Integration**: REST endpoints for broker authentication and market data
-
-### Frontend Architecture
-- **Template Engine**: Jinja2 with base template inheritance
-- **CSS Framework**: Bootstrap 5 for responsive design
-- **JavaScript**: Vanilla JS with modular components for interactive features
-- **UI Components**: Resizable panels, carousels, and modal dialogs
-
-### Database Schema
-- **BrokerSettings Model**: Stores broker credentials and access tokens
-  - Supports multiple brokers per user
-  - Includes token management with timestamps
-  - Development-friendly with default user_id=0
-
-## Key Components
-
-### 1. Broker Management (`APP_Routes/broker_settings.py`)
-- Handles broker authentication and token management
-- Supports multiple broker integrations (Fyers SDK ready)
-- RESTful API endpoints for CRUD operations on broker settings
-- Token refresh and validation mechanisms
-
-### 2. Symbol Selection (`APP_Routes/symbol_selector.py`)
-- Fetches expiry dates for index symbols (NIFTY, BANKNIFTY, etc.)
-- Integrates with external CSV data sources (NSE/BSE)
-- Provides symbol lookup and filtering capabilities
-
-### 3. Live Trading Interface (`templates/live_trade.html`)
-- Real-time options chain display
-- ATM (At-the-Money) strike highlighting
-- ITM/OTM color coding for options
-- Payoff chart visualization
-- Market data carousel
-
-### 4. Frontend Controllers
-- **ChartController**: Manages chart visibility and fullscreen modes
-- **ResizableLayout**: Handles drag-and-drop panel resizing
-- **MarketDataCarousel**: Navigation for market data display
-- **SymbolSelector**: Dynamic symbol and expiry selection
-
-## Data Flow
-
-1. **User Authentication**: Broker credentials stored in BrokerSettings model
-2. **Symbol Selection**: Index/exchange selection triggers API calls to fetch symbols and expiry dates
-3. **Market Data**: Real-time data fetched via broker APIs using stored access tokens
-4. **Options Chain**: Live options data displayed with visual indicators for ITM/OTM status
-5. **Chart Integration**: Payoff calculations and visualization based on selected options
-
-## External Dependencies
-
-### Python Packages
-- Flask and Flask-SQLAlchemy for web framework and ORM
-- requests for HTTP API calls
-- pytz for timezone handling
-- fyers_apiv3 (optional) for Fyers broker integration
-
-### Frontend Libraries
-- Bootstrap 5 for UI components
-- Font Awesome for icons
-- CSV data from public.fyers.in for symbol information
-
-### Data Sources
-- NSE/BSE CSV files for options symbols and expiry dates
-- Broker APIs for real-time market data and order execution
-
-## Deployment Strategy
-
-### Environment Configuration
-- DATABASE_URL for PostgreSQL connection
-- DEBUG mode enabled for development
-- Port 5000 default with host binding for containerization
-
-### File Structure
-- Modular blueprint organization in APP_Routes/
-- Static assets in static/ directory
-- Templates with inheritance in templates/
-- Database extensions in APP_Extensions/
-
-### Database Management
-- SQLAlchemy models with automatic table creation
-- Development-friendly foreign key handling
-- Token expiration tracking for security
+This Flask-based trading platform provides live trading functionality with support for multiple brokers, comprehensive options chain analysis, and market data visualization. Its purpose is to offer a robust, modular, and user-friendly environment for real-time trading operations, focusing on options trading strategies and market insights. The platform aims to be a versatile tool for traders, integrating various data sources and broker services to provide a unified trading experience.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-## CRITICAL SYNCHRONIZATION LOGIC - DO NOT BREAK
+## System Architecture
 
-### Position Tracking Arrays (PRESERVE THIS LOGIC)
-The app uses THREE synchronized arrays that MUST always stay in sync:
+### Backend
+- **Framework**: Flask web application with SQLAlchemy ORM.
+- **Database**: PostgreSQL (configurable via `DATABASE_URL`).
+- **Modularity**: Blueprint-based routing for organized code.
+- **API**: REST endpoints for broker authentication and market data.
 
-1. **window.activeLots** - Array of individual lot objects (used for button badge counts)
-2. **window.globalPositions** - Object with aggregated position data (used for active trades table & position cards)  
-3. **window.closedTrades** - Array of closed trade records (used for closed trades table)
+### Frontend
+- **Templating**: Jinja2 with base template inheritance.
+- **Styling**: Bootstrap 5 for responsive design.
+- **Interactivity**: Vanilla JS with modular components.
+- **UI Components**: Resizable panels, carousels, and modal dialogs.
+- **UI/UX Decisions**:
+    - Professional styling for option chain tables.
+    - Dynamic yellow highlighting for In-The-Money (ITM) calls and puts.
+    - Real-time payoff chart with dynamic spot price, breakeven lines, zoom/pan, crosshairs, and simplified tooltips.
+    - Microcharts in option chain table for historical data visualization.
+    - World Market Clock with real-time status, notifications, sound controls, and persistent user preferences.
 
-### Synchronization Rules (CRITICAL - NEVER BREAK)
-**Every position modification MUST update ALL THREE arrays:**
+### Technical Implementations & Feature Specifications
+- **Broker Management**: Handles authentication, token management, and CRUD operations for broker settings, supporting multiple integrations (e.g., Fyers).
+- **Symbol Selection**: Fetches expiry dates for index symbols (NIFTY, BANKNIFTY) and provides lookup/filtering, integrating with external CSV data.
+- **Live Trading Interface**: Displays real-time options chain with ATM (At-the-Money) strike highlighting and ITM/OTM color coding.
+- **Position Tracking Synchronization**: Critical logic ensures three primary arrays are always in sync: `window.activeLots` (individual lots), `window.globalPositions` (aggregated positions), and `window.closedTrades` (closed trade records). All position modifications must update these three arrays and trigger UI updates for tables and payoff charts. Netting logic for positions is precisely managed across these arrays.
+- **Data Flow**: User authentication, symbol selection triggering API calls, real-time market data fetching via broker APIs, live options data display, and payoff chart visualization.
+- **Deployment**: Uses environment variables for configuration (`DATABASE_URL`, `DEBUG`), modular file structure (blueprints, static, templates), and SQLAlchemy for database management.
 
-1. **Buy/Sell Button Clicks (handleButtonClick function)**:
-   - Updates window.activeLots (add/remove individual lots)
-   - Updates window.globalPositions (increment/decrement aggregated counts)
-   - During NETTING: Updates both arrays to remove closed positions
+## External Dependencies
 
-2. **Lots Column +/- Buttons (adjustLots function)**:
-   - Updates window.globalPositions 
-   - Syncs window.activeLots to match
-   - Calls same update functions
+### Python Packages
+- `Flask`: Web framework.
+- `Flask-SQLAlchemy`: ORM for database interaction.
+- `requests`: HTTP requests.
+- `pytz`: Timezone handling.
+- `fyers_apiv3`: (Optional) Fyers broker integration.
 
-3. **Position Card +/- Buttons (handleExpirySpecificPositionChange function)**:
-   - Updates window.globalPositions
-   - Syncs window.activeLots to match  
-   - Calls same update functions
+### Frontend Libraries
+- `Bootstrap 5`: CSS framework.
+- `Font Awesome`: Icons.
+- Public Fyers CSV data (e.g., `public.fyers.in/sym_details/NSE_FO.csv`) for symbol information.
 
-### Required Update Function Calls (ALWAYS CALL THESE)
-After ANY position change, MUST call:
-```javascript
-updateActiveTradesTable();    // Updates active trades display
-updateClosedTradesTable();    // Updates closed trades display  
-updateCurrentPositionsTable(); // Updates position cards
-createPayoffChartFromOptionChain(); // Updates payoff chart
+### Data Sources
+- NSE/BSE CSV files: Options symbols and expiry dates.
+- Broker APIs: Real-time market data, order execution, historical data (e.g., Fyers API v3 for market data, order management, and WebSocket streams).
+
+## FYERS API v3 Integration Guide
+
+### Overview
+The trading platform integrates with Fyers API v3 for broker connectivity, live market data, and order management. This section documents the complete API structure for development reference.
+
+### Authentication Flow (3-Step Process)
+
+#### Step 1: Generate Auth Code
+- **Endpoint**: `https://api-t1.fyers.in/api/v3/generate-authcode`
+- **Parameters**:
+  - `client_id`: App ID (e.g., "SPXXXXE7-100")
+  - `redirect_uri`: Redirect URL after login
+  - `response_type`: Always "code"
+  - `state`: Random value for security
+- **Response**: Auth code for Step 2
+
+#### Step 2: Validate Auth Code
+- **Endpoint**: `https://api-t1.fyers.in/api/v3/validate-authcode`
+- **Parameters**:
+  - `grant_type`: Always "authorization_code"
+  - `appIdHash`: SHA-256 of (api_id + ":" + app_secret)
+  - `code`: Auth code from Step 1
+- **Response**: Access token and refresh token
+
+#### Step 3: Use Access Token
+- **Authorization Header**: `{api_id}:{access_token}`
+- **Token Validity**: Access token expires daily, refresh token valid for 15 days
+
+### Python SDK Integration
+
+#### Installation
+```bash
+pip install fyers_apiv3
 ```
 
-### Netting Logic (PRESERVE EXACTLY)
-When opposite positions net out:
-1. Update window.activeLots (remove closed lot)
-2. **CRITICAL**: Also update window.globalPositions (reduce lot count)
-3. Add to window.closedTrades (record closed trade)
-4. If globalPositions lots reach zero, delete the position entry
+#### Basic Usage
+```python
+from fyers_apiv3 import fyersModel
+from fyers_apiv3.FyersWebsocket import data_ws
 
-### Badge Count Calculation (PRESERVE)
-Button badges calculate from window.activeLots filtering, NOT from counters:
-```javascript
-const remainingLots = window.activeLots.filter(lot => /* conditions */).length;
+# Initialize Fyers client
+client_id = "XC4XXXXM-100"
+access_token = "eyJ0eXXXXXXXX2c5-Y3RgS8wR14g"
+fyers = fyersModel.FyersModel(client_id=client_id, token=access_token)
 ```
 
-## Changelog
+### WebSocket Implementations
 
-Changelog:
-- September 10, 2025. CRITICAL PRESERVATION: Documented complete synchronization logic to prevent future breakage - all position modification systems now properly sync window.activeLots, window.globalPositions, and window.closedTrades arrays with mandatory update function calls
-- September 09, 2025. URGENT: Position synchronization broken - Buy/Sell button badges show counts but Current Positions card shows "No positions yet" - the three-way sync between buttons, positions table, and payoff chart that was working perfectly has been disrupted by recent changes to handleButtonClick function
-- July 07, 2025. Implemented comprehensive real-time payoff chart updates with dynamic spot price and breakeven line synchronization - the system now polls WebSocket data every 1 second to update the blue spot price vertical line and automatically recalculates red dashed breakeven lines based on current positions, with immediate updates triggered by Buy/Sell button clicks and support for both single and complex multi-leg option strategies
-- July 06, 2025. Enhanced payoff chart with interactive features: zoom/pan functionality (drag to zoom, Shift+drag to pan), crosshairs with value labels, reset zoom button, simplified tooltip, removed title and legend for maximum space utilization, and improved horizontal label display for Breakeven and Spot price indicators with professional font styling
-- July 06, 2025. Enhanced historical data system with 4-day range and 1-minute resolution - providing 1125 granular price points for real-time market analysis, added tick data endpoint for high-frequency data access, and optimized date ranges to capture weekday trading sessions
-- July 06, 2025. Fixed microcharts display issue in option chain table - resolved historical data API to properly handle FYERS "no_data" responses, added debug logging for chart loading process, and implemented proper fallback display with chart icons when historical data isn't available for options
-- July 05, 2025. Enhanced World Market Clock with individual market notification and sound controls, allowing per-market toggle switches for open/close notifications and sound alerts, plus bulk control buttons for managing all markets at once
-- July 05, 2025. Added notification and sound muting controls to World Market Clock system with global toggle switches, visual status indicators on Markets button, and persistent user preferences stored in localStorage
-- July 05, 2025. Added comprehensive World Market Clock feature with popup interface, CRUD operations for market times, real-time status monitoring, notification system with sound alerts, and database-driven market management supporting 10 major global exchanges including BSE and MCX
-- July 05, 2025. Updated ITM highlighting to use subtle yellow background (#fff3cd) matching reference design, while keeping existing logic intact
-- July 05, 2025. Enhanced option chain table with professional styling, removed column visibility controls, disabled ATM row highlighting, and added dynamic yellow highlighting for ITM calls and puts based on real-time ATM calculations
-- July 04, 2025. Initial setup
+#### 1. Market Data WebSocket (Real-time Quotes)
+- **Purpose**: Live price data, LTP, volume, OI updates
+- **SDK Class**: `FyersDataSocket`
+- **Data Types**: SymbolUpdate, MarketDepth, Full
+- **Connection**: Automatic reconnection supported
+- **Usage**:
+```python
+def on_message(message):
+    print("Response:", message)
+
+fyers_ws = data_ws.FyersDataSocket(
+    access_token=f"{client_id}:{access_token}",
+    on_message=on_message,
+    on_error=on_error,
+    on_close=on_close,
+    on_connect=on_open
+)
+fyers_ws.connect()
+fyers_ws.subscribe(symbols=['NSE:SBIN-EQ'], data_type="SymbolUpdate")
+```
+
+#### 2. Order WebSocket (Order/Trade Updates)
+- **Endpoint**: `wss://socket.fyers.in/trade/v3`
+- **Purpose**: Real-time order status, trade confirmations, position updates
+- **Subscription Types**: orders, trades, positions, edis, pricealerts
+- **Message Format**: JSON with action-based updates
+- **Subscribe Message**:
+```json
+{"T": "SUB_ORD", "SLIST": ["orders", "trades", "positions"], "SUB_T": 1}
+```
+
+#### 3. Tick-by-Tick (TBT) WebSocket [Advanced]
+- **Endpoint**: `wss://rtsocket-api.fyers.in/versova`
+- **Purpose**: 50-level market depth, granular trade data
+- **Format**: Protobuf responses for efficiency
+- **Availability**: NFO instruments only (NSE F&O)
+- **Data Mode**: Incremental updates with initial snapshots
+
+### API Rate Limits
+- **Per Second**: 10 requests
+- **Per Minute**: 200 requests  
+- **Per Day**: 100,000 requests
+- **User Blocking**: Blocked for remainder of day if per-minute limit exceeded 3+ times
+
+### Common Error Codes
+- `-8`: Token expired
+- `-15`: Invalid token provided
+- `-16`: Server unable to authenticate token
+- `-17`: Token invalid or expired
+- `-50`: Invalid parameters passed
+- `-99`: Order placement rejected
+- `-300`: Invalid symbol provided
+- `-352`: Invalid App ID provided
+- `-429`: API rate limit exceeded
+- `400`: Bad request/invalid input
+- `401`: Authorization error
+- `403`: Permission denied
+- `500`: Internal server error
+
+### Symbol Master Files (CSV Format)
+- **NSE Equity Derivatives**: https://public.fyers.in/sym_details/NSE_FO.csv
+- **NSE Capital Market**: https://public.fyers.in/sym_details/NSE_CM.csv
+- **NSE Currency Derivatives**: https://public.fyers.in/sym_details/NSE_CD.csv
+- **BSE Capital Market**: https://public.fyers.in/sym_details/BSE_CM.csv
+- **BSE Equity Derivatives**: https://public.fyers.in/sym_details/BSE_FO.csv
+- **MCX Commodity**: https://public.fyers.in/sym_details/MCX_COM.csv
+
+#### Symbol Format
+- **Structure**: `EXCHANGE:SYMBOL-SEGMENT`
+- **Examples**: 
+  - `NSE:NIFTY50-INDEX`
+  - `NSE:BANKNIFTY25JAN51000CE`
+  - `NSE:SBIN-EQ`
+
+### Key API Endpoints
+
+#### Market Data
+- **Quotes**: `/api/v3/quotes` - Get current quotes for symbols
+- **Market Depth**: `/api/v3/depth` - Get market depth data
+- **Historical Data**: `/api/v3/history` - Historical price data
+- **Market Status**: `/api/v3/market-status` - Exchange status
+
+#### Order Management  
+- **Place Order**: `/api/v3/orders` (POST)
+- **Modify Order**: `/api/v3/orders` (PUT)
+- **Cancel Order**: `/api/v3/orders/{order_id}` (DELETE)
+- **Order Book**: `/api/v3/orders` (GET)
+
+#### Portfolio & Positions
+- **Positions**: `/api/v3/positions` - Current positions
+- **Holdings**: `/api/v3/holdings` - Long-term holdings
+- **Funds**: `/api/v3/funds` - Account balance and margins
+- **Tradebook**: `/api/v3/tradebook` - Trade history
+
+### Security Best Practices
+1. Never share `app_secret` - store securely in environment variables
+2. Never expose `access_token` in frontend code
+3. Use controlled redirect URIs (not public endpoints)
+4. Implement proper token refresh mechanisms
+5. Validate `state` parameter for security
+6. Use HTTPS for all API communications
+
+### Integration with Current Platform
+The existing BrokerSettings model in the platform already supports Fyers:
+- Stores `client_id`, `app_secret`, `access_token`, `refresh_token`
+- Handles token refresh automatically
+- Provides API endpoints for broker management
+- Integrates with symbol selector for Fyers data
+
+### WebSocket Handler Integration
+The platform's existing WebSocket handler (`static/js/websocket_handler.js`) should be extended to:
+- Connect to Fyers market data WebSocket
+- Subscribe to relevant symbols based on user selection
+- Update option chain table with live prices
+- Handle connection errors and reconnection
+- Manage subscription state for performance
+
+### Performance Considerations
+- **Connection Management**: Reuse WebSocket connections, implement proper cleanup
+- **Subscription Optimization**: Only subscribe to required symbols
+- **Rate Limit Handling**: Implement request queuing and retry mechanisms
+- **Data Processing**: Handle incremental updates efficiently for TBT data
+- **Memory Management**: Clean up unused subscriptions and data
+
+### Development Environment Setup
+1. Install fyers_apiv3: `pip install fyers_apiv3`
+2. Create Fyers app at https://myapi.fyers.in
+3. Configure redirect URI for development
+4. Store credentials in environment variables
+5. Test authentication flow in development
+6. Implement WebSocket connections for live data
