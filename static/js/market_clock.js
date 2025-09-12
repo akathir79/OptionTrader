@@ -697,6 +697,20 @@ class MarketClock {
             const response = await fetch('/api/market-times');
             if (response.ok) {
                 this.markets = await response.json();
+                
+                // If no markets exist, automatically initialize default markets (including IST markets)
+                if (this.markets.length === 0) {
+                    console.log('No markets found, initializing default markets including IST...');
+                    await this.initializeDefaultMarkets();
+                    
+                    // Reload markets after initialization
+                    const retryResponse = await fetch('/api/market-times');
+                    if (retryResponse.ok) {
+                        this.markets = await retryResponse.json();
+                        console.log(`Loaded ${this.markets.length} default markets including IST markets`);
+                    }
+                }
+                
                 this.renderMarketTable();
             }
         } catch (error) {
@@ -961,21 +975,28 @@ class MarketClock {
     }
 
     checkMarketNotification(market) {
-        const now = new Date();
-        const currentTime = now.toTimeString().substr(0, 5); // HH:MM format
+        // Use the market's local time (already converted to correct timezone by backend API)
+        const marketCurrentTime = market.local_time; // This is already in market timezone (IST, etc.)
+        
+        // Log for debugging IST notifications
+        if (market.timezone === 'Asia/Kolkata') {
+            console.log(`IST Market ${market.market_name}: Current time=${marketCurrentTime}, Open=${market.local_open_time}, Close=${market.local_close_time}, Trading day=${market.is_trading_day}`);
+        }
         
         // Check if market is opening
-        if (market.notify_open && currentTime === market.local_open_time && market.is_trading_day) {
+        if (market.notify_open && marketCurrentTime === market.local_open_time && market.is_trading_day) {
+            console.log(`🔔 Market opening notification triggered for ${market.market_name} at ${marketCurrentTime}`);
             this.showMarketNotification(market, 'opening');
-            if (market.sound_enabled) {
+            if (market.sound_enabled && this.isGlobalSoundEnabled()) {
                 this.playNotificationSound();
             }
         }
         
         // Check if market is closing
-        if (market.notify_close && currentTime === market.local_close_time && market.is_trading_day) {
+        if (market.notify_close && marketCurrentTime === market.local_close_time && market.is_trading_day) {
+            console.log(`🔔 Market closing notification triggered for ${market.market_name} at ${marketCurrentTime}`);
             this.showMarketNotification(market, 'closing');
-            if (market.sound_enabled) {
+            if (market.sound_enabled && this.isGlobalSoundEnabled()) {
                 this.playNotificationSound();
             }
         }
