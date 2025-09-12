@@ -5322,154 +5322,60 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ Panel toggle functionality initialized successfully');
     });
 
-    // Full Page View Functionality
+    // Step 1: Option Chain Fullscreen
     document.addEventListener('DOMContentLoaded', function() {
-        const currentPositionsCard = document.querySelector('.card:has([id*="activeTradesTableBody"])');
-        const fullscreenCurrentPositionsBtn = document.getElementById('fullscreenCurrentPositions');
-        const fullscreenPayoffBtn = document.getElementById('fullscreenPayoff');
-        const combineViewPayoffBtn = document.getElementById('combineViewPayoff');
-
-        // Current Positions Fullscreen Toggle
-        if (fullscreenCurrentPositionsBtn && currentPositionsCard) {
-            fullscreenCurrentPositionsBtn.addEventListener('click', function() {
-                toggleCurrentPositionsFullscreen();
+        const optionChainBtn = document.getElementById('fullscreenOptionChain');
+        
+        if (optionChainBtn) {
+            optionChainBtn.addEventListener('click', function() {
+                console.log('Option chain fullscreen clicked');
+                toggleOptionChainFullscreen();
             });
         }
 
-        // Combined View for Payoff Chart + Current Positions
-        if (combineViewPayoffBtn) {
-            combineViewPayoffBtn.addEventListener('click', function() {
-                toggleCombinedView();
-            });
-        }
-
-        function toggleCurrentPositionsFullscreen() {
-            const card = document.querySelector('.card:has([id*="activeTradesTableBody"]) + .card:has([id*="closedTradesTableBody"])') || 
-                        document.querySelector('.card:has([id*="activeTradesTableBody"])');
+        function toggleOptionChainFullscreen() {
+            // Find the option chain container
+            const optionChainContainer = document.querySelector('.left-panel') || 
+                                       document.querySelector('[id*="optionChain"]').closest('.card') ||
+                                       document.querySelector('.resizable-container .left-panel');
             
-            if (!card) return;
-
-            if (card.classList.contains('current-positions-fullscreen')) {
-                // Exit fullscreen
-                card.classList.remove('current-positions-fullscreen');
-                fullscreenCurrentPositionsBtn.innerHTML = '<i class="fas fa-expand"></i>';
-                fullscreenCurrentPositionsBtn.title = 'Fullscreen View';
-            } else {
-                // Enter fullscreen
-                card.classList.add('current-positions-fullscreen');
-                fullscreenCurrentPositionsBtn.innerHTML = '<i class="fas fa-compress"></i>';
-                fullscreenCurrentPositionsBtn.title = 'Exit Fullscreen';
-                
-                // Add close button
-                if (!card.querySelector('.fullscreen-exit-btn')) {
-                    const exitBtn = document.createElement('button');
-                    exitBtn.className = 'fullscreen-exit-btn btn btn-outline-dark btn-sm';
-                    exitBtn.innerHTML = '<i class="fas fa-times"></i>';
-                    exitBtn.style.cssText = 'position: absolute; top: 10px; right: 10px; z-index: 10000;';
-                    exitBtn.onclick = toggleCurrentPositionsFullscreen;
-                    card.appendChild(exitBtn);
-                }
-            }
-        }
-
-        function toggleCombinedView() {
-            const payoffCard = document.querySelector('.card:has(#chartContainer)');
-            const currentPositionsCard = document.querySelector('.card:has([id*="activeTradesTableBody"])');
-            
-            if (!payoffCard || !currentPositionsCard) return;
-
-            // Check if already in combined view
-            if (document.body.classList.contains('combined-view-active')) {
-                exitCombinedView();
+            if (!optionChainContainer) {
+                console.log('Option chain container not found');
                 return;
             }
 
-            // Enter combined view
-            document.body.classList.add('combined-view-active');
-            
-            // Create combined container
-            const combinedContainer = document.createElement('div');
-            combinedContainer.id = 'combinedViewContainer';
-            combinedContainer.className = 'combined-view-fullscreen';
-            
-            // Create payoff section
-            const payoffSection = document.createElement('div');
-            payoffSection.className = 'payoff-section';
-            payoffSection.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4><i class="fas fa-chart-line me-2"></i>Payoff Analysis + Current Positions</h4>
-                    <button class="btn btn-outline-dark btn-sm" onclick="exitCombinedView()">
-                        <i class="fas fa-times"></i> Close
-                    </button>
-                </div>
-                <div id="combinedChartContainer" style="height: 100%; border: 1px solid #dee2e6; border-radius: 0.375rem;"></div>
-            `;
+            console.log('Option chain container found:', optionChainContainer);
 
-            // Create positions section  
-            const positionsSection = document.createElement('div');
-            positionsSection.className = 'positions-section';
-            positionsSection.innerHTML = `
-                <div class="card">
-                    <div class="card-header bg-primary text-white">
-                        <h6 class="mb-0"><i class="fas fa-briefcase me-2"></i>Current Positions</h6>
-                    </div>
-                    <div class="card-body p-0" style="max-height: 300px; overflow: auto;">
-                        ${currentPositionsCard.querySelector('.card-body').innerHTML}
-                    </div>
-                </div>
-            `;
-
-            combinedContainer.appendChild(payoffSection);
-            combinedContainer.appendChild(positionsSection);
-            document.body.appendChild(combinedContainer);
-
-            // Copy payoff chart to combined view
-            setTimeout(() => {
-                if (window.payoffChart) {
-                    // Clone the chart to combined container
-                    const combinedChartContainer = document.getElementById('combinedChartContainer');
-                    if (combinedChartContainer && window.Highcharts) {
-                        const originalChart = window.payoffChart;
-                        const combinedChart = window.Highcharts.chart('combinedChartContainer', {
-                            ...originalChart.options,
-                            chart: {
-                                ...originalChart.options.chart,
-                                height: '100%'
-                            }
-                        });
-                        // Copy series data
-                        if (originalChart.series && originalChart.series.length > 0) {
-                            originalChart.series.forEach((series, index) => {
-                                if (combinedChart.series[index]) {
-                                    combinedChart.series[index].setData(series.data.map(point => [point.x, point.y]));
-                                }
-                            });
-                        }
-                    }
-                }
-            }, 100);
-
-            // Update button
-            combineViewPayoffBtn.innerHTML = '<i class="fas fa-compress"></i>';
-            combineViewPayoffBtn.title = 'Exit Combined View';
+            if (optionChainContainer.classList.contains('option-chain-fullscreen')) {
+                // Exit fullscreen
+                optionChainContainer.classList.remove('option-chain-fullscreen');
+                optionChainBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                optionChainBtn.title = 'Fullscreen View';
+                
+                // Remove exit button if exists
+                const exitBtn = optionChainContainer.querySelector('.fullscreen-exit-btn');
+                if (exitBtn) exitBtn.remove();
+                
+                console.log('Exited option chain fullscreen');
+            } else {
+                // Enter fullscreen
+                optionChainContainer.classList.add('option-chain-fullscreen');
+                optionChainBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                optionChainBtn.title = 'Exit Fullscreen';
+                
+                // Add close button
+                const exitBtn = document.createElement('button');
+                exitBtn.className = 'fullscreen-exit-btn btn btn-outline-dark btn-sm';
+                exitBtn.innerHTML = '<i class="fas fa-times"></i>';
+                exitBtn.style.cssText = 'position: absolute; top: 10px; right: 10px; z-index: 10001;';
+                exitBtn.onclick = toggleOptionChainFullscreen;
+                optionChainContainer.appendChild(exitBtn);
+                
+                console.log('Entered option chain fullscreen');
+            }
         }
 
-        // Global function to exit combined view
-        window.exitCombinedView = function() {
-            const combinedContainer = document.getElementById('combinedViewContainer');
-            if (combinedContainer) {
-                document.body.removeChild(combinedContainer);
-            }
-            document.body.classList.remove('combined-view-active');
-            
-            // Reset button
-            if (combineViewPayoffBtn) {
-                combineViewPayoffBtn.innerHTML = '<i class="fas fa-angle-up"></i>';
-                combineViewPayoffBtn.title = 'Show Payoff Chart + Current Positions';
-            }
-        };
-
-        console.log('✅ Full page view functionality initialized');
+        console.log('✅ Option Chain fullscreen initialized');
     });
     </script>
 {% endblock %}
@@ -5501,6 +5407,22 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
 }
 
 /* Full Page View Styles */
+
+/* Option Chain Fullscreen */
+.option-chain-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  background: white !important;
+  padding: 20px !important;
+  overflow: auto !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
 .current-positions-fullscreen {
   position: fixed !important;
   top: 0 !important;
