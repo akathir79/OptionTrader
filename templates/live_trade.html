@@ -5454,6 +5454,75 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('✅ Payoff Chart fullscreen initialized (fixed)');
         }, 2000); // Wait 2 seconds for page to fully load
     });
+
+    // Step 3: Current Positions Fullscreen
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+            console.log('Looking for current positions fullscreen button...');
+            const positionsBtn = document.getElementById('fullscreenPositions');
+            
+            if (positionsBtn) {
+                console.log('Current positions fullscreen button found!');
+                positionsBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('🎯 Current positions fullscreen button clicked!');
+                    toggleCurrentPositionsFullscreen();
+                });
+            } else {
+                console.log('❌ Current positions fullscreen button NOT found');
+            }
+
+            function toggleCurrentPositionsFullscreen() {
+                console.log('🔍 Finding current positions container...');
+                
+                // Find the positions table container
+                let positionsContainer = document.querySelector('#currentPositionsTable')?.closest('.card');
+                if (!positionsContainer) {
+                    positionsContainer = document.querySelector('.right-panel .card:nth-child(3)');
+                }
+                if (!positionsContainer) {
+                    positionsContainer = document.querySelector('.card:has(#currentPositionsTable)');
+                }
+                
+                console.log('Positions container found:', positionsContainer);
+                
+                if (!positionsContainer) {
+                    console.log('❌ Current positions container not found');
+                    return;
+                }
+
+                if (positionsContainer.classList.contains('current-positions-fullscreen')) {
+                    // Exit fullscreen
+                    positionsContainer.classList.remove('current-positions-fullscreen');
+                    positionsBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                    positionsBtn.title = 'Fullscreen View';
+                    
+                    // Remove exit button if exists
+                    const exitBtn = positionsContainer.querySelector('.fullscreen-exit-btn');
+                    if (exitBtn) exitBtn.remove();
+                    
+                    console.log('✅ Exited current positions fullscreen');
+                } else {
+                    // Enter fullscreen
+                    positionsContainer.classList.add('current-positions-fullscreen');
+                    positionsBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                    positionsBtn.title = 'Exit Fullscreen';
+                    
+                    // Add close button
+                    const exitBtn = document.createElement('button');
+                    exitBtn.className = 'fullscreen-exit-btn btn btn-outline-dark btn-sm';
+                    exitBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    exitBtn.style.cssText = 'position: absolute; top: 10px; right: 10px; z-index: 10001;';
+                    exitBtn.onclick = toggleCurrentPositionsFullscreen;
+                    positionsContainer.appendChild(exitBtn);
+                    
+                    console.log('✅ Entered current positions fullscreen');
+                }
+            }
+
+            console.log('✅ Current Positions fullscreen initialized');
+        }, 2000);
+    });
     </script>
 {% endblock %}
 
@@ -5520,7 +5589,27 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   width: 100% !important;
 }
 
+/* Current Positions Fullscreen */
 .current-positions-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  background: white !important;
+  padding: 20px !important;
+  overflow: auto !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.current-positions-fullscreen .table-responsive {
+  max-height: calc(100vh - 100px) !important;
+  overflow-y: auto !important;
+}
+
+.combined-fullscreen {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
