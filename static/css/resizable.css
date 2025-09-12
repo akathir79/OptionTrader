@@ -143,26 +143,35 @@
     flex-direction: column;
     gap: 4px;
     z-index: 10;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* Show toggle buttons on resizer hover */
+.resizer:hover .panel-toggles {
+    opacity: 1;
 }
 
 .panel-toggle-btn {
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.8);
     color: white;
     border: none;
-    border-radius: 3px;
-    width: 20px;
-    height: 20px;
+    border-radius: 4px;
+    width: 24px;
+    height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 10px;
+    font-size: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
 }
 
 .panel-toggle-btn:hover {
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.95);
     transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.4);
 }
 
 .panel-toggle-btn:active {

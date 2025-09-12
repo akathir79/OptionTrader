@@ -5295,15 +5295,15 @@ document.addEventListener('DOMContentLoaded', function() {
         toggleLeftBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Left toggle clicked');
-            toggleLeftFull();
+            console.log('Left toggle clicked - expanding right panel');
+            toggleRightFull();
         });
 
         toggleRightBtn.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Right toggle clicked');
-            toggleRightFull();
+            console.log('Right toggle clicked - expanding left panel');
+            toggleLeftFull();
         });
 
         resetBtn.addEventListener('click', function(e) {
