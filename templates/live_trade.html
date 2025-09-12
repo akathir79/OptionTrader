@@ -1505,7 +1505,20 @@
     </div>
 
     <!-- Resizable Separator -->
-    <div class="resizer"></div>
+    <div class="resizer">
+      <!-- Panel Toggle Controls -->
+      <div class="panel-toggles">
+        <button id="toggleLeftPanel" class="panel-toggle-btn" title="Toggle Left Panel Full" data-direction="left">
+          <i class="fas fa-angle-double-left"></i>
+        </button>
+        <button id="toggleRightPanel" class="panel-toggle-btn" title="Toggle Right Panel Full" data-direction="right">
+          <i class="fas fa-angle-double-right"></i>
+        </button>
+        <button id="resetPanels" class="panel-toggle-btn" title="Reset to Default View" data-direction="center" style="display: none;">
+          <i class="fas fa-arrows-alt-h"></i>
+        </button>
+      </div>
+    </div>
 
     <!-- Right Panel - Charts & Trading -->
     <div class="resizable-panel right-panel">
@@ -5238,3 +5251,6 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
 }
 </style>
 
+
+<!-- Panel Toggle Functionality -->
+<script src="{{ url_for("static", filename="js/panel_toggle.js") }}"></script>
