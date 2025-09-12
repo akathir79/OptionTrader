@@ -74,41 +74,35 @@ class MarketClock {
       </div>
       <div class="modal-body">
         <!-- Market Status Dashboard -->
+        <!-- Global Controls Section -->
         <div class="row mb-4">
           <div class="col-12">
-            <div class="card">
-              <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Current Market Status</h6>
-                <div class="d-flex gap-2 align-items-center">
-                  <!-- Global Notification Controls -->
-                  <div class="form-check form-switch me-3">
-                    <input class="form-check-input" type="checkbox" id="globalNotifications" checked>
-                    <label class="form-check-label" for="globalNotifications">
-                      <i class="fas fa-bell me-1"></i>Notifications
-                    </label>
-                  </div>
-                  <div class="form-check form-switch me-3">
-                    <input class="form-check-input" type="checkbox" id="globalSound" checked>
-                    <label class="form-check-label" for="globalSound">
-                      <i class="fas fa-volume-up me-1"></i>Sound
-                    </label>
-                  </div>
-                  <div class="vr me-2"></div>
-                  <button id="refreshMarketStatus" class="btn btn-outline-primary btn-sm">
-                    <i class="fas fa-sync-alt me-1"></i>Refresh
-                  </button>
-                  <button id="addNewMarket" class="btn btn-primary btn-sm">
-                    <i class="fas fa-plus me-1"></i>Add Market
-                  </button>
-                  <button id="initDefaultMarkets" class="btn btn-success btn-sm">
-                    <i class="fas fa-download me-1"></i>Load Defaults
-                  </button>
+            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+              <h6 class="mb-0"><i class="fas fa-clock me-2"></i>World Market Times</h6>
+              <div class="d-flex gap-2 align-items-center">
+                <!-- Global Notification Controls -->
+                <div class="form-check form-switch me-3">
+                  <input class="form-check-input" type="checkbox" id="globalNotifications" checked>
+                  <label class="form-check-label" for="globalNotifications">
+                    <i class="fas fa-bell me-1"></i>Notifications
+                  </label>
                 </div>
-              </div>
-              <div class="card-body">
-                <div id="marketStatusGrid" class="row">
-                  <!-- Market status cards will be populated here -->
+                <div class="form-check form-switch me-3">
+                  <input class="form-check-input" type="checkbox" id="globalSound" checked>
+                  <label class="form-check-label" for="globalSound">
+                    <i class="fas fa-volume-up me-1"></i>Sound
+                  </label>
                 </div>
+                <div class="vr me-2"></div>
+                <button id="refreshMarketStatus" class="btn btn-outline-primary btn-sm">
+                  <i class="fas fa-sync-alt me-1"></i>Refresh
+                </button>
+                <button id="addNewMarket" class="btn btn-primary btn-sm">
+                  <i class="fas fa-plus me-1"></i>Add Market
+                </button>
+                <button id="initDefaultMarkets" class="btn btn-success btn-sm">
+                  <i class="fas fa-download me-1"></i>Load Defaults
+                </button>
               </div>
             </div>
           </div>
