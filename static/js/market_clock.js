@@ -731,7 +731,10 @@ class MarketClock {
             if (response.ok) {
                 this.showNotification(`Market ${marketId ? 'updated' : 'created'} successfully`, 'success');
                 this.hideForm();
-                this.loadMarkets();
+                // Reload markets using the simplified API and re-render cards
+                await this.loadMarkets();
+                this.renderSimpleMarketCards();
+                this.startCountdownUpdates();
             } else {
                 const error = await response.json();
                 this.showNotification(error.error || 'Error saving market', 'danger');
@@ -752,7 +755,10 @@ class MarketClock {
 
             if (response.ok) {
                 this.showNotification('Market deleted successfully', 'success');
-                this.loadMarkets();
+                // Reload markets using simplified API and refresh display
+                await this.loadMarkets();
+                this.renderSimpleMarketCards();
+                this.startCountdownUpdates();
             } else {
                 const error = await response.json();
                 this.showNotification(error.error || 'Error deleting market', 'danger');
