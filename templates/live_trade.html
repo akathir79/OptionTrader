@@ -5222,6 +5222,100 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <!-- Token Expiry Monitor -->
     <script src="{{ url_for('static', filename='js/token_monitor.js') }}"></script>
+    
+    <!-- Panel Toggle Functionality -->
+    <script>
+    console.log('🔧 Panel toggle script loaded!');
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🔧 Panel toggle DOMContentLoaded fired!');
+        
+        const container = document.querySelector('.resizable-container');
+        const leftPanel = document.querySelector('.left-panel');
+        const rightPanel = document.querySelector('.right-panel');
+        const toggleLeftBtn = document.getElementById('toggleLeftPanel');
+        const toggleRightBtn = document.getElementById('toggleRightPanel');
+        const resetBtn = document.getElementById('resetPanels');
+
+        console.log('Elements found:', {
+            container: !!container,
+            leftPanel: !!leftPanel,
+            rightPanel: !!rightPanel,
+            toggleLeftBtn: !!toggleLeftBtn,
+            toggleRightBtn: !!toggleRightBtn,
+            resetBtn: !!resetBtn
+        });
+
+        if (!container || !leftPanel || !rightPanel || !toggleLeftBtn || !toggleRightBtn || !resetBtn) {
+            console.log('Panel toggle elements not found - missing elements');
+            return;
+        }
+
+        let currentState = 'default';
+
+        function toggleLeftFull() {
+            console.log('Toggling left panel full');
+            if (currentState === 'left-full') {
+                resetToDefault();
+            } else {
+                container.classList.remove('panel-right-full');
+                container.classList.add('panel-left-full');
+                currentState = 'left-full';
+                resetBtn.style.display = 'block';
+                toggleLeftBtn.style.display = 'none';
+                toggleRightBtn.style.display = 'none';
+                console.log('Panel state: Left panel full');
+            }
+        }
+
+        function toggleRightFull() {
+            console.log('Toggling right panel full');
+            if (currentState === 'right-full') {
+                resetToDefault();
+            } else {
+                container.classList.remove('panel-left-full');
+                container.classList.add('panel-right-full');
+                currentState = 'right-full';
+                resetBtn.style.display = 'block';
+                toggleLeftBtn.style.display = 'none';
+                toggleRightBtn.style.display = 'none';
+                console.log('Panel state: Right panel full');
+            }
+        }
+
+        function resetToDefault() {
+            console.log('Resetting to default view');
+            container.classList.remove('panel-left-full', 'panel-right-full');
+            currentState = 'default';
+            resetBtn.style.display = 'none';
+            toggleLeftBtn.style.display = 'block';
+            toggleRightBtn.style.display = 'block';
+            console.log('Panel state: Default split view');
+        }
+
+        toggleLeftBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Left toggle clicked');
+            toggleLeftFull();
+        });
+
+        toggleRightBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Right toggle clicked');
+            toggleRightFull();
+        });
+
+        resetBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Reset button clicked');
+            resetToDefault();
+        });
+
+        console.log('✅ Panel toggle functionality initialized successfully');
+    });
+    </script>
 {% endblock %}
 
 <style>
@@ -5251,110 +5345,3 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
 }
 </style>
 
-
-<!-- Panel Toggle Functionality -->
-<script>
-console.log('🔧 Panel toggle script loaded!');
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔧 Panel toggle DOMContentLoaded fired!');
-    
-    const container = document.querySelector('.resizable-container');
-    const leftPanel = document.querySelector('.left-panel');
-    const rightPanel = document.querySelector('.right-panel');
-    const toggleLeftBtn = document.getElementById('toggleLeftPanel');
-    const toggleRightBtn = document.getElementById('toggleRightPanel');
-    const resetBtn = document.getElementById('resetPanels');
-
-    console.log('Elements found:', {
-        container: !!container,
-        leftPanel: !!leftPanel,
-        rightPanel: !!rightPanel,
-        toggleLeftBtn: !!toggleLeftBtn,
-        toggleRightBtn: !!toggleRightBtn,
-        resetBtn: !!resetBtn
-    });
-
-    if (!container || !leftPanel || !rightPanel || !toggleLeftBtn || !toggleRightBtn || !resetBtn) {
-        console.log('Panel toggle elements not found - missing elements');
-        return;
-    }
-
-    let currentState = 'default'; // 'default', 'left-full', 'right-full'
-
-    // Toggle left panel to full width
-    function toggleLeftFull() {
-        console.log('Toggling left panel full');
-        if (currentState === 'left-full') {
-            resetToDefault();
-        } else {
-            container.classList.remove('panel-right-full');
-            container.classList.add('panel-left-full');
-            currentState = 'left-full';
-            
-            // Show reset button, hide other toggles
-            resetBtn.style.display = 'block';
-            toggleLeftBtn.style.display = 'none';
-            toggleRightBtn.style.display = 'none';
-            
-            console.log('Panel state: Left panel full');
-        }
-    }
-
-    // Toggle right panel to full width
-    function toggleRightFull() {
-        console.log('Toggling right panel full');
-        if (currentState === 'right-full') {
-            resetToDefault();
-        } else {
-            container.classList.remove('panel-left-full');
-            container.classList.add('panel-right-full');
-            currentState = 'right-full';
-            
-            // Show reset button, hide other toggles
-            resetBtn.style.display = 'block';
-            toggleLeftBtn.style.display = 'none';
-            toggleRightBtn.style.display = 'none';
-            
-            console.log('Panel state: Right panel full');
-        }
-    }
-
-    // Reset to default split view
-    function resetToDefault() {
-        console.log('Resetting to default view');
-        container.classList.remove('panel-left-full', 'panel-right-full');
-        currentState = 'default';
-        
-        // Show toggle buttons, hide reset button
-        resetBtn.style.display = 'none';
-        toggleLeftBtn.style.display = 'block';
-        toggleRightBtn.style.display = 'block';
-        
-        console.log('Panel state: Default split view');
-    }
-
-    // Event listeners
-    toggleLeftBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('Left toggle clicked');
-        toggleLeftFull();
-    });
-
-    toggleRightBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('Right toggle clicked');
-        toggleRightFull();
-    });
-
-    resetBtn.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log('Reset button clicked');
-        resetToDefault();
-    });
-
-    console.log('✅ Panel toggle functionality initialized successfully');
-});
-</script>
