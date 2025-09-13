@@ -5472,10 +5472,19 @@ document.addEventListener('DOMContentLoaded', function() {
             function toggleCurrentPositionsFullscreen() {
                 console.log('🔍 Finding current positions table...');
                 
-                // Find just the table element, not the entire card
-                let positionsTable = document.querySelector('#currentPositionsTable');
+                // Find the active trades table (which is the actual current positions data)
+                let positionsTable = document.querySelector('#activeTradesTableBody')?.closest('table');
                 if (!positionsTable) {
+                    console.log('🔍 Active trades table not found, trying table-responsive...');
                     positionsTable = document.querySelector('.table-responsive');
+                }
+                if (!positionsTable) {
+                    console.log('🔍 Table-responsive not found, trying any table in current positions...');
+                    // Find any table within the current positions card
+                    const currentPositionsCard = document.querySelector('.card:has(#fullscreenPositions)');
+                    if (currentPositionsCard) {
+                        positionsTable = currentPositionsCard.querySelector('table');
+                    }
                 }
                 
                 console.log('Positions table found:', positionsTable);
