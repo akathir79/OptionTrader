@@ -5435,6 +5435,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Step 3: Current Positions Fullscreen - Fixed Implementation
     document.addEventListener('DOMContentLoaded', function() {
+        // Apply darker background to symbol selection card
+        setTimeout(() => {
+            const symbolCard = document.querySelector('.symbol-selection-card');
+            if (symbolCard) {
+                symbolCard.style.background = '#e8eaf6';
+                symbolCard.style.backgroundColor = '#e8eaf6';
+                const cardBody = symbolCard.querySelector('.card-body');
+                if (cardBody) {
+                    cardBody.style.background = '#e8eaf6';
+                    cardBody.style.backgroundColor = '#e8eaf6';
+                }
+                console.log('✅ Applied darker background to symbol selection card');
+            }
+        }, 1000);
+        
         setTimeout(() => {
             console.log('Looking for current positions fullscreen button...');
             const positionsBtn = document.getElementById('fullscreenPositions');
