@@ -651,3 +651,37 @@ button.btn-modern-icon-xs {
 .modern-rounded { border-radius: var(--border-radius-md); }
 .modern-rounded-lg { border-radius: var(--border-radius-lg); }
 .modern-transition { transition: var(--transition); }
+
+/* ===== CAROUSEL NAVIGATION HOVER EFFECTS ===== */
+/* Hide carousel buttons by default and show only on hover */
+button#expiryPrevBtn, 
+button#expiryNextBtn, 
+button#marketDataPrevBtn, 
+button#marketDataNextBtn {
+  opacity: 0 !important;
+  transition: opacity 0.3s ease !important;
+  pointer-events: none !important;
+}
+
+/* Show expiry carousel buttons on hover over their container */
+.d-flex:has(#expiryViewerCarousel):hover button#expiryPrevBtn,
+.d-flex:has(#expiryViewerCarousel):hover button#expiryNextBtn {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Show market data carousel buttons on hover over their container */
+.d-flex:has(.carousel-container):hover button#marketDataPrevBtn,
+.d-flex:has(.carousel-container):hover button#marketDataNextBtn {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Alternative approach for browsers that don't support :has() */
+.expiry-carousel-container:hover #expiryPrevBtn,
+.expiry-carousel-container:hover #expiryNextBtn,
+.market-data-container:hover #marketDataPrevBtn,
+.market-data-container:hover #marketDataNextBtn {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}

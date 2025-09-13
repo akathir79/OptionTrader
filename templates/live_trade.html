@@ -5935,29 +5935,6 @@ body.positions-fs-active {
   transform: scale(0.95) !important;
 }
 
-/* Carousel Navigation Buttons - Show only on hover */
-#expiryPrevBtn, #expiryNextBtn, #marketDataPrevBtn, #marketDataNextBtn {
-  opacity: 0 !important;
-  transition: opacity 0.3s ease !important;
-}
-
-/* Show expiry carousel buttons on hover over their container */
-.d-flex:has(#expiryViewerCarousel):hover #expiryPrevBtn,
-.d-flex:has(#expiryViewerCarousel):hover #expiryNextBtn {
-  opacity: 1 !important;
-}
-
-/* Show market data carousel buttons on hover over their container */
-.d-flex:has(#marketDataCarousel):hover #marketDataPrevBtn,
-.d-flex:has(#marketDataCarousel):hover #marketDataNextBtn {
-  opacity: 1 !important;
-}
-
-/* Fallback for browsers that don't support :has() */
-.carousel-container:hover ~ #marketDataNextBtn,
-.carousel-container:hover + .carousel-container ~ #marketDataNextBtn {
-  opacity: 1 !important;
-}
 
 .combined-fullscreen {
   position: fixed !important;
