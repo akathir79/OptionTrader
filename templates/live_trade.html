@@ -5499,10 +5499,32 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-                // Check if already in fullscreen
+                // Check if already in fullscreen (both old and new approach)
                 const existingOverlay = document.querySelector('.positions-fullscreen-overlay');
+                const existingSimple = document.getElementById('positions-fullscreen-simple');
                 
-                if (existingOverlay) {
+                if (existingSimple) {
+                    // Exit simple fullscreen
+                    console.log('🔴 DEBUG: Exiting simple fullscreen...');
+                    
+                    // Remove the fullscreen container
+                    existingSimple.remove();
+                    
+                    // Restore all body children
+                    const bodyChildren = Array.from(document.body.children);
+                    bodyChildren.forEach(child => {
+                        child.style.display = '';
+                    });
+                    
+                    // Clean up
+                    document.body.classList.remove('positions-fs-active');
+                    document.body.style.overflow = '';
+                    
+                    positionsBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                    positionsBtn.title = 'Fullscreen View';
+                    
+                    console.log('✅ DEBUG: Exited simple fullscreen successfully');
+                } else if (existingOverlay) {
                     // Exit fullscreen
                     const cardInOverlay = existingOverlay.querySelector('.card');
                     console.log('🔍 Found card in overlay:', cardInOverlay);
@@ -5548,6 +5570,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log('✅ Exited current positions fullscreen');
                 } else {
                     // Enter fullscreen
+                    console.log('🔴 DEBUG: Entering fullscreen mode...');
+                    
                     // Close any open Bootstrap dropdowns first
                     document.querySelectorAll('.dropdown-toggle').forEach(dropdown => {
                         if (dropdown.getAttribute('aria-expanded') === 'true') {
@@ -5555,44 +5579,66 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     });
                     
+                    // Hide all body content except the overlay we're about to create
+                    document.body.style.overflow = 'hidden';
+                    
                     // Create placeholder to mark original position
                     const placeholder = document.createComment('positions-placeholder');
                     placeholder.id = 'positions-placeholder';
                     positionsCard.parentNode.insertBefore(placeholder, positionsCard);
                     
-                    // Create fullscreen overlay
-                    const overlay = document.createElement('div');
-                    overlay.className = 'positions-fullscreen-overlay';
+                    // SIMPLE APPROACH: Hide all body content, show only fullscreen
+                    console.log('🔴 DEBUG: Creating simple fullscreen...');
                     
-                    // Create header (without title label)
+                    // Save all current body children and hide them
+                    const bodyChildren = Array.from(document.body.children);
+                    bodyChildren.forEach(child => {
+                        child.style.display = 'none';
+                    });
+                    
+                    // Create simple fullscreen container
+                    const fullscreenDiv = document.createElement('div');
+                    fullscreenDiv.id = 'positions-fullscreen-simple';
+                    fullscreenDiv.style.cssText = `
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100vw;
+                        height: 100vh;
+                        background: #f8f9fa;
+                        z-index: 999999;
+                        display: flex;
+                        flex-direction: column;
+                        overflow: auto;
+                        padding: 20px;
+                    `;
+                    
+                    // Create header with close button
                     const header = document.createElement('div');
-                    header.className = 'fullscreen-header';
-                    header.innerHTML = '';
+                    header.style.cssText = 'display: flex; justify-content: flex-end; margin-bottom: 20px;';
                     
-                    // Create close button with proper event listener
                     const closeBtn = document.createElement('button');
-                    closeBtn.className = 'btn btn-light btn-sm';
-                    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
-                    closeBtn.style.cssText = 'background: white; color: #333; border: 1px solid #ccc; font-size: 16px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; margin-left: auto;';
+                    closeBtn.innerHTML = '<i class="fas fa-times"></i> Close';
+                    closeBtn.className = 'btn btn-danger btn-sm';
                     closeBtn.addEventListener('click', toggleCurrentPositionsFullscreen);
                     header.appendChild(closeBtn);
                     
-                    // Create content area
-                    const content = document.createElement('div');
-                    content.className = 'fullscreen-content';
+                    // Clone the positions card to avoid moving the original
+                    const clonedCard = positionsCard.cloneNode(true);
+                    clonedCard.style.cssText = 'height: calc(100vh - 100px); border: none; margin: 0; background: white;';
                     
-                    overlay.appendChild(header);
-                    overlay.appendChild(content);
+                    // Add everything to fullscreen container
+                    fullscreenDiv.appendChild(header);
+                    fullscreenDiv.appendChild(clonedCard);
                     
-                    // Move card into overlay
-                    content.appendChild(positionsCard);
-                    document.body.appendChild(overlay);
+                    // Add to body
+                    document.body.appendChild(fullscreenDiv);
                     document.body.classList.add('positions-fs-active');
                     
                     positionsBtn.innerHTML = '<i class="fas fa-compress"></i>';
                     positionsBtn.title = 'Exit Fullscreen';
                     
-                    console.log('✅ Entered current positions fullscreen');
+                    console.log('✅ DEBUG: Simple fullscreen created successfully');
                 }
             }
 
