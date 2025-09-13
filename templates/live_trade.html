@@ -1655,6 +1655,9 @@
             <button id="clearAllBtn" class="btn btn-outline-light btn-sm">
               <i class="fas fa-trash me-1"></i>Clear All
             </button>
+            <button id="togglePositionsView" class="btn btn-outline-light btn-sm" title="Hide/Show Current Positions">
+              <i class="fas fa-chevron-up"></i>
+            </button>
             <button id="fullscreenPositions" class="btn btn-outline-light btn-sm" title="Fullscreen View">
               <i class="fas fa-expand"></i>
             </button>
@@ -1665,6 +1668,8 @@
           </div>
         </div>
         
+        <!-- Current Positions Content (Hideable) -->
+        <div id="currentPositionsContent">
         <!-- Broker and User ID Selection Section -->
         <div class="border-bottom" style="background: #f8f9fa; padding: 12px;">
           <div class="d-flex align-items-center gap-3">
@@ -1775,6 +1780,7 @@
             </div>
           </div>
         </div>
+        </div> <!-- End currentPositionsContent -->
       </div>
 
               </div>
@@ -5589,7 +5595,80 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 2000);
     });
 
-    // Step 4: Connect combineViewPayoff button to payoff chart fullscreen
+    // Step 4: Payoff Chart Toggle Functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+            const togglePayoffBtn = document.getElementById('togglePayoffView');
+            const payoffContent = document.getElementById('payoffChartContent');
+            
+            if (togglePayoffBtn && payoffContent) {
+                console.log('✅ Payoff chart toggle button found');
+                
+                togglePayoffBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('🎯 Payoff chart toggle clicked');
+                    
+                    if (payoffContent.style.display === 'none') {
+                        // Show payoff chart
+                        payoffContent.style.display = 'block';
+                        togglePayoffBtn.innerHTML = '<i class="fas fa-chevron-up"></i>';
+                        togglePayoffBtn.title = 'Hide Payoff Chart';
+                        console.log('✅ Showed payoff chart');
+                    } else {
+                        // Hide payoff chart
+                        payoffContent.style.display = 'none';
+                        togglePayoffBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                        togglePayoffBtn.title = 'Show Payoff Chart';
+                        console.log('✅ Hidden payoff chart');
+                    }
+                });
+            } else {
+                console.log('❌ Payoff chart toggle button or content not found');
+            }
+            
+            console.log('✅ Payoff chart toggle initialized');
+        }, 2000);
+    });
+
+    // Step 5: Current Positions Toggle Functionality  
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+            const togglePositionsBtn = document.getElementById('togglePositionsView');
+            const positionsContent = document.getElementById('currentPositionsContent');
+            const payoffContent = document.getElementById('payoffChartContent');
+            
+            if (togglePositionsBtn && positionsContent) {
+                console.log('✅ Current positions toggle button found');
+                
+                togglePositionsBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('🎯 Current positions toggle clicked');
+                    
+                    if (positionsContent.style.display === 'none') {
+                        // Show current positions (and payoff chart)
+                        positionsContent.style.display = 'block';
+                        if (payoffContent) payoffContent.style.display = 'block';
+                        togglePositionsBtn.innerHTML = '<i class="fas fa-chevron-up"></i>';
+                        togglePositionsBtn.title = 'Hide Current Positions';
+                        console.log('✅ Showed current positions and payoff chart');
+                    } else {
+                        // Hide current positions (keep payoff chart visible)
+                        positionsContent.style.display = 'none';
+                        if (payoffContent) payoffContent.style.display = 'block';
+                        togglePositionsBtn.innerHTML = '<i class="fas fa-chevron-down"></i>';
+                        togglePositionsBtn.title = 'Show Current Positions';
+                        console.log('✅ Hidden current positions, showing payoff chart');
+                    }
+                });
+            } else {
+                console.log('❌ Current positions toggle button or content not found');
+            }
+            
+            console.log('✅ Current positions toggle initialized');
+        }, 2000);
+    });
+
+    // Step 6: Connect combineViewPayoff button to payoff chart fullscreen
     document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             const combineBtn = document.getElementById('combineViewPayoff');
