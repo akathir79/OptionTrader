@@ -412,22 +412,8 @@ class RiskVisualization {
     // ===== UI CONTROLS =====
     
     createRiskControls() {
-        // Create risk toggle button
-        const toggleBtn = document.createElement('button');
-        toggleBtn.id = 'riskToggleBtn';
-        toggleBtn.className = 'btn btn-sm btn-outline-primary position-fixed';
-        toggleBtn.style.cssText = 'top: 60px; right: 10px; z-index: 1001; font-size: 10px;';
-        toggleBtn.innerHTML = '<i class="fas fa-palette"></i>';
-        toggleBtn.title = 'Toggle Risk Visualization';
-        toggleBtn.onclick = () => this.toggleRiskVisualization();
-        
-        // Risk legend removed per user request
-        
-        // Add controls to page (legend removed)
-        setTimeout(() => {
-            document.body.appendChild(toggleBtn);
-            // Legend functionality removed per user request
-        }, 1000);
+        // Risk visualization button and legend removed per user request
+        // No UI controls needed
     }
 }
 
