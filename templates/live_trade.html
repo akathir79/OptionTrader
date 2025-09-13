@@ -5353,10 +5353,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 optionChainBtn.innerHTML = '<i class="fas fa-expand"></i>';
                 optionChainBtn.title = 'Fullscreen View';
                 
-                // Remove exit button if exists
-                const exitBtn = optionChainContainer.querySelector('.fullscreen-exit-btn');
-                if (exitBtn) exitBtn.remove();
-                
                 console.log('Exited option chain fullscreen');
             } else {
                 // Enter fullscreen
@@ -5364,13 +5360,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 optionChainBtn.innerHTML = '<i class="fas fa-compress"></i>';
                 optionChainBtn.title = 'Exit Fullscreen';
                 
-                // Add close button
-                const exitBtn = document.createElement('button');
-                exitBtn.className = 'fullscreen-exit-btn btn btn-outline-dark btn-sm';
-                exitBtn.innerHTML = '<i class="fas fa-times"></i>';
-                exitBtn.style.cssText = 'position: absolute; top: 10px; right: 10px; z-index: 10001;';
-                exitBtn.onclick = toggleOptionChainFullscreen;
-                optionChainContainer.appendChild(exitBtn);
                 
                 console.log('Entered option chain fullscreen');
             }
@@ -5422,24 +5411,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     payoffBtn.innerHTML = '<i class="fas fa-expand"></i>';
                     payoffBtn.title = 'Fullscreen View';
                     
-                    // Remove exit button if exists
-                    const exitBtn = payoffContainer.querySelector('.fullscreen-exit-btn');
-                    if (exitBtn) exitBtn.remove();
-                    
                     console.log('✅ Exited payoff chart fullscreen');
                 } else {
                     // Enter fullscreen
                     payoffContainer.classList.add('payoff-chart-fullscreen');
                     payoffBtn.innerHTML = '<i class="fas fa-compress"></i>';
                     payoffBtn.title = 'Exit Fullscreen';
-                    
-                    // Add close button
-                    const exitBtn = document.createElement('button');
-                    exitBtn.className = 'fullscreen-exit-btn btn btn-outline-dark btn-sm';
-                    exitBtn.innerHTML = '<i class="fas fa-times"></i>';
-                    exitBtn.style.cssText = 'position: absolute; top: 10px; right: 10px; z-index: 10001;';
-                    exitBtn.onclick = togglePayoffChartFullscreen;
-                    payoffContainer.appendChild(exitBtn);
                     
                     console.log('✅ Entered payoff chart fullscreen');
                 }
@@ -5747,31 +5724,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             // Exit fullscreen
                             payoffContainer.classList.remove('payoff-fullscreen');
                             
-                            // Remove exit button if exists
-                            const exitBtn = payoffContainer.querySelector('.fullscreen-exit-btn');
-                            if (exitBtn) exitBtn.remove();
-                            
                             console.log('✅ Exited payoff chart fullscreen');
                         } else {
                             // Enter fullscreen
                             payoffContainer.classList.add('payoff-fullscreen');
-                            
-                            // Add close button
-                            const exitBtn = document.createElement('button');
-                            exitBtn.className = 'fullscreen-exit-btn btn btn-outline-dark btn-sm';
-                            exitBtn.innerHTML = '<i class="fas fa-times"></i>';
-                            exitBtn.style.cssText = 'position: absolute; top: 10px; right: 10px; z-index: 10001;';
-                            exitBtn.onclick = function() {
-                                payoffContainer.classList.remove('payoff-fullscreen');
-                                exitBtn.remove();
-                                // Resize chart after exit
-                                requestAnimationFrame(() => {
-                                    if (window.payoffChart && window.payoffChart.reflow) {
-                                        window.payoffChart.reflow();
-                                    }
-                                });
-                            };
-                            payoffContainer.appendChild(exitBtn);
                             
                             console.log('✅ Entered payoff chart fullscreen');
                         }
