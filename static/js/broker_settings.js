@@ -17,6 +17,33 @@ document.addEventListener("DOMContentLoaded", () => {
   // const brokerSelect = document.getElementById("brokerSelect"); // Element doesn't exist
   const tokenStatus = document.getElementById("tokenStatus");
 
+  // Auto-uppercase functionality for Broker and Broker User ID fields
+  const setupAutoUppercase = () => {
+    const brokerNameField = form.querySelector('input[name="brokername"]');
+    const brokerUserIdField = form.querySelector('input[name="broker_user_id"]');
+
+    if (brokerNameField) {
+      brokerNameField.addEventListener('blur', function() {
+        if (this.value.trim()) {
+          this.value = this.value.trim().toUpperCase();
+          console.log('🔄 Broker name converted to uppercase:', this.value);
+        }
+      });
+    }
+
+    if (brokerUserIdField) {
+      brokerUserIdField.addEventListener('blur', function() {
+        if (this.value.trim()) {
+          this.value = this.value.trim().toUpperCase();
+          console.log('🔄 Broker User ID converted to uppercase:', this.value);
+        }
+      });
+    }
+  };
+
+  // Initialize auto-uppercase when form is ready
+  setupAutoUppercase();
+
   const toast = (msg, cls = "bg-danger") => {
     console.log("Toast triggered:", msg, cls);
     const t = document.createElement("div");

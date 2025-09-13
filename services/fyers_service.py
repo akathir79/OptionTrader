@@ -45,10 +45,13 @@ class FyersService:
             settings.user_id = self.user_id
             settings.brokername = 'FYERS'
         
-        # Map config to database fields
+        # Map config to database fields - ensure broker name is uppercase for consistency
         settings.clientid = config.get('client_id', '')
         settings.appkey = config.get('secret_key', '')  # Using appkey field for secret
         settings.redirect_url = config.get('redirect_uri', '')
+        
+        # Ensure brokername is stored in uppercase for consistency
+        settings.brokername = 'FYERS'
         # Set broker_user_id to avoid non-nullable constraint (will be updated during auth)
         if not settings.broker_user_id:
             settings.broker_user_id = 'pending'
