@@ -5488,6 +5488,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 console.log('Positions table found:', positionsTable);
+                console.log('Table tag name:', positionsTable ? positionsTable.tagName : 'null');
+                console.log('Table classes:', positionsTable ? positionsTable.className : 'null');
                 
                 if (!positionsTable) {
                     console.log('❌ Current positions table not found');
@@ -5510,6 +5512,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     positionsTable.classList.add('positions-table-fullscreen');
                     positionsBtn.innerHTML = '<i class="fas fa-compress"></i>';
                     positionsBtn.title = 'Exit Fullscreen';
+                    
+                    console.log('🔍 Added fullscreen class to:', positionsTable.tagName);
+                    console.log('🔍 Element classes after adding:', positionsTable.className);
                     
                     // Add close button
                     const exitBtn = document.createElement('button');
