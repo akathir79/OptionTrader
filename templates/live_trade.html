@@ -5530,14 +5530,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     e.preventDefault();
                     console.log('🎯 Combine view payoff button clicked - triggering fullscreen!');
                     
-                    // Find the payoff chart container
-                    let payoffContainer = document.querySelector('[id*="chartContainer"]')?.closest('.card');
+                    // Find the payoff chart container - target the specific analysis tabs card
+                    let payoffContainer = document.querySelector('#payoffCardBody')?.closest('.card');
                     if (!payoffContainer) {
-                        payoffContainer = document.querySelector('.right-panel');
+                        payoffContainer = document.querySelector('.card.shadow-sm:has(#payoff-tab)');
                     }
                     if (!payoffContainer) {
-                        payoffContainer = document.querySelector('.card:nth-child(2)');
+                        payoffContainer = document.querySelector('.card:has(.tab-content)');
                     }
+                    
+                    console.log('Found payoff container:', payoffContainer);
                     
                     if (payoffContainer) {
                         // Enter fullscreen
