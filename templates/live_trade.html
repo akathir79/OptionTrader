@@ -5433,7 +5433,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 2000); // Wait 2 seconds for page to fully load
     });
 
-    // Step 3: Current Positions Fullscreen
+    // Step 3: Current Positions Fullscreen - Fixed Implementation
     document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             console.log('Looking for current positions fullscreen button...');
@@ -5441,57 +5441,51 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (positionsBtn) {
                 console.log('Current positions fullscreen button found!');
+                
                 positionsBtn.addEventListener('click', function(e) {
                     e.preventDefault();
                     console.log('🎯 Current positions fullscreen button clicked!');
-                    toggleCurrentPositionsFullscreen();
-                });
-            } else {
-                console.log('❌ Current positions fullscreen button NOT found');
-            }
-
-            function toggleCurrentPositionsFullscreen() {
-                console.log('🔍 Finding current positions card...');
-                
-                // Find the current positions card (same as other toggles)
-                let positionsCard = document.querySelector('#fullscreenPositions')?.closest('.card');
-                if (!positionsCard) {
-                    // Fallback: find the card in right panel that contains Active Trades
-                    const rightPanel = document.querySelector('.right-panel');
-                    if (rightPanel) {
-                        const cards = rightPanel.querySelectorAll('.card');
-                        for (let card of cards) {
-                            if (card.querySelector('#activeTradesTableBody') || card.textContent.includes('Current Positions')) {
-                                positionsCard = card;
-                                break;
+                    
+                    // Find the current positions card
+                    let positionsCard = document.querySelector('#fullscreenPositions')?.closest('.card');
+                    if (!positionsCard) {
+                        // Fallback: find the card in right panel that contains Active Trades
+                        const rightPanel = document.querySelector('.right-panel');
+                        if (rightPanel) {
+                            const cards = rightPanel.querySelectorAll('.card');
+                            for (let card of cards) {
+                                if (card.querySelector('#activeTradesTableBody') || card.textContent.includes('Current Positions')) {
+                                    positionsCard = card;
+                                    break;
+                                }
                             }
                         }
                     }
-                }
-                
-                console.log('Positions card found:', positionsCard);
-                
-                if (!positionsCard) {
-                    console.log('❌ Current positions card not found');
-                    return;
-                }
+                    
+                    console.log('Positions card found:', positionsCard);
+                    
+                    if (!positionsCard) {
+                        console.log('❌ Current positions card not found');
+                        return;
+                    }
 
-                // SIMPLE APPROACH: Just like payoff chart and option chain - CSS class toggle only!
-                if (positionsCard.classList.contains('positions-fullscreen')) {
-                    // Exit fullscreen - same as payoff chart
-                    positionsCard.classList.remove('positions-fullscreen');
-                    positionsBtn.innerHTML = '<i class="fas fa-expand"></i>';
-                    positionsBtn.title = 'Fullscreen View';
-                    
-                    console.log('✅ Exited current positions fullscreen');
-                } else {
-                    // Enter fullscreen - same as payoff chart
-                    positionsCard.classList.add('positions-fullscreen');
-                    positionsBtn.innerHTML = '<i class="fas fa-compress" style="color: #dc3545;"></i>';
-                    positionsBtn.title = 'Exit Fullscreen';
-                    
-                    console.log('✅ Entered current positions fullscreen');
-                }
+                    // Toggle fullscreen class (same as payoff chart and option chain)
+                    if (positionsCard.classList.contains('positions-fullscreen')) {
+                        // Exit fullscreen
+                        positionsCard.classList.remove('positions-fullscreen');
+                        positionsBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                        positionsBtn.title = 'Fullscreen View';
+                        console.log('✅ Exited current positions fullscreen');
+                    } else {
+                        // Enter fullscreen
+                        positionsCard.classList.add('positions-fullscreen');
+                        positionsBtn.innerHTML = '<i class="fas fa-compress" style="color: #dc3545;"></i>';
+                        positionsBtn.title = 'Exit Fullscreen';
+                        console.log('✅ Entered current positions fullscreen');
+                    }
+                });
+            } else {
+                console.log('❌ Current positions fullscreen button NOT found');
             }
 
             console.log('✅ Current Positions fullscreen initialized');
