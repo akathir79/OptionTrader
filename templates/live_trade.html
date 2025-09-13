@@ -5501,11 +5501,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (existingOverlay) {
                     // Exit fullscreen
                     const cardInOverlay = existingOverlay.querySelector('.card');
-                    const placeholder = document.querySelector('#positions-placeholder');
+                    console.log('🔍 Found card in overlay:', cardInOverlay);
+                    
+                    // Find placeholder using comment node
+                    let placeholder = null;
+                    const rightPanel = document.querySelector('.right-panel');
+                    if (rightPanel) {
+                        const walker = document.createTreeWalker(
+                            rightPanel, 
+                            NodeFilter.SHOW_COMMENT,
+                            null,
+                            false
+                        );
+                        while (walker.nextNode()) {
+                            if (walker.currentNode.nodeValue === 'positions-placeholder') {
+                                placeholder = walker.currentNode;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    console.log('🔍 Found placeholder:', placeholder);
+                    
                     if (placeholder && placeholder.parentNode && cardInOverlay) {
                         placeholder.parentNode.insertBefore(cardInOverlay, placeholder);
                         placeholder.remove();
+                        console.log('✅ Card restored to original position');
+                    } else {
+                        // Fallback: append to right panel
+                        if (rightPanel && cardInOverlay) {
+                            rightPanel.appendChild(cardInOverlay);
+                            console.log('⚠️ Used fallback: appended to right panel');
+                        }
                     }
+                    
                     existingOverlay.remove();
                     document.body.classList.remove('positions-fs-active');
                     
