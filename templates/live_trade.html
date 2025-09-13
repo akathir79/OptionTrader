@@ -5450,67 +5450,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 1000);
         
-        // Apply hover scrollbar behavior to expiry carousel
-        setTimeout(() => {
-            const expiryCarousel = document.getElementById('expiryViewerCarousel');
-            if (expiryCarousel) {
-                // Ensure the carousel has overflow-x auto
-                expiryCarousel.style.overflowX = 'auto';
-                expiryCarousel.style.overflowY = 'hidden';
-                
-                // Create and inject CSS for webkit scrollbars
-                if (!document.getElementById('expiry-scrollbar-css')) {
-                    const style = document.createElement('style');
-                    style.id = 'expiry-scrollbar-css';
-                    style.textContent = `
-                        #expiryViewerCarousel {
-                            overflow-x: auto;
-                            overflow-y: hidden;
-                            scrollbar-width: none; /* Firefox */
-                            -ms-overflow-style: none; /* IE */
-                        }
-                        #expiryViewerCarousel::-webkit-scrollbar {
-                            height: 0px;
-                        }
-                        #expiryViewerCarousel.show-scrollbar {
-                            scrollbar-width: thin; /* Firefox */
-                            -ms-overflow-style: auto; /* IE */
-                        }
-                        #expiryViewerCarousel.show-scrollbar::-webkit-scrollbar {
-                            height: 12px !important;
-                            background: transparent;
-                        }
-                        #expiryViewerCarousel.show-scrollbar::-webkit-scrollbar-track {
-                            background: #f1f1f1;
-                            border-radius: 6px;
-                        }
-                        #expiryViewerCarousel.show-scrollbar::-webkit-scrollbar-thumb {
-                            background: #c1c1c1;
-                            border-radius: 6px;
-                            border: 1px solid #ddd;
-                        }
-                        #expiryViewerCarousel.show-scrollbar::-webkit-scrollbar-thumb:hover {
-                            background: #a8a8a8;
-                        }
-                    `;
-                    document.head.appendChild(style);
-                }
-                
-                // Add hover event listeners with class toggling
-                expiryCarousel.addEventListener('mouseenter', function() {
-                    this.classList.add('show-scrollbar');
-                    console.log('✅ Expiry carousel scrollbar shown on hover');
-                });
-                
-                expiryCarousel.addEventListener('mouseleave', function() {
-                    this.classList.remove('show-scrollbar');
-                    console.log('✅ Expiry carousel scrollbar hidden on leave');
-                });
-                
-                console.log('✅ Expiry carousel hover scrollbar behavior initialized');
-            }
-        }, 1500);
-        
         setTimeout(() => {
             console.log('Looking for current positions fullscreen button...');
             const positionsBtn = document.getElementById('fullscreenPositions');
@@ -5831,41 +5770,6 @@ div.card.shadow-sm.mb-2.symbol-selection-card {
 div.card.shadow-sm.mb-2.symbol-selection-card .card-body {
   background: #e8eaf6 !important;
   background-color: #e8eaf6 !important;
-}
-
-/* Expiry Carousel - Hide scrollbar by default, show on hover */
-#expiryViewerCarousel {
-  overflow-x: auto;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* Internet Explorer 10+ */
-}
-
-#expiryViewerCarousel::-webkit-scrollbar {
-  height: 0px; /* Chrome, Safari, Opera */
-  background: transparent;
-}
-
-#expiryViewerCarousel:hover {
-  scrollbar-width: thin; /* Firefox */
-  -ms-overflow-style: auto; /* Internet Explorer 10+ */
-}
-
-#expiryViewerCarousel:hover::-webkit-scrollbar {
-  height: 8px; /* Chrome, Safari, Opera */
-}
-
-#expiryViewerCarousel:hover::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-#expiryViewerCarousel:hover::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-#expiryViewerCarousel:hover::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
 }
 
 /* Option Chain Header Buttons - White for better visibility */
