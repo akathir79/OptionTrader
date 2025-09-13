@@ -5548,6 +5548,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.log('✅ Exited current positions fullscreen');
                 } else {
                     // Enter fullscreen
+                    // Close any open Bootstrap dropdowns first
+                    document.querySelectorAll('.dropdown-toggle').forEach(dropdown => {
+                        if (dropdown.getAttribute('aria-expanded') === 'true') {
+                            dropdown.click(); // Close the dropdown
+                        }
+                    });
+                    
                     // Create placeholder to mark original position
                     const placeholder = document.createComment('positions-placeholder');
                     placeholder.id = 'positions-placeholder';
@@ -5831,6 +5838,18 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
+}
+
+/* Override Bootstrap dropdown z-index when in fullscreen */
+.positions-fs-active .dropdown-menu,
+.positions-fs-active .form-select,
+.positions-fs-active select {
+  z-index: 1 !important;
+}
+
+/* Hide all other elements when fullscreen is active */
+.positions-fs-active > *:not(.positions-fullscreen-overlay) {
+  visibility: hidden !important;
 }
 
 .positions-fullscreen-overlay .fullscreen-header {
