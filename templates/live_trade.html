@@ -5357,7 +5357,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 // Enter fullscreen
                 optionChainContainer.classList.add('option-chain-fullscreen');
-                optionChainBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                optionChainBtn.innerHTML = '<i class="fas fa-compress" style="color: #dc3545;"></i>';
                 optionChainBtn.title = 'Exit Fullscreen';
                 
                 
@@ -5415,7 +5415,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     // Enter fullscreen
                     payoffContainer.classList.add('payoff-chart-fullscreen');
-                    payoffBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                    payoffBtn.innerHTML = '<i class="fas fa-compress" style="color: #dc3545;"></i>';
                     payoffBtn.title = 'Exit Fullscreen';
                     
                     console.log('✅ Entered payoff chart fullscreen');
@@ -5594,9 +5594,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     const clonedCard = positionsCard.cloneNode(true);
                     clonedCard.style.cssText = 'height: calc(100vh - 40px); border: none; margin: 0; background: white;';
                     
-                    // Make sure the fullscreen toggle button in the cloned card is functional
+                    // Make sure the fullscreen toggle button in the cloned card is functional and red
                     const clonedToggleBtn = clonedCard.querySelector('#fullscreenPositions');
                     if (clonedToggleBtn) {
+                        clonedToggleBtn.innerHTML = '<i class="fas fa-compress" style="color: #dc3545;"></i>';
                         clonedToggleBtn.addEventListener('click', toggleCurrentPositionsFullscreen);
                     }
                     
@@ -5607,7 +5608,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.body.appendChild(fullscreenDiv);
                     document.body.classList.add('positions-fs-active');
                     
-                    positionsBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                    positionsBtn.innerHTML = '<i class="fas fa-compress" style="color: #dc3545;"></i>';
                     positionsBtn.title = 'Exit Fullscreen';
                     
                     console.log('✅ DEBUG: Simple fullscreen created successfully');
