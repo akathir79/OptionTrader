@@ -5453,7 +5453,7 @@ document.addEventListener('DOMContentLoaded', function() {
             function toggleCurrentPositionsFullscreen() {
                 console.log('🔍 Finding current positions card...');
                 
-                // Find specifically the current positions card (right panel, 3rd card)
+                // Find the current positions card (same as other toggles)
                 let positionsCard = document.querySelector('#fullscreenPositions')?.closest('.card');
                 if (!positionsCard) {
                     // Fallback: find the card in right panel that contains Active Trades
@@ -5476,148 +5476,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
-                // Check if already in fullscreen (both old and new approach)
-                const existingOverlay = document.querySelector('.positions-fullscreen-overlay');
-                const existingSimple = document.getElementById('positions-fullscreen-simple');
-                
-                if (existingSimple) {
-                    // Exit simple fullscreen - CLEAN APPROACH like other toggles
-                    console.log('🔴 DEBUG: Exiting simple fullscreen...');
-                    
-                    // Remove the fullscreen container first
-                    existingSimple.remove();
-                    
-                    // Properly restore all hidden elements (like payoff/option chain do)
-                    Array.from(document.body.children).forEach(child => {
-                        if (child.id !== 'positions-fullscreen-simple') {
-                            child.style.display = '';
-                            child.style.visibility = '';
-                        }
-                    });
-                    
-                    // Clean up body state completely
-                    document.body.classList.remove('positions-fs-active');
-                    document.body.style.overflow = '';
-                    document.body.style.background = '';
-                    document.body.style.margin = '';
-                    document.body.style.padding = '';
-                    
-                    // Reset the button
-                    positionsBtn.innerHTML = '<i class="fas fa-expand"></i>';
-                    positionsBtn.title = 'Fullscreen View';
-                    
-                    console.log('✅ DEBUG: Clean fullscreen exit completed');
-                } else if (existingOverlay) {
-                    // Exit fullscreen
-                    const cardInOverlay = existingOverlay.querySelector('.card');
-                    console.log('🔍 Found card in overlay:', cardInOverlay);
-                    
-                    // Find placeholder using comment node
-                    let placeholder = null;
-                    const rightPanel = document.querySelector('.right-panel');
-                    if (rightPanel) {
-                        const walker = document.createTreeWalker(
-                            rightPanel, 
-                            NodeFilter.SHOW_COMMENT,
-                            null,
-                            false
-                        );
-                        while (walker.nextNode()) {
-                            if (walker.currentNode.nodeValue === 'positions-placeholder') {
-                                placeholder = walker.currentNode;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    console.log('🔍 Found placeholder:', placeholder);
-                    
-                    if (placeholder && placeholder.parentNode && cardInOverlay) {
-                        placeholder.parentNode.insertBefore(cardInOverlay, placeholder);
-                        placeholder.remove();
-                        console.log('✅ Card restored to original position');
-                    } else {
-                        // Fallback: append to right panel
-                        if (rightPanel && cardInOverlay) {
-                            rightPanel.appendChild(cardInOverlay);
-                            console.log('⚠️ Used fallback: appended to right panel');
-                        }
-                    }
-                    
-                    existingOverlay.remove();
-                    document.body.classList.remove('positions-fs-active');
-                    
+                // SIMPLE APPROACH: Just like payoff chart and option chain - CSS class toggle only!
+                if (positionsCard.classList.contains('positions-fullscreen')) {
+                    // Exit fullscreen - same as payoff chart
+                    positionsCard.classList.remove('positions-fullscreen');
                     positionsBtn.innerHTML = '<i class="fas fa-expand"></i>';
                     positionsBtn.title = 'Fullscreen View';
                     
                     console.log('✅ Exited current positions fullscreen');
                 } else {
-                    // Enter fullscreen
-                    console.log('🔴 DEBUG: Entering fullscreen mode...');
-                    
-                    // Close any open Bootstrap dropdowns first
-                    document.querySelectorAll('.dropdown-toggle').forEach(dropdown => {
-                        if (dropdown.getAttribute('aria-expanded') === 'true') {
-                            dropdown.click(); // Close the dropdown
-                        }
-                    });
-                    
-                    // Hide all body content except the overlay we're about to create
-                    document.body.style.overflow = 'hidden';
-                    
-                    // Create placeholder to mark original position
-                    const placeholder = document.createComment('positions-placeholder');
-                    placeholder.id = 'positions-placeholder';
-                    positionsCard.parentNode.insertBefore(placeholder, positionsCard);
-                    
-                    // SIMPLE APPROACH: Hide all body content, show only fullscreen
-                    console.log('🔴 DEBUG: Creating simple fullscreen...');
-                    
-                    // Save all current body children and hide them
-                    const bodyChildren = Array.from(document.body.children);
-                    bodyChildren.forEach(child => {
-                        child.style.display = 'none';
-                    });
-                    
-                    // Create simple fullscreen container
-                    const fullscreenDiv = document.createElement('div');
-                    fullscreenDiv.id = 'positions-fullscreen-simple';
-                    fullscreenDiv.style.cssText = `
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        width: 100vw;
-                        height: 100vh;
-                        background: #f8f9fa;
-                        z-index: 999999;
-                        display: flex;
-                        flex-direction: column;
-                        overflow: auto;
-                        padding: 20px;
-                    `;
-                    
-                    // Clone the positions card to avoid moving the original
-                    const clonedCard = positionsCard.cloneNode(true);
-                    clonedCard.style.cssText = 'height: calc(100vh - 40px); border: none; margin: 0; background: white;';
-                    
-                    // Make sure the fullscreen toggle button in the cloned card is functional and red
-                    const clonedToggleBtn = clonedCard.querySelector('#fullscreenPositions');
-                    if (clonedToggleBtn) {
-                        clonedToggleBtn.innerHTML = '<i class="fas fa-compress" style="color: #dc3545;"></i>';
-                        clonedToggleBtn.addEventListener('click', toggleCurrentPositionsFullscreen);
-                    }
-                    
-                    // Add cloned card to fullscreen container
-                    fullscreenDiv.appendChild(clonedCard);
-                    
-                    // Add to body
-                    document.body.appendChild(fullscreenDiv);
-                    document.body.classList.add('positions-fs-active');
-                    
+                    // Enter fullscreen - same as payoff chart
+                    positionsCard.classList.add('positions-fullscreen');
                     positionsBtn.innerHTML = '<i class="fas fa-compress" style="color: #dc3545;"></i>';
                     positionsBtn.title = 'Exit Fullscreen';
                     
-                    console.log('✅ DEBUG: Simple fullscreen created successfully');
+                    console.log('✅ Entered current positions fullscreen');
                 }
             }
 
@@ -5830,30 +5703,29 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   min-height: 400px !important;
 }
 
-/* Current Positions Fullscreen Overlay */
-.positions-fullscreen-overlay {
+/* Current Positions Fullscreen - Same as Payoff Chart */
+.positions-fullscreen {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
-  z-index: 999999 !important;
-  background: #f8f9fa !important;
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
+  z-index: 9999 !important;
+  background: white !important;
+  padding: 20px !important;
+  overflow: auto !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 
-/* Override Bootstrap dropdown z-index when in fullscreen */
-.positions-fs-active .dropdown-menu,
-.positions-fs-active .form-select,
-.positions-fs-active select {
-  z-index: 1 !important;
+.positions-fullscreen .card-body {
+  height: calc(100vh - 120px) !important;
+  overflow: auto !important;
 }
 
-/* Hide all other elements when fullscreen is active */
-.positions-fs-active > *:not(.positions-fullscreen-overlay) {
-  visibility: hidden !important;
+.positions-fullscreen .table-container {
+  height: calc(100vh - 140px) !important;
+  overflow: auto !important;
 }
 
 .positions-fullscreen-overlay .fullscreen-header {
