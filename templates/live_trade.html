@@ -5484,19 +5484,32 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Exit simple fullscreen
                     console.log('🔴 DEBUG: Exiting simple fullscreen...');
                     
-                    // Remove the fullscreen container
+                    // Remove the fullscreen container first
                     existingSimple.remove();
                     
-                    // Restore all body children
-                    const bodyChildren = Array.from(document.body.children);
-                    bodyChildren.forEach(child => {
-                        child.style.display = '';
+                    // Force restore all hidden elements
+                    const allElements = document.querySelectorAll('*[style*="display: none"]');
+                    allElements.forEach(element => {
+                        // Only restore elements that were hidden by our fullscreen
+                        if (element.style.display === 'none') {
+                            element.style.display = '';
+                        }
                     });
                     
-                    // Clean up
+                    // Also restore direct body children
+                    Array.from(document.body.children).forEach(child => {
+                        if (child.id !== 'positions-fullscreen-simple') {
+                            child.style.display = '';
+                            child.style.visibility = '';
+                        }
+                    });
+                    
+                    // Clean up all fullscreen-related CSS
                     document.body.classList.remove('positions-fs-active');
                     document.body.style.overflow = '';
+                    document.body.style.background = '';
                     
+                    // Reset the button
                     positionsBtn.innerHTML = '<i class="fas fa-expand"></i>';
                     positionsBtn.title = 'Fullscreen View';
                     
