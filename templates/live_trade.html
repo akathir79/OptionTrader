@@ -1159,7 +1159,7 @@
     <!-- Left Panel - Symbol Selection & Option Chain -->
     <div class="resizable-panel left-panel">
       <!-- Symbol Selection & Expiry Dates Card -->
-      <div class="card shadow-sm mb-2">
+      <div class="card shadow-sm mb-2 symbol-selection-card">
         <div class="card-body">
           <!-- Symbol Selection Row -->
           <div class="row g-2 align-items-center mb-3">
@@ -5744,6 +5744,15 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
 .positions-fullscreen .card-body {
   height: calc(100vh - 120px) !important;
   overflow: auto !important;
+}
+
+/* Symbol Selection Card - Slightly darker background */
+.symbol-selection-card {
+  background: #f1f3f4 !important;
+}
+
+.symbol-selection-card .card-body {
+  background: #f1f3f4 !important;
 }
 
 /* Option Chain Header Buttons - White for better visibility */
