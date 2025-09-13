@@ -5470,61 +5470,64 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             function toggleCurrentPositionsFullscreen() {
-                console.log('🔍 Finding current positions table...');
+                console.log('🔍 Finding current positions card...');
                 
-                // Find the active trades table (which is the actual current positions data)
-                let positionsTable = document.querySelector('#activeTradesTableBody')?.closest('table');
-                if (!positionsTable) {
-                    console.log('🔍 Active trades table not found, trying table-responsive...');
-                    positionsTable = document.querySelector('.table-responsive');
-                }
-                if (!positionsTable) {
-                    console.log('🔍 Table-responsive not found, trying any table in current positions...');
-                    // Find any table within the current positions card
-                    const currentPositionsCard = document.querySelector('.card:has(#fullscreenPositions)');
-                    if (currentPositionsCard) {
-                        positionsTable = currentPositionsCard.querySelector('table');
-                    }
-                }
+                // Find the entire current positions card
+                const positionsCard = document.querySelector('.card:has(#fullscreenPositions)');
                 
-                console.log('Positions table found:', positionsTable);
-                console.log('Table tag name:', positionsTable ? positionsTable.tagName : 'null');
-                console.log('Table classes:', positionsTable ? positionsTable.className : 'null');
+                console.log('Positions card found:', positionsCard);
                 
-                if (!positionsTable) {
-                    console.log('❌ Current positions table not found');
+                if (!positionsCard) {
+                    console.log('❌ Current positions card not found');
                     return;
                 }
 
-                if (positionsTable.classList.contains('positions-table-fullscreen')) {
+                // Check if already in fullscreen
+                const existingOverlay = document.querySelector('.positions-fullscreen-overlay');
+                
+                if (existingOverlay) {
                     // Exit fullscreen
-                    positionsTable.classList.remove('positions-table-fullscreen');
+                    const placeholder = document.querySelector('#positions-placeholder');
+                    if (placeholder && placeholder.parentNode) {
+                        placeholder.parentNode.insertBefore(positionsCard, placeholder);
+                        placeholder.remove();
+                    }
+                    existingOverlay.remove();
+                    document.body.classList.remove('positions-fs-active');
+                    
                     positionsBtn.innerHTML = '<i class="fas fa-expand"></i>';
                     positionsBtn.title = 'Fullscreen View';
                     
-                    // Remove exit button if exists
-                    const exitBtn = positionsTable.querySelector('.fullscreen-exit-btn');
-                    if (exitBtn) exitBtn.remove();
-                    
-                    console.log('✅ Exited current positions table fullscreen');
+                    console.log('✅ Exited current positions fullscreen');
                 } else {
                     // Enter fullscreen
-                    positionsTable.classList.add('positions-table-fullscreen');
+                    // Create placeholder to mark original position
+                    const placeholder = document.createComment('positions-placeholder');
+                    placeholder.id = 'positions-placeholder';
+                    positionsCard.parentNode.insertBefore(placeholder, positionsCard);
+                    
+                    // Create fullscreen overlay
+                    const overlay = document.createElement('div');
+                    overlay.className = 'positions-fullscreen-overlay';
+                    overlay.innerHTML = `
+                        <div class="fullscreen-header">
+                            <h5><i class="fas fa-chart-line me-2"></i>Current Positions - Fullscreen</h5>
+                            <button class="btn btn-outline-dark btn-sm" onclick="toggleCurrentPositionsFullscreen()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="fullscreen-content"></div>
+                    `;
+                    
+                    // Move card into overlay
+                    overlay.querySelector('.fullscreen-content').appendChild(positionsCard);
+                    document.body.appendChild(overlay);
+                    document.body.classList.add('positions-fs-active');
+                    
                     positionsBtn.innerHTML = '<i class="fas fa-compress"></i>';
                     positionsBtn.title = 'Exit Fullscreen';
                     
-                    console.log('🔍 Added fullscreen class to:', positionsTable.tagName);
-                    console.log('🔍 Element classes after adding:', positionsTable.className);
-                    
-                    // Add close button
-                    const exitBtn = document.createElement('button');
-                    exitBtn.className = 'fullscreen-exit-btn btn btn-outline-dark btn-sm';
-                    exitBtn.innerHTML = '<i class="fas fa-times"></i>';
-                    exitBtn.style.cssText = 'position: absolute; top: 10px; right: 10px; z-index: 10001;';
-                    exitBtn.onclick = toggleCurrentPositionsFullscreen;
-                    positionsTable.appendChild(exitBtn);
-                    
-                    console.log('✅ Entered current positions table fullscreen');
+                    console.log('✅ Entered current positions fullscreen');
                 }
             }
 
@@ -5685,45 +5688,56 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   min-height: 400px !important;
 }
 
-/* Current Positions Table Fullscreen */
-table.positions-table-fullscreen {
+/* Current Positions Fullscreen Overlay */
+.positions-fullscreen-overlay {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
-  z-index: 9999 !important;
-  background: white !important;
-  padding: 20px !important;
-  overflow: auto !important;
-  box-shadow: none !important;
-  border: none !important;
-  margin: 0 !important;
-  border-radius: 0 !important;
+  z-index: 10000 !important;
+  background: #f8f9fa !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
 }
 
-table.positions-table-fullscreen {
-  width: 100% !important;
-  font-size: 14px !important;
-  display: table !important;
-}
-
-table.positions-table-fullscreen thead th {
-  position: sticky !important;
-  top: 20px !important;
+.positions-fullscreen-overlay .fullscreen-header {
   background: #0d6efd !important;
   color: white !important;
-  z-index: 10 !important;
-  padding: 12px 8px !important;
+  padding: 15px 20px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
 }
 
-table.positions-table-fullscreen tbody {
+.positions-fullscreen-overlay .fullscreen-header h5 {
+  margin: 0 !important;
+  font-weight: 600 !important;
+}
+
+.positions-fullscreen-overlay .fullscreen-content {
+  flex: 1 !important;
+  overflow: auto !important;
+  padding: 20px !important;
+}
+
+.positions-fullscreen-overlay .card {
+  height: 100% !important;
+  border: none !important;
+  box-shadow: none !important;
   background: white !important;
 }
 
-table.positions-table-fullscreen tbody td {
-  padding: 8px !important;
-  border-bottom: 1px solid #dee2e6 !important;
+.positions-fullscreen-overlay .table-responsive {
+  max-height: none !important;
+  height: calc(100vh - 200px) !important;
+  overflow-y: auto !important;
+}
+
+body.positions-fs-active {
+  overflow: hidden !important;
 }
 
 .combined-fullscreen {
