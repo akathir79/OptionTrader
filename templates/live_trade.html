@@ -5746,13 +5746,15 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   overflow: auto !important;
 }
 
-/* Symbol Selection Card - Slightly darker background */
-.symbol-selection-card {
-  background: #f1f3f4 !important;
+/* Symbol Selection Card - Darker background with higher specificity */
+div.card.shadow-sm.mb-2.symbol-selection-card {
+  background: #e8eaf6 !important;
+  background-color: #e8eaf6 !important;
 }
 
-.symbol-selection-card .card-body {
-  background: #f1f3f4 !important;
+div.card.shadow-sm.mb-2.symbol-selection-card .card-body {
+  background: #e8eaf6 !important;
+  background-color: #e8eaf6 !important;
 }
 
 /* Option Chain Header Buttons - White for better visibility */
