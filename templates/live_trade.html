@@ -5697,7 +5697,7 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   min-height: 400px !important;
 }
 
-/* Current Positions Fullscreen - Identical to Payoff Chart */
+/* Current Positions Fullscreen - Exact Copy of Working Payoff Chart */
 .positions-fullscreen {
   position: fixed !important;
   top: 0 !important;
@@ -5706,13 +5706,17 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   height: 100vh !important;
   z-index: 9999 !important;
   background: white !important;
+  padding: 20px !important;
+  overflow: auto !important;
+  box-shadow: none !important;
+  border: none !important;
   margin: 0 !important;
   border-radius: 0 !important;
 }
 
 .positions-fullscreen .card-body {
-  height: calc(100vh - 60px) !important;
-  overflow-y: auto;
+  height: calc(100vh - 120px) !important;
+  overflow: auto !important;
 }
 
 /* Option Chain Header Buttons - White for better visibility */
