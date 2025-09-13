@@ -84,18 +84,19 @@ class VixService:
             
             response = client.quotes({"symbols": vix_symbol})
             
-            if response and response.get('s') == 'ok' and response.get('d'):
-                vix_data = response['d'].get(vix_symbol, {})
+            if response and response.get('s') == 'ok' and response.get('d') and len(response['d']) > 0:
+                vix_data = response['d'][0]  # Get first element from list
+                vix_values = vix_data.get('v', {})  # Get values dict
                 
                 return {
                     'symbol': vix_symbol,
-                    'ltp': vix_data.get('v', {}).get('lp', 0),  # Last traded price
-                    'change': vix_data.get('v', {}).get('ch', 0),  # Change
-                    'change_percent': vix_data.get('v', {}).get('chp', 0),  # Change %
-                    'open': vix_data.get('v', {}).get('op', 0),
-                    'high': vix_data.get('v', {}).get('h', 0),
-                    'low': vix_data.get('v', {}).get('l', 0),
-                    'volume': vix_data.get('v', {}).get('volume', 0),
+                    'ltp': vix_values.get('lp', 0),  # Last traded price
+                    'change': vix_values.get('ch', 0),  # Change
+                    'change_percent': vix_values.get('chp', 0),  # Change %
+                    'open': vix_values.get('op', 0),
+                    'high': vix_values.get('h', 0),
+                    'low': vix_values.get('l', 0),
+                    'volume': vix_values.get('volume', 0),
                     'timestamp': datetime.now().isoformat()
                 }
             else:
