@@ -5557,16 +5557,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     const overlay = document.createElement('div');
                     overlay.className = 'positions-fullscreen-overlay';
                     
-                    // Create header
+                    // Create header (without title label)
                     const header = document.createElement('div');
                     header.className = 'fullscreen-header';
-                    header.innerHTML = '<h5><i class="fas fa-chart-line me-2"></i>Current Positions - Fullscreen</h5>';
+                    header.innerHTML = '';
                     
                     // Create close button with proper event listener
                     const closeBtn = document.createElement('button');
                     closeBtn.className = 'btn btn-light btn-sm';
                     closeBtn.innerHTML = '<i class="fas fa-times"></i>';
-                    closeBtn.style.cssText = 'background: white; color: #333; border: 1px solid #ccc; font-size: 16px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;';
+                    closeBtn.style.cssText = 'background: white; color: #333; border: 1px solid #ccc; font-size: 16px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; margin-left: auto;';
                     closeBtn.addEventListener('click', toggleCurrentPositionsFullscreen);
                     header.appendChild(closeBtn);
                     
