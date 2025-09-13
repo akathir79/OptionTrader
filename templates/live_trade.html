@@ -5686,7 +5686,7 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
 }
 
 /* Current Positions Table Fullscreen */
-.positions-table-fullscreen {
+table.positions-table-fullscreen {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
@@ -5698,23 +5698,32 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   overflow: auto !important;
   box-shadow: none !important;
   border: none !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
 }
 
-.positions-table-fullscreen table {
+table.positions-table-fullscreen {
   width: 100% !important;
   font-size: 14px !important;
+  display: table !important;
 }
 
-.positions-table-fullscreen thead th {
+table.positions-table-fullscreen thead th {
   position: sticky !important;
-  top: 0 !important;
+  top: 20px !important;
   background: #0d6efd !important;
   color: white !important;
   z-index: 10 !important;
+  padding: 12px 8px !important;
 }
 
-.positions-table-fullscreen tbody {
+table.positions-table-fullscreen tbody {
   background: white !important;
+}
+
+table.positions-table-fullscreen tbody td {
+  padding: 8px !important;
+  border-bottom: 1px solid #dee2e6 !important;
 }
 
 .combined-fullscreen {
