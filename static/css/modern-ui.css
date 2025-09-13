@@ -494,9 +494,9 @@ button.btn-modern-icon-xs {
 #columnVisibilityDropdown,
 #maximizeChart,
 #minimizeChart {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
   padding: 0.25rem !important;
   width: 30px !important;
   height: 30px !important;
@@ -504,7 +504,7 @@ button.btn-modern-icon-xs {
   align-items: center !important;
   justify-content: center !important;
   border-radius: 6px !important;
-  color: var(--secondary-gray) !important;
+  color: #333 !important;
   transition: var(--transition) !important;
 }
 
@@ -513,10 +513,10 @@ button.btn-modern-icon-xs {
 #columnVisibilityDropdown:hover,
 #maximizeChart:hover,
 #minimizeChart:hover {
-  background: rgba(255,255,255,0.08) !important;
-  border: none !important;
-  box-shadow: none !important;
-  color: var(--secondary-gray-hover) !important;
+  background: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+  color: #000 !important;
 }
 
 .nav-btn-modern:focus,
