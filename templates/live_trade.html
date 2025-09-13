@@ -5772,6 +5772,41 @@ div.card.shadow-sm.mb-2.symbol-selection-card .card-body {
   background-color: #e8eaf6 !important;
 }
 
+/* Expiry Carousel - Hide scrollbar by default, show on hover */
+#expiryViewerCarousel {
+  overflow-x: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+#expiryViewerCarousel::-webkit-scrollbar {
+  height: 0px; /* Chrome, Safari, Opera */
+  background: transparent;
+}
+
+#expiryViewerCarousel:hover {
+  scrollbar-width: thin; /* Firefox */
+  -ms-overflow-style: auto; /* Internet Explorer 10+ */
+}
+
+#expiryViewerCarousel:hover::-webkit-scrollbar {
+  height: 8px; /* Chrome, Safari, Opera */
+}
+
+#expiryViewerCarousel:hover::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+#expiryViewerCarousel:hover::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+#expiryViewerCarousel:hover::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
 /* Option Chain Header Buttons - White for better visibility */
 #refreshBtn, #fullscreenOptionChain, #columnVisibilityDropdown {
   background: white !important;
