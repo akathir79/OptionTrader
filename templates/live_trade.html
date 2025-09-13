@@ -5530,46 +5530,67 @@ document.addEventListener('DOMContentLoaded', function() {
                     e.preventDefault();
                     console.log('🎯 Combine view payoff button clicked - triggering fullscreen!');
                     
-                    // Find the payoff chart container - target the specific analysis tabs card
-                    let payoffContainer = document.querySelector('#payoffCardBody')?.closest('.card');
+                    // Find the payoff chart container using the same approach as option chain
+                    let payoffContainer = document.querySelector('#payoff-tab')?.closest('.card');
                     if (!payoffContainer) {
-                        payoffContainer = document.querySelector('.card.shadow-sm:has(#payoff-tab)');
+                        payoffContainer = document.querySelector('.card.shadow-sm');
                     }
                     if (!payoffContainer) {
-                        payoffContainer = document.querySelector('.card:has(.tab-content)');
+                        // Find the Analysis Tabs card specifically 
+                        const analysisCards = document.querySelectorAll('.card.shadow-sm');
+                        for (let card of analysisCards) {
+                            if (card.querySelector('#payoff-tab')) {
+                                payoffContainer = card;
+                                break;
+                            }
+                        }
                     }
                     
                     console.log('Found payoff container:', payoffContainer);
                     
                     if (payoffContainer) {
-                        // Enter fullscreen
-                        payoffContainer.classList.add('payoff-chart-fullscreen');
+                        // Add toggle functionality like option chain
+                        if (payoffContainer.classList.contains('payoff-fullscreen')) {
+                            // Exit fullscreen
+                            payoffContainer.classList.remove('payoff-fullscreen');
+                            
+                            // Remove exit button if exists
+                            const exitBtn = payoffContainer.querySelector('.fullscreen-exit-btn');
+                            if (exitBtn) exitBtn.remove();
+                            
+                            console.log('✅ Exited payoff chart fullscreen');
+                        } else {
+                            // Enter fullscreen
+                            payoffContainer.classList.add('payoff-fullscreen');
+                            
+                            // Add close button
+                            const exitBtn = document.createElement('button');
+                            exitBtn.className = 'fullscreen-exit-btn btn btn-outline-dark btn-sm';
+                            exitBtn.innerHTML = '<i class="fas fa-times"></i>';
+                            exitBtn.style.cssText = 'position: absolute; top: 10px; right: 10px; z-index: 10001;';
+                            exitBtn.onclick = function() {
+                                payoffContainer.classList.remove('payoff-fullscreen');
+                                exitBtn.remove();
+                                // Resize chart after exit
+                                requestAnimationFrame(() => {
+                                    if (window.payoffChart && window.payoffChart.reflow) {
+                                        window.payoffChart.reflow();
+                                    }
+                                });
+                            };
+                            payoffContainer.appendChild(exitBtn);
+                            
+                            console.log('✅ Entered payoff chart fullscreen');
+                        }
                         
-                        // Add close button
-                        const exitBtn = document.createElement('button');
-                        exitBtn.className = 'fullscreen-exit-btn btn btn-outline-dark btn-sm';
-                        exitBtn.innerHTML = '<i class="fas fa-times"></i>';
-                        exitBtn.style.cssText = 'position: absolute; top: 10px; right: 10px; z-index: 10001;';
-                        exitBtn.onclick = function() {
-                            payoffContainer.classList.remove('payoff-chart-fullscreen');
-                            exitBtn.remove();
-                            // Resize chart after exit
-                            setTimeout(() => {
-                                if (window.payoffChart && window.payoffChart.reflow) {
-                                    window.payoffChart.reflow();
-                                }
-                            }, 200);
-                        };
-                        payoffContainer.appendChild(exitBtn);
-                        
-                        // Resize chart after entering fullscreen
-                        setTimeout(() => {
+                        // Resize chart after toggle
+                        requestAnimationFrame(() => {
                             if (window.payoffChart && window.payoffChart.reflow) {
                                 window.payoffChart.reflow();
                             }
-                        }, 200);
+                        });
                         
-                        console.log('✅ Payoff chart fullscreen activated via combine button');
+                        console.log('✅ Payoff chart fullscreen toggled via combine button');
                     } else {
                         console.log('❌ Payoff container not found');
                     }
@@ -5627,7 +5648,7 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
 }
 
 /* Payoff Chart Fullscreen */
-.payoff-chart-fullscreen {
+.payoff-fullscreen {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
@@ -5641,9 +5662,16 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   border: none !important;
 }
 
-.payoff-chart-fullscreen #chartContainer {
-  height: calc(100vh - 150px) !important;
+.payoff-fullscreen #chartContainer {
+  height: calc(100vh - 300px) !important;
   width: 100% !important;
+  min-height: 400px !important;
+}
+
+.payoff-fullscreen .highcharts-container {
+  height: calc(100vh - 300px) !important;
+  width: 100% !important;
+  min-height: 400px !important;
 }
 
 /* Current Positions Fullscreen */
