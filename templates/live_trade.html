@@ -5702,8 +5702,8 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   min-height: 400px !important;
 }
 
-/* Current Positions Fullscreen - Exact Copy of Working Payoff Chart */
-.positions-fullscreen {
+/* Current Positions Fullscreen - Higher Specificity */
+.card.positions-fullscreen {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
@@ -5717,6 +5717,7 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   border: none !important;
   margin: 0 !important;
   border-radius: 0 !important;
+  transform: none !important;
 }
 
 .positions-fullscreen .card-body {
