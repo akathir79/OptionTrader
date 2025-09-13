@@ -5476,12 +5476,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         positionsBtn.innerHTML = '<i class="fas fa-expand"></i>';
                         positionsBtn.title = 'Fullscreen View';
                         console.log('✅ Exited current positions fullscreen');
+                        console.log('🔴 DEBUG: Card classes after exit:', positionsCard.className);
+                        console.log('🔴 DEBUG: Card computed styles:', window.getComputedStyle(positionsCard).position, window.getComputedStyle(positionsCard).zIndex);
                     } else {
                         // Enter fullscreen
                         positionsCard.classList.add('positions-fullscreen');
                         positionsBtn.innerHTML = '<i class="fas fa-compress" style="color: #dc3545;"></i>';
                         positionsBtn.title = 'Exit Fullscreen';
                         console.log('✅ Entered current positions fullscreen');
+                        console.log('🔴 DEBUG: Card classes after enter:', positionsCard.className);
+                        console.log('🔴 DEBUG: Card computed styles:', window.getComputedStyle(positionsCard).position, window.getComputedStyle(positionsCard).zIndex);
+                        console.log('🔴 DEBUG: Card element:', positionsCard);
                     }
                 });
             } else {
