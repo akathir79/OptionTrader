@@ -1238,7 +1238,7 @@
                 <div class="carousel-page">
                   <div class="d-flex justify-content-between align-items-center">
                     <div class="text-center">
-                      <small class="text-muted me-1">Spot Price:</small>
+                      <small class="fw-semibold me-1" style="font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;">Spot Price:</small>
                       <strong id="spotPrice" class="text-muted">Select Symbol</strong>
                       <span id="chartIcon" class="icon-modern icon-chart text-primary ms-2" 
                          style="cursor: pointer; display: none;" 
@@ -1246,13 +1246,13 @@
                          onclick="openCandlestickChart()"></span>
                     </div>
                     <div class="text-center">
-                      <small class="text-muted me-1">Day Open:</small><strong class="text-secondary">23,649</strong>
+                      <small class="fw-semibold me-1" style="font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;">Day Open:</small><strong class="text-secondary">23,649</strong>
                     </div>
                     <div class="text-center">
-                      <small class="text-muted me-1">Future:</small><strong class="text-secondary">23,700</strong>
+                      <small class="fw-semibold me-1" style="font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;">Future:</small><strong class="text-secondary">23,700</strong>
                     </div>
                     <div class="text-center">
-                      <small class="text-muted me-1">VIX:</small><strong class="text-warning">14.56</strong>
+                      <small class="fw-semibold me-1" style="font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;">VIX:</small><strong class="text-warning">14.56</strong>
                     </div>
                   </div>
                 </div>
@@ -1379,7 +1379,7 @@
             </div>
             <!-- Strike Count Dropdown -->
             <div class="d-flex align-items-center gap-2">
-              <label for="strikeCountSelect" class="form-label mb-0 text-light" style="font-size: 11px; font-weight: 500;">Strike Count:</label>
+              <label for="strikeCountSelect" class="form-label mb-0 text-light" style="font-size: 12px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;">Strike Count:</label>
               <select id="strikeCountSelect" class="form-select form-select-sm" style="width: 80px; font-size: 11px;">
                 <option value="5">5</option>
                 <option value="7">7</option>
@@ -1765,7 +1765,7 @@
           <!-- Position Table Footer with Controls -->
           <div class="d-flex justify-content-between align-items-center p-2" style="background: #f8f9fa; border-top: 1px solid #dee2e6; font-size: 11px;">
             <div class="d-flex align-items-center gap-2">
-              <span>Lot Size: 75</span>
+              <span style="font-size: 12px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;">Lot Size: 75</span>
               <button class="btn btn-outline-primary btn-sm" style="padding: 2px 8px; font-size: 10px;">Add Alert</button>
               <button class="btn btn-outline-success btn-sm" style="padding: 2px 8px; font-size: 10px;">Save</button>
               <button class="btn btn-outline-info btn-sm" style="padding: 2px 8px; font-size: 10px;">Share</button>
@@ -5481,39 +5481,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 const existingSimple = document.getElementById('positions-fullscreen-simple');
                 
                 if (existingSimple) {
-                    // Exit simple fullscreen
+                    // Exit simple fullscreen with forced page reload approach
                     console.log('🔴 DEBUG: Exiting simple fullscreen...');
                     
-                    // Remove the fullscreen container first
+                    // Remove the fullscreen container
                     existingSimple.remove();
                     
-                    // Force restore all hidden elements
-                    const allElements = document.querySelectorAll('*[style*="display: none"]');
-                    allElements.forEach(element => {
-                        // Only restore elements that were hidden by our fullscreen
-                        if (element.style.display === 'none') {
-                            element.style.display = '';
-                        }
-                    });
+                    // NUCLEAR APPROACH: Force page reload to clear any overlay issues
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 100);
                     
-                    // Also restore direct body children
-                    Array.from(document.body.children).forEach(child => {
-                        if (child.id !== 'positions-fullscreen-simple') {
-                            child.style.display = '';
-                            child.style.visibility = '';
-                        }
-                    });
-                    
-                    // Clean up all fullscreen-related CSS
-                    document.body.classList.remove('positions-fs-active');
-                    document.body.style.overflow = '';
-                    document.body.style.background = '';
-                    
-                    // Reset the button
-                    positionsBtn.innerHTML = '<i class="fas fa-expand"></i>';
-                    positionsBtn.title = 'Fullscreen View';
-                    
-                    console.log('✅ DEBUG: Exited simple fullscreen successfully');
+                    console.log('✅ DEBUG: Fullscreen exit triggered - reloading page');
                 } else if (existingOverlay) {
                     // Exit fullscreen
                     const cardInOverlay = existingOverlay.querySelector('.card');
