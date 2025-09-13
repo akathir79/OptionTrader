@@ -5697,7 +5697,7 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   min-height: 400px !important;
 }
 
-/* Current Positions Fullscreen - Exact Copy of Payoff Chart CSS */
+/* Current Positions Fullscreen - Identical to Payoff Chart */
 .positions-fullscreen {
   position: fixed !important;
   top: 0 !important;
@@ -5708,83 +5708,11 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   background: white !important;
   margin: 0 !important;
   border-radius: 0 !important;
-  padding: 20px !important;
-  overflow: auto !important;
-  box-shadow: none !important;
-  border: none !important;
 }
 
 .positions-fullscreen .card-body {
-  height: calc(100vh - 120px) !important;
-  overflow: auto !important;
-}
-
-.positions-fullscreen .table-container {
-  height: calc(100vh - 140px) !important;
-  overflow: auto !important;
-}
-
-.positions-fullscreen-overlay .fullscreen-header {
-  background: #0d6efd !important;
-  color: white !important;
-  padding: 15px 20px !important;
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
-}
-
-.positions-fullscreen-overlay .fullscreen-header h5 {
-  margin: 0 !important;
-  font-weight: 600 !important;
-}
-
-.positions-fullscreen-overlay .fullscreen-content {
-  flex: 1 !important;
-  overflow: auto !important;
-  padding: 20px !important;
-}
-
-.positions-fullscreen-overlay .card {
-  height: 100% !important;
-  border: none !important;
-  box-shadow: none !important;
-  background: white !important;
-  margin: 0 !important;
-}
-
-.positions-fullscreen-overlay .card-header {
-  display: none !important;
-}
-
-.positions-fullscreen-overlay .card-body {
-  padding: 10px !important;
-  height: 100% !important;
-}
-
-.positions-fullscreen-overlay .table-responsive {
-  max-height: none !important;
-  height: calc(100vh - 120px) !important;
-  overflow-y: auto !important;
-  border: 1px solid #dee2e6 !important;
-}
-
-.positions-fullscreen-overlay table {
-  margin: 0 !important;
-  font-size: 14px !important;
-}
-
-.positions-fullscreen-overlay table thead th {
-  position: sticky !important;
-  top: 0 !important;
-  background: #f8f9fa !important;
-  border-bottom: 2px solid #dee2e6 !important;
-  font-weight: 600 !important;
-  z-index: 10 !important;
-}
-
-body.positions-fs-active {
-  overflow: hidden !important;
+  height: calc(100vh - 60px) !important;
+  overflow-y: auto;
 }
 
 /* Option Chain Header Buttons - White for better visibility */
