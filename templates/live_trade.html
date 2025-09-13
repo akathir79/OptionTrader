@@ -5450,6 +5450,55 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 1000);
         
+        // Apply hover scrollbar behavior to expiry carousel
+        setTimeout(() => {
+            const expiryCarousel = document.getElementById('expiryViewerCarousel');
+            if (expiryCarousel) {
+                // Hide scrollbar by default
+                expiryCarousel.style.scrollbarWidth = 'none'; // Firefox
+                expiryCarousel.style.msOverflowStyle = 'none'; // IE
+                
+                // Add hover event listeners
+                expiryCarousel.addEventListener('mouseenter', function() {
+                    this.style.scrollbarWidth = 'thin'; // Firefox
+                    this.style.msOverflowStyle = 'auto'; // IE
+                    // Add webkit scrollbar styles dynamically
+                    if (!document.getElementById('webkit-scrollbar-style')) {
+                        const style = document.createElement('style');
+                        style.id = 'webkit-scrollbar-style';
+                        style.textContent = `
+                            #expiryViewerCarousel.hover-scrollbar::-webkit-scrollbar {
+                                height: 8px;
+                            }
+                            #expiryViewerCarousel.hover-scrollbar::-webkit-scrollbar-track {
+                                background: #f1f1f1;
+                                border-radius: 4px;
+                            }
+                            #expiryViewerCarousel.hover-scrollbar::-webkit-scrollbar-thumb {
+                                background: #c1c1c1;
+                                border-radius: 4px;
+                            }
+                            #expiryViewerCarousel.hover-scrollbar::-webkit-scrollbar-thumb:hover {
+                                background: #a8a8a8;
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
+                    this.classList.add('hover-scrollbar');
+                    console.log('✅ Expiry carousel scrollbar shown on hover');
+                });
+                
+                expiryCarousel.addEventListener('mouseleave', function() {
+                    this.style.scrollbarWidth = 'none'; // Firefox
+                    this.style.msOverflowStyle = 'none'; // IE
+                    this.classList.remove('hover-scrollbar');
+                    console.log('✅ Expiry carousel scrollbar hidden on leave');
+                });
+                
+                console.log('✅ Expiry carousel hover scrollbar behavior initialized');
+            }
+        }, 1500);
+        
         setTimeout(() => {
             console.log('Looking for current positions fullscreen button...');
             const positionsBtn = document.getElementById('fullscreenPositions');
