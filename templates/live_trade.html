@@ -5469,24 +5469,45 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
 
-                    // Toggle fullscreen class (same as payoff chart and option chain)
-                    if (positionsCard.classList.contains('positions-fullscreen')) {
-                        // Exit fullscreen
-                        positionsCard.classList.remove('positions-fullscreen');
+                    // Apply fullscreen styles directly via JavaScript
+                    if (positionsCard.style.position === 'fixed') {
+                        // Exit fullscreen - remove inline styles
+                        positionsCard.style.position = '';
+                        positionsCard.style.top = '';
+                        positionsCard.style.left = '';
+                        positionsCard.style.width = '';
+                        positionsCard.style.height = '';
+                        positionsCard.style.zIndex = '';
+                        positionsCard.style.background = '';
+                        positionsCard.style.padding = '';
+                        positionsCard.style.overflow = '';
+                        positionsCard.style.margin = '';
+                        positionsCard.style.borderRadius = '';
+                        positionsCard.style.boxShadow = '';
+                        positionsCard.style.border = '';
+                        
                         positionsBtn.innerHTML = '<i class="fas fa-expand"></i>';
                         positionsBtn.title = 'Fullscreen View';
                         console.log('✅ Exited current positions fullscreen');
-                        console.log('🔴 DEBUG: Card classes after exit:', positionsCard.className);
-                        console.log('🔴 DEBUG: Card computed styles:', window.getComputedStyle(positionsCard).position, window.getComputedStyle(positionsCard).zIndex);
                     } else {
-                        // Enter fullscreen
-                        positionsCard.classList.add('positions-fullscreen');
+                        // Enter fullscreen - apply inline styles directly
+                        positionsCard.style.position = 'fixed';
+                        positionsCard.style.top = '0';
+                        positionsCard.style.left = '0';
+                        positionsCard.style.width = '100vw';
+                        positionsCard.style.height = '100vh';
+                        positionsCard.style.zIndex = '9999';
+                        positionsCard.style.background = 'white';
+                        positionsCard.style.padding = '20px';
+                        positionsCard.style.overflow = 'auto';
+                        positionsCard.style.margin = '0';
+                        positionsCard.style.borderRadius = '0';
+                        positionsCard.style.boxShadow = 'none';
+                        positionsCard.style.border = 'none';
+                        
                         positionsBtn.innerHTML = '<i class="fas fa-compress" style="color: #dc3545;"></i>';
                         positionsBtn.title = 'Exit Fullscreen';
                         console.log('✅ Entered current positions fullscreen');
-                        console.log('🔴 DEBUG: Card classes after enter:', positionsCard.className);
-                        console.log('🔴 DEBUG: Card computed styles:', window.getComputedStyle(positionsCard).position, window.getComputedStyle(positionsCard).zIndex);
-                        console.log('🔴 DEBUG: Card element:', positionsCard);
                     }
                 });
             } else {
