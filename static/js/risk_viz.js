@@ -417,86 +417,16 @@ class RiskVisualization {
         toggleBtn.id = 'riskToggleBtn';
         toggleBtn.className = 'btn btn-sm btn-outline-primary position-fixed';
         toggleBtn.style.cssText = 'top: 60px; right: 10px; z-index: 1001; font-size: 10px;';
-        toggleBtn.innerHTML = '<i class=\"fas fa-palette\"></i>';
+        toggleBtn.innerHTML = '<i class="fas fa-palette"></i>';
         toggleBtn.title = 'Toggle Risk Visualization';
         toggleBtn.onclick = () => this.toggleRiskVisualization();
         
-        // Create risk legend
-        const legendHtml = `
-            <div id=\"riskLegend\" class=\"position-fixed\" style=\"top: 100px; right: 10px; z-index: 1000; background: rgba(255,255,255,0.95); border-radius: 8px; padding: 12px; font-size: 11px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 220px; display: none;\">
-                <div class=\"fw-bold mb-3 text-center\" style=\"color: #007bff;\">
-                    <i class=\"fas fa-palette\"></i> Risk Visualization Legend
-                </div>
-                
-                <div class=\"mb-3\">
-                    <div class=\"small fw-bold mb-1\">📊 Profit/Loss:</div>
-                    <div class=\"d-flex gap-1 mb-1\">
-                        <span class=\"risk-badge profit\">Profit</span>
-                        <span class=\"risk-badge loss\">Loss</span>
-                        <span class=\"risk-badge neutral\">Neutral</span>
-                    </div>
-                </div>
-                
-                <div class=\"mb-3\">
-                    <div class=\"small fw-bold mb-1\">⏰ Expiry Risk:</div>
-                    <div class=\"d-flex gap-1 mb-1\">
-                        <span class=\"risk-badge urgent\">Urgent</span>
-                        <span class=\"risk-badge moderate\">Moderate</span>
-                        <span class=\"risk-badge safe\">Safe</span>
-                    </div>
-                </div>
-                
-                <div class=\"mb-3\">
-                    <div class=\"small fw-bold mb-1\">📏 Position Size:</div>
-                    <div class=\"d-flex gap-1 mb-1\">
-                        <span class=\"badge bg-info\">Small</span>
-                        <span class=\"badge bg-warning\">Medium</span>
-                        <span class=\"badge bg-danger\">Large</span>
-                    </div>
-                </div>
-                
-                <div class=\"text-center mt-3\">
-                    <small class=\"text-muted\">
-                        <i class=\"fas fa-info-circle\"></i> 
-                        Colors combine to show overall risk
-                    </small>
-                </div>
-            </div>
-        `;
+        // Risk legend removed per user request
         
-        // Add controls to page
+        // Add controls to page (legend removed)
         setTimeout(() => {
             document.body.appendChild(toggleBtn);
-            document.body.insertAdjacentHTML('beforeend', legendHtml);
-            
-            // Legend toggle functionality
-            toggleBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const legend = document.getElementById('riskLegend');
-                const isVisible = legend.style.display !== 'none';
-                legend.style.display = isVisible ? 'none' : 'block';
-                
-                // Update button appearance
-                toggleBtn.classList.toggle('btn-outline-primary', !isVisible);
-                toggleBtn.classList.toggle('btn-primary', isVisible);
-            });
-            
-            // Close legend when clicking outside
-            document.addEventListener('click', (e) => {
-                const legend = document.getElementById('riskLegend');
-                const toggleBtn = document.getElementById('riskToggleBtn');
-                
-                if (legend && toggleBtn && 
-                    !legend.contains(e.target) && 
-                    !toggleBtn.contains(e.target)) {
-                    legend.style.display = 'none';
-                    toggleBtn.classList.remove('btn-primary');
-                    toggleBtn.classList.add('btn-outline-primary');
-                }
-            });
-            
+            // Legend functionality removed per user request
         }, 1000);
     }
 }
