@@ -5481,18 +5481,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 const existingSimple = document.getElementById('positions-fullscreen-simple');
                 
                 if (existingSimple) {
-                    // Exit simple fullscreen with forced page reload approach
+                    // Exit simple fullscreen - CLEAN APPROACH like other toggles
                     console.log('🔴 DEBUG: Exiting simple fullscreen...');
                     
-                    // Remove the fullscreen container
+                    // Remove the fullscreen container first
                     existingSimple.remove();
                     
-                    // NUCLEAR APPROACH: Force page reload to clear any overlay issues
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 100);
+                    // Properly restore all hidden elements (like payoff/option chain do)
+                    Array.from(document.body.children).forEach(child => {
+                        if (child.id !== 'positions-fullscreen-simple') {
+                            child.style.display = '';
+                            child.style.visibility = '';
+                        }
+                    });
                     
-                    console.log('✅ DEBUG: Fullscreen exit triggered - reloading page');
+                    // Clean up body state completely
+                    document.body.classList.remove('positions-fs-active');
+                    document.body.style.overflow = '';
+                    document.body.style.background = '';
+                    document.body.style.margin = '';
+                    document.body.style.padding = '';
+                    
+                    // Reset the button
+                    positionsBtn.innerHTML = '<i class="fas fa-expand"></i>';
+                    positionsBtn.title = 'Fullscreen View';
+                    
+                    console.log('✅ DEBUG: Clean fullscreen exit completed');
                 } else if (existingOverlay) {
                     // Exit fullscreen
                     const cardInOverlay = existingOverlay.querySelector('.card');
