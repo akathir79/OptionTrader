@@ -1252,7 +1252,11 @@
                       <small class="fw-semibold me-1" style="font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;">Future:</small><strong class="text-secondary">23,700</strong>
                     </div>
                     <div class="text-center">
-                      <small class="fw-semibold me-1" style="font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;">VIX:</small><strong class="text-warning">14.56</strong>
+                      <small class="fw-semibold me-1" style="font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;">VIX:</small>
+                      <strong id="vixValue" class="text-warning" style="cursor: pointer;" 
+                              onclick="openVixAnalysis()" 
+                              title="Click for detailed VIX analysis">--</strong>
+                      <span id="vixChange" class="ms-1" style="font-size: 10px;"></span>
                     </div>
                   </div>
                 </div>
@@ -2056,6 +2060,9 @@ window.addEventListener('DOMContentLoaded', function() {
 
 <!-- Market data carousel -->
 <script src="{{ url_for('static', filename='js/market_data_carousel.js') }}"></script>
+
+<!-- VIX Analysis -->
+<script src="{{ url_for('static', filename='js/vix_analysis.js') }}"></script>
 
 <!-- Broker settings -->
 <script src="{{ url_for('static', filename='js/broker_settings.js') }}"></script>

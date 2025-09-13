@@ -123,6 +123,10 @@ app.register_blueprint(historical_bp)
 from APP_Routes.token_monitor import bp as token_monitor_bp
 app.register_blueprint(token_monitor_bp)
 
+# Import and register VIX API blueprint
+from api.vix_api import vix_bp
+app.register_blueprint(vix_bp)
+
 # Import market times functions
 from APP_Routes.market_times import (
     api_list_market_times, api_create_market_time, api_update_market_time,
