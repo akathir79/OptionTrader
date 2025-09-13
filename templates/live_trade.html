@@ -1583,7 +1583,7 @@
               <button id="togglePayoffView" class="btn btn-outline-secondary btn-sm" title="Hide/Show Payoff Chart">
                 <i class="fas fa-chevron-up"></i>
               </button>
-              <button id="combineViewPayoff" class="btn btn-outline-success btn-sm" title="Fullscreen Combined View">
+              <button id="combineViewPayoff" class="btn btn-outline-success btn-sm" title="Fullscreen Payoff Chart">
                 <i class="fas fa-expand-arrows-alt"></i>
               </button>
             </div>
@@ -2074,7 +2074,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (payoffContainer && !document.getElementById('worldClockBtn')) {
             const clockBtn = document.createElement('button');
             clockBtn.id = 'worldClockBtn';
-            clockBtn.className = 'btn btn-warning btn-sm';
+            clockBtn.className = 'btn btn-info btn-sm';
             clockBtn.title = 'World Market Times';
             clockBtn.innerHTML = '<i class="fas fa-globe-americas"></i>';
             clockBtn.onclick = function() {
@@ -5519,6 +5519,64 @@ document.addEventListener('DOMContentLoaded', function() {
 
             console.log('✅ Current Positions fullscreen initialized');
         }, 2000);
+    });
+
+    // Step 4: Connect combineViewPayoff button to payoff chart fullscreen
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+            const combineBtn = document.getElementById('combineViewPayoff');
+            if (combineBtn) {
+                combineBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    console.log('🎯 Combine view payoff button clicked - triggering fullscreen!');
+                    
+                    // Find the payoff chart container
+                    let payoffContainer = document.querySelector('[id*="chartContainer"]')?.closest('.card');
+                    if (!payoffContainer) {
+                        payoffContainer = document.querySelector('.right-panel');
+                    }
+                    if (!payoffContainer) {
+                        payoffContainer = document.querySelector('.card:nth-child(2)');
+                    }
+                    
+                    if (payoffContainer) {
+                        // Enter fullscreen
+                        payoffContainer.classList.add('payoff-chart-fullscreen');
+                        
+                        // Add close button
+                        const exitBtn = document.createElement('button');
+                        exitBtn.className = 'fullscreen-exit-btn btn btn-outline-dark btn-sm';
+                        exitBtn.innerHTML = '<i class="fas fa-times"></i>';
+                        exitBtn.style.cssText = 'position: absolute; top: 10px; right: 10px; z-index: 10001;';
+                        exitBtn.onclick = function() {
+                            payoffContainer.classList.remove('payoff-chart-fullscreen');
+                            exitBtn.remove();
+                            // Resize chart after exit
+                            setTimeout(() => {
+                                if (window.payoffChart && window.payoffChart.reflow) {
+                                    window.payoffChart.reflow();
+                                }
+                            }, 200);
+                        };
+                        payoffContainer.appendChild(exitBtn);
+                        
+                        // Resize chart after entering fullscreen
+                        setTimeout(() => {
+                            if (window.payoffChart && window.payoffChart.reflow) {
+                                window.payoffChart.reflow();
+                            }
+                        }, 200);
+                        
+                        console.log('✅ Payoff chart fullscreen activated via combine button');
+                    } else {
+                        console.log('❌ Payoff container not found');
+                    }
+                });
+                console.log('✅ Combine view payoff button connected to fullscreen');
+            } else {
+                console.log('❌ Combine view payoff button not found');
+            }
+        }, 2500);
     });
     </script>
 {% endblock %}
