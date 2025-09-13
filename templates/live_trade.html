@@ -5613,22 +5613,17 @@ document.addEventListener('DOMContentLoaded', function() {
                         padding: 20px;
                     `;
                     
-                    // Create header with close button
-                    const header = document.createElement('div');
-                    header.style.cssText = 'display: flex; justify-content: flex-end; margin-bottom: 20px;';
-                    
-                    const closeBtn = document.createElement('button');
-                    closeBtn.innerHTML = '<i class="fas fa-times"></i> Close';
-                    closeBtn.className = 'btn btn-danger btn-sm';
-                    closeBtn.addEventListener('click', toggleCurrentPositionsFullscreen);
-                    header.appendChild(closeBtn);
-                    
                     // Clone the positions card to avoid moving the original
                     const clonedCard = positionsCard.cloneNode(true);
-                    clonedCard.style.cssText = 'height: calc(100vh - 100px); border: none; margin: 0; background: white;';
+                    clonedCard.style.cssText = 'height: calc(100vh - 40px); border: none; margin: 0; background: white;';
                     
-                    // Add everything to fullscreen container
-                    fullscreenDiv.appendChild(header);
+                    // Make sure the fullscreen toggle button in the cloned card is functional
+                    const clonedToggleBtn = clonedCard.querySelector('#fullscreenPositions');
+                    if (clonedToggleBtn) {
+                        clonedToggleBtn.addEventListener('click', toggleCurrentPositionsFullscreen);
+                    }
+                    
+                    // Add cloned card to fullscreen container
                     fullscreenDiv.appendChild(clonedCard);
                     
                     // Add to body
