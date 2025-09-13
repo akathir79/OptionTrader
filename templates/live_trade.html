@@ -5472,8 +5472,21 @@ document.addEventListener('DOMContentLoaded', function() {
             function toggleCurrentPositionsFullscreen() {
                 console.log('🔍 Finding current positions card...');
                 
-                // Find the entire current positions card
-                const positionsCard = document.querySelector('.card:has(#fullscreenPositions)');
+                // Find specifically the current positions card (right panel, 3rd card)
+                let positionsCard = document.querySelector('#fullscreenPositions')?.closest('.card');
+                if (!positionsCard) {
+                    // Fallback: find the card in right panel that contains Active Trades
+                    const rightPanel = document.querySelector('.right-panel');
+                    if (rightPanel) {
+                        const cards = rightPanel.querySelectorAll('.card');
+                        for (let card of cards) {
+                            if (card.querySelector('#activeTradesTableBody') || card.textContent.includes('Current Positions')) {
+                                positionsCard = card;
+                                break;
+                            }
+                        }
+                    }
+                }
                 
                 console.log('Positions card found:', positionsCard);
                 
@@ -5487,9 +5500,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (existingOverlay) {
                     // Exit fullscreen
+                    const cardInOverlay = existingOverlay.querySelector('.card');
                     const placeholder = document.querySelector('#positions-placeholder');
-                    if (placeholder && placeholder.parentNode) {
-                        placeholder.parentNode.insertBefore(positionsCard, placeholder);
+                    if (placeholder && placeholder.parentNode && cardInOverlay) {
+                        placeholder.parentNode.insertBefore(cardInOverlay, placeholder);
                         placeholder.remove();
                     }
                     existingOverlay.remove();
@@ -5509,18 +5523,28 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Create fullscreen overlay
                     const overlay = document.createElement('div');
                     overlay.className = 'positions-fullscreen-overlay';
-                    overlay.innerHTML = `
-                        <div class="fullscreen-header">
-                            <h5><i class="fas fa-chart-line me-2"></i>Current Positions - Fullscreen</h5>
-                            <button class="btn btn-outline-dark btn-sm" onclick="toggleCurrentPositionsFullscreen()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="fullscreen-content"></div>
-                    `;
+                    
+                    // Create header
+                    const header = document.createElement('div');
+                    header.className = 'fullscreen-header';
+                    header.innerHTML = '<h5><i class="fas fa-chart-line me-2"></i>Current Positions - Fullscreen</h5>';
+                    
+                    // Create close button with proper event listener
+                    const closeBtn = document.createElement('button');
+                    closeBtn.className = 'btn btn-outline-light btn-sm';
+                    closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    closeBtn.addEventListener('click', toggleCurrentPositionsFullscreen);
+                    header.appendChild(closeBtn);
+                    
+                    // Create content area
+                    const content = document.createElement('div');
+                    content.className = 'fullscreen-content';
+                    
+                    overlay.appendChild(header);
+                    overlay.appendChild(content);
                     
                     // Move card into overlay
-                    overlay.querySelector('.fullscreen-content').appendChild(positionsCard);
+                    content.appendChild(positionsCard);
                     document.body.appendChild(overlay);
                     document.body.classList.add('positions-fs-active');
                     
@@ -5728,12 +5752,37 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   border: none !important;
   box-shadow: none !important;
   background: white !important;
+  margin: 0 !important;
+}
+
+.positions-fullscreen-overlay .card-header {
+  display: none !important;
+}
+
+.positions-fullscreen-overlay .card-body {
+  padding: 10px !important;
+  height: 100% !important;
 }
 
 .positions-fullscreen-overlay .table-responsive {
   max-height: none !important;
-  height: calc(100vh - 200px) !important;
+  height: calc(100vh - 120px) !important;
   overflow-y: auto !important;
+  border: 1px solid #dee2e6 !important;
+}
+
+.positions-fullscreen-overlay table {
+  margin: 0 !important;
+  font-size: 14px !important;
+}
+
+.positions-fullscreen-overlay table thead th {
+  position: sticky !important;
+  top: 0 !important;
+  background: #f8f9fa !important;
+  border-bottom: 2px solid #dee2e6 !important;
+  font-weight: 600 !important;
+  z-index: 10 !important;
 }
 
 body.positions-fs-active {
