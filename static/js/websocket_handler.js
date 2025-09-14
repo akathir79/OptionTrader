@@ -767,6 +767,7 @@ class WebSocketHandler {
         const loadingElement = document.getElementById('optionChainLoading');
         const containerElement = document.getElementById('optionChainContainer');
         const tableBody = document.querySelector('#optionChainTable tbody');
+        const tableElement = document.getElementById('optionChainTable');
         
         // Clear existing option chain table immediately
         if (tableBody) {
@@ -774,23 +775,34 @@ class WebSocketHandler {
             console.log('🗑️ Cleared option chain table before loading');
         }
         
+        // Hide the entire table (including headers) for professional loading experience
+        if (tableElement) {
+            tableElement.style.display = 'none';
+        }
+        
         if (loadingElement) {
             loadingElement.style.display = 'block';
         }
         if (containerElement) {
-            containerElement.style.display = 'none';
+            containerElement.style.display = 'block';
         }
     }
     
     hideOptionChainLoading() {
         const loadingElement = document.getElementById('optionChainLoading');
         const containerElement = document.getElementById('optionChainContainer');
+        const tableElement = document.getElementById('optionChainTable');
         
         if (loadingElement) {
             loadingElement.style.display = 'none';
         }
         if (containerElement) {
             containerElement.style.display = 'block';
+        }
+        
+        // Show the table again with new data
+        if (tableElement) {
+            tableElement.style.display = 'table';
         }
     }
     
