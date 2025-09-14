@@ -1158,14 +1158,10 @@
   <div class="resizable-container">
     <!-- Left Panel - Symbol Selection & Option Chain -->
     <div class="resizable-panel left-panel">
-      <!-- Panel Toggle Button -->
-      <div class="panel-toggle-btn" id="leftPanelToggle" title="Collapse/Expand Symbol Selector" style="position: absolute; top: 8px; left: 8px; width: 24px; height: 24px; background: rgba(255, 255, 255, 0.95); border: 2px solid #007bff; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; color: #007bff; font-weight: bold; transition: all 0.2s ease;">
-        ^
-      </div>
       
-      <!-- Symbol Selection & Expiry Dates Card -->
-      <div class="card shadow-sm mb-2 symbol-selection-card" id="symbolSelectorCard">
-        <div class="card-body">
+      <!-- Symbol Selection Controls Card -->
+      <div class="card shadow-sm mb-2 symbol-selection-card" id="symbolControlsCard">
+        <div class="card-body" id="symbolControlsSection">
           <!-- Symbol Selection Row -->
           <div class="row g-2 align-items-center mb-3">
             <!-- Index Selection -->
@@ -1231,9 +1227,18 @@
 
           <!-- Horizontal Separator -->
           <hr class="my-2" style="border-color: #dee2e6;">
+        </div>
+      </div>
 
+      <!-- Market Data Card -->
+      <div class="card shadow-sm mb-2 market-data-card" id="marketDataCard">
+        <div class="card-body">
           <!-- Market Data Carousel -->
-          <div class="d-flex align-items-center">
+          <div class="d-flex align-items-center position-relative">
+            <!-- Panel Toggle Button on Market Data Card -->
+            <div class="panel-toggle-btn" id="leftPanelToggle" title="Collapse/Expand Symbol Selector" style="position: absolute; top: -8px; left: 5px; width: 20px; height: 20px; background: rgba(255, 255, 255, 0.95); border: 2px solid #007bff; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; color: #007bff; font-weight: bold; transition: all 0.2s ease; font-size: 10px;">
+              ^
+            </div>
             <button id="marketDataPrevBtn" class="nav-btn-modern me-2">
               <span class="icon-modern icon-chevron-left"></span>
             </button>
@@ -2075,7 +2080,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(function() {
         const leftPanel = document.querySelector('.left-panel');
         const toggleBtn = document.getElementById('leftPanelToggle');
-        const symbolCard = document.getElementById('symbolSelectorCard');
+        const symbolCard = document.getElementById('symbolControlsSection');
         
         if (leftPanel && toggleBtn && symbolCard) {
             let isCollapsed = false;
@@ -2089,11 +2094,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (isCollapsed) {
                     symbolCard.style.display = 'none';
                     toggleBtn.innerHTML = 'v';
-                    console.log('✅ Symbol selection and market data cards collapsed');
+                    console.log('✅ Symbol selection card collapsed (market data still visible)');
                 } else {
                     symbolCard.style.display = 'block';
                     toggleBtn.innerHTML = '^';
-                    console.log('✅ Symbol selection and market data cards expanded');
+                    console.log('✅ Symbol selection card expanded');
                 }
             });
             
