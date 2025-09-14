@@ -192,13 +192,23 @@
 
 /* Optimize option chain table height in panel fullscreen */
 .panel-fullscreen .card:last-child .card-body {
-  height: calc(100vh - 300px) !important;
+  height: calc(100vh - 180px) !important;
   overflow: auto;
 }
 
 .panel-fullscreen .card:last-child .table-container {
-  height: calc(100vh - 350px) !important;
+  height: calc(100vh - 220px) !important;
   overflow: auto;
+}
+
+/* Make option chain table fill available space in fullscreen */
+.panel-fullscreen #optionChainContainer {
+  height: calc(100vh - 200px) !important;
+  overflow-y: auto;
+}
+
+.panel-fullscreen #optionChainTable {
+  min-height: 100%;
 }
 
 /* Compact card spacing in fullscreen mode */
