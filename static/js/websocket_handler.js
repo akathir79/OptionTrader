@@ -766,6 +766,13 @@ class WebSocketHandler {
     showOptionChainLoading() {
         const loadingElement = document.getElementById('optionChainLoading');
         const containerElement = document.getElementById('optionChainContainer');
+        const tableBody = document.querySelector('#optionChainTable tbody');
+        
+        // Clear existing option chain table immediately
+        if (tableBody) {
+            tableBody.innerHTML = '';
+            console.log('🗑️ Cleared option chain table before loading');
+        }
         
         if (loadingElement) {
             loadingElement.style.display = 'block';
