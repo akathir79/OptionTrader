@@ -243,6 +243,18 @@ body.fullscreen-active .left-panel .mb-2 {
   margin-bottom: 0.125rem !important;
 }
 
+/* Additional spacing overrides for carousels */
+body.fullscreen-active .left-panel hr.my-1,
+.left-panel hr.my-1 {
+  margin-top: 0.125rem !important;
+  margin-bottom: 0.125rem !important;
+}
+
+body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
+.left-panel .d-flex.align-items-center.mb-1 {
+  margin-bottom: 0.25rem !important;
+}
+
 /* Clean B/S Button Styles - Match original design */
 .option_button {
   display: inline-flex;
@@ -1205,7 +1217,7 @@ body.fullscreen-active .left-panel .mb-2 {
     <div class="resizable-panel left-panel">
       
       <!-- Symbol Selection Controls Card -->
-      <div class="card shadow-sm mb-2 symbol-selection-card" id="symbolControlsCard">
+      <div class="card shadow-sm symbol-selection-card" id="symbolControlsCard" style="margin-bottom: 0.25rem !important;">
         <div class="card-body" id="symbolControlsSection">
           <!-- Symbol Selection Row -->
           <div class="row g-2 align-items-center mb-3">
@@ -1253,7 +1265,7 @@ body.fullscreen-active .left-panel .mb-2 {
           <hr class="my-2" style="border-color: #dee2e6;">
 
           <!-- Expiry Dates Row -->
-          <div class="d-flex align-items-center mb-3">
+          <div class="d-flex align-items-center mb-1">
 
 
 
@@ -1271,7 +1283,7 @@ body.fullscreen-active .left-panel .mb-2 {
           </div>
 
           <!-- Horizontal Separator -->
-          <hr class="my-2" style="border-color: #dee2e6;">
+          <hr class="my-1" style="border-color: #dee2e6; margin-top: 0.25rem !important; margin-bottom: 0.25rem !important;">
         </div>
       </div>
 
