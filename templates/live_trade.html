@@ -5772,26 +5772,40 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
 .left-panel .symbol-selection-card {
   background: #e8eaf6 !important;
   background-color: #e8eaf6 !important;
-  max-height: 90px !important; /* Forced small height */
+  max-height: 60px !important; /* Even smaller forced height */
   overflow: hidden !important;
-  margin-bottom: 0.5rem !important;
+  margin-bottom: 4px !important;
 }
 
 .left-panel .symbol-selection-card .card-body {
   background: #e8eaf6 !important;
   background-color: #e8eaf6 !important;
-  padding: 6px 8px !important; /* Ultra-compact padding */
+  padding: 3px 6px !important; /* Minimal padding */
+  line-height: 1 !important;
 }
 
 /* Market Data Carousel - Forced height reduction */
 .left-panel .carousel-container {
-  height: 18px !important; /* Forced small height */
+  height: 14px !important; /* Even smaller height */
   overflow: hidden !important;
+  line-height: 1 !important;
 }
 
 .left-panel #marketDataCarousel, .left-panel .carousel-page {
-  height: 18px !important;
+  height: 14px !important;
   align-items: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.left-panel .carousel-page .text-center {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+}
+
+.left-panel .carousel-page .d-flex {
+  gap: 4px !important; /* Minimal gap between items */
 }
 
 .carousel-page {
@@ -5811,24 +5825,45 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   font-size: 11px !important; /* Smaller values */
 }
 
-/* Symbol selection rows - Ultra-compact spacing */
-.symbol-selection-card .row.g-2 {
-  margin-bottom: 0.25rem !important; /* Minimal spacing */
+/* Aggressive padding reduction for all elements */
+.left-panel .symbol-selection-card .row {
+  margin-bottom: 0 !important; /* Remove all row margins */
+  margin-top: 0 !important;
 }
 
-.symbol-selection-card .mb-3 {
-  margin-bottom: 0.25rem !important; /* Ultra-compact spacing */
+.left-panel .symbol-selection-card .col-md-4, 
+.left-panel .symbol-selection-card .col-md-3,
+.left-panel .symbol-selection-card .col-auto {
+  padding: 2px !important; /* Minimal column padding */
 }
 
-/* Expiry date selector - compact */
-.symbol-selection-card .form-select {
-  padding: 0.25rem 0.5rem !important; /* Reduced select padding */
-  font-size: 12px !important; /* Smaller font */
+.left-panel .symbol-selection-card .form-select {
+  padding: 2px 6px !important; /* Ultra-minimal padding */
+  font-size: 10px !important; /* Very small font */
+  height: 20px !important; /* Fixed small height */
+  line-height: 1 !important;
 }
 
-/* Horizontal separator - remove excess margin */
-.symbol-selection-card hr {
-  margin: 0.25rem 0 !important; /* Minimal separator spacing */
+.left-panel .symbol-selection-card .form-label {
+  font-size: 9px !important; /* Tiny labels */
+  margin-bottom: 2px !important;
+  line-height: 1 !important;
+}
+
+.left-panel .symbol-selection-card hr {
+  margin: 2px 0 !important; /* Almost no separator spacing */
+  border-width: 0.5px !important;
+}
+
+/* Market data text - ultra compact */
+.left-panel .carousel-page small {
+  font-size: 8px !important; /* Tiny text */
+  line-height: 1 !important;
+}
+
+.left-panel .carousel-page strong {
+  font-size: 9px !important; /* Tiny values */
+  line-height: 1 !important;
 }
 
 /* Option Chain Header Buttons - White for better visibility */
