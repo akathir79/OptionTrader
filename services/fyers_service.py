@@ -213,32 +213,23 @@ class FyersService:
             return False, f"Authentication failed: {str(e)}", {}
     
     def get_client(self) -> Optional[fyersModel.FyersModel]:
-        """Get authenticated Fyers client with automatic token refresh"""
+        """Get authenticated Fyers client - always use current access token"""
         if self.client:
             return self.client
         
         settings = self.get_settings()
         if not settings or not settings.access_token:
-            logger.error("No valid access token found")
+            logger.error("No access token found")
             return None
         
-        # Check if token is expired and attempt refresh
-        if self.is_token_expired():
-            logger.warning("Access token expired - attempting refresh")
-            if self.refresh_access_token():
-                logger.info("Successfully refreshed access token")
-                # Update settings after refresh
-                settings = self.get_settings()
-            else:
-                logger.error("Failed to refresh access token")
-                return None
-        
+        # Always use current access token - don't check expiry for VIX calls
         try:
             self.client = fyersModel.FyersModel(
                 client_id=settings.clientid,
                 token=settings.access_token
             )
             
+            logger.info("Created Fyers client with current access token")
             return self.client
             
         except Exception as e:
