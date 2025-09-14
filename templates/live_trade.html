@@ -2211,6 +2211,9 @@ window.addEventListener('DOMContentLoaded', function() {
 <!-- VIX Analysis -->
 <script src="{{ url_for('static', filename='js/vix_analysis.js') }}"></script>
 
+<!-- Futures Analysis -->
+<script src="{{ url_for('static', filename='js/futures_analysis.js') }}"></script>
+
 <!-- Option Chain Fullscreen Functionality -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -5652,6 +5655,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     <!-- Token Expiry Monitor -->
     <script src="{{ url_for('static', filename='js/token_monitor.js') }}"></script>
+    
+    <!-- Futures Analysis Bridge Function -->
+    <script>
+    /**
+     * Open futures analysis modal - called from futures price click
+     */
+    function openFuturesAnalysis() {
+        try {
+            console.log('🔮 Opening futures analysis modal...');
+            showFuturesAnalysisModal();
+        } catch (error) {
+            console.error('Error opening futures analysis:', error);
+        }
+    }
+    
+    // Make function globally available
+    window.openFuturesAnalysis = openFuturesAnalysis;
+    </script>
     
     <!-- Panel Toggle Functionality -->
     <script>

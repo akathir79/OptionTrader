@@ -502,8 +502,8 @@ class FuturesService:
         """Analyze current market risk regime and volatility"""
         try:
             # Get VIX data for volatility context
-            vix_data = self.vix_service.get_latest_vix_data()
-            current_vix = vix_data.get('current_vix', 15)
+            vix_data = self.vix_service.get_real_time_vix()
+            current_vix = vix_data.get('ltp', 15) if vix_data else 15
             
             # Basis volatility assessment
             basis_values = [contract.get('basis_percentage', 0) for contract in monthly_data]
