@@ -22,16 +22,41 @@ document.addEventListener("DOMContentLoaded", () => {
   let expiryCtrl = null, symbolCtrl = null;
 
   /* =================================================================
+     HELPER: Show/Hide Collapsible Sections
+     ================================================================= */
+  function updateSectionVisibility() {
+    const hasIndex = indexSelect?.value !== "";
+    const hasExchangeAndSymbol = exchangeSel?.value !== "" && extraSelect?.value !== "";
+    const shouldShow = hasIndex || hasExchangeAndSymbol;
+    
+    const expirySection = document.getElementById("expiryDateSection");
+    const marketDataCard = document.getElementById("marketDataCard");
+    
+    if (shouldShow) {
+      expirySection.style.display = "block";
+      marketDataCard.style.display = "block";
+    } else {
+      expirySection.style.display = "none";
+      marketDataCard.style.display = "none";
+    }
+  }
+
+  /* =================================================================
      EVENTS
      ================================================================= */
   indexSelect?.addEventListener("change", () => {
-    if (!indexSelect.value) return clearExpiry();
+    if (!indexSelect.value) {
+      clearExpiry();
+      updateSectionVisibility();
+      return;
+    }
     exchangeSel.value = "";
     extraSelect.innerHTML = '<option value="">Select Symbol</option>';
     fetchExpiryForIndex(indexSelect.value);
     // Lookup symbol and lot size for index
     lookupSymbolAndLotSize('index', indexSelect.value, '');
     // Spot price updates will be started automatically after symbol lookup completes
+    updateSectionVisibility();
   });
 
   exchangeSel?.addEventListener("change", () => {
@@ -39,9 +64,11 @@ document.addEventListener("DOMContentLoaded", () => {
     clearExpiry();
     if (!exchangeSel.value) {
       extraSelect.innerHTML = '<option value="">Select Symbol</option>';
+      updateSectionVisibility();
       return;
     }
     loadExtraSymbols(exchangeSel.value);
+    updateSectionVisibility();
   });
 
   extraSelect?.addEventListener("change", () => {
@@ -52,6 +79,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Lookup symbol and lot size for exchange+symbol
       lookupSymbolAndLotSize('exchange', extraSelect.value, exchangeSel.value);
     }
+    updateSectionVisibility();
   });
 
   // Strike Count Dropdown Event Listener
@@ -529,5 +557,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Export for global access
   window.updateWebSocketSubscriptions = updateWebSocketSubscriptions;
+
+  // Initialize section visibility on page load
+  updateSectionVisibility();
 
 });

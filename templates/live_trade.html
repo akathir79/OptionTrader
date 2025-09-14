@@ -1261,34 +1261,34 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
             </div>
           </div>
 
-          <!-- Horizontal Separator -->
-          <hr class="my-2" style="border-color: #dee2e6;">
+          <!-- Expiry Dates Section (Collapsible) -->
+          <div id="expiryDateSection" class="expiry-date-section" style="display: none; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 8px; padding: 0.75rem; margin-top: 0.5rem; border: 1px solid #dee2e6;">
+            <!-- Horizontal Separator -->
+            <hr class="my-2" style="border-color: #dee2e6; margin-top: 0 !important;">
 
-          <!-- Expiry Dates Row -->
-          <div class="d-flex align-items-center mb-1">
-
-
-
-            <button id="expiryPrevBtn" class="nav-btn-modern me-2">
-              <span class="icon-modern icon-chevron-left"></span>
-            </button>
-            <div class="flex-grow-1 position-relative overflow-hidden">
-              <div id="expiryViewerCarousel" class="d-flex gap-1 transition-all" style="transition: transform 0.3s ease;">
-                <!-- Populated by JavaScript -->
+            <!-- Expiry Dates Row -->
+            <div class="d-flex align-items-center mb-1">
+              <button id="expiryPrevBtn" class="nav-btn-modern me-2">
+                <span class="icon-modern icon-chevron-left"></span>
+              </button>
+              <div class="flex-grow-1 position-relative overflow-hidden">
+                <div id="expiryViewerCarousel" class="d-flex gap-1 transition-all" style="transition: transform 0.3s ease;">
+                  <!-- Populated by JavaScript -->
+                </div>
               </div>
+              <button id="expiryNextBtn" class="nav-btn-modern ms-2">
+                <span class="icon-modern icon-chevron-right"></span>
+              </button>
             </div>
-            <button id="expiryNextBtn" class="nav-btn-modern ms-2">
-              <span class="icon-modern icon-chevron-right"></span>
-            </button>
-          </div>
 
-          <!-- Horizontal Separator -->
-          <hr class="my-1" style="border-color: #dee2e6; margin-top: 0.25rem !important; margin-bottom: 0.25rem !important;">
+            <!-- Horizontal Separator -->
+            <hr class="my-1" style="border-color: #dee2e6; margin-top: 0.25rem !important; margin-bottom: 0.25rem !important;">
+          </div>
         </div>
       </div>
 
-      <!-- Market Data Card -->
-      <div class="card shadow-sm market-data-card mb-1" id="marketDataCard">
+      <!-- Market Data Card (Collapsible) -->
+      <div class="card shadow-sm market-data-card mb-1" id="marketDataCard" style="display: none;">
         <div class="card-body" style="padding: 0.5rem !important;">
           <!-- Market Data Carousel -->
           <div class="d-flex align-items-center position-relative" onmouseenter="document.getElementById('leftPanelToggle').style.opacity='1'" onmouseleave="document.getElementById('leftPanelToggle').style.opacity='0'">
