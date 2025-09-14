@@ -3266,7 +3266,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 button.classList.remove('active');
                 badge.style.display = 'none';
-                firstClickFlags[rowIndex][key] = true;
+                // Don't reset firstClickFlags - once a button has been clicked, modal should always open
             }
             console.log(`[BUTTON UPDATE] Updated ${key} badge for row ${rowIndex}: ${count} (calculated from ${remainingLots} active lots)`);
         }
