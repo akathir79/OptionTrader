@@ -22,7 +22,7 @@ live_market_data = {}
 def get_fyers_client():
     """Get FYERS client with access token"""
     try:
-        broker_row = BrokerSettings.query.filter_by(brokername='fyers').first()
+        broker_row = BrokerSettings.query.filter_by(brokername='FYERS').first()
         if not broker_row or not broker_row.access_token:
             return None, "No FYERS access token found"
             
@@ -93,7 +93,7 @@ def get_option_chain():
             return jsonify({"error": "Symbol parameter required"}), 400
         
         # Get access token from database
-        broker_row = BrokerSettings.query.filter_by(brokername='fyers').first()
+        broker_row = BrokerSettings.query.filter_by(brokername='FYERS').first()
         if not broker_row or not broker_row.access_token:
             return jsonify({"error": "No FYERS access token found"}), 500
             
@@ -293,7 +293,7 @@ def start_websocket_subscription(symbols):
             except:
                 pass
         
-        broker_row = BrokerSettings.query.filter_by(brokername='fyers').first()
+        broker_row = BrokerSettings.query.filter_by(brokername='FYERS').first()
         if not broker_row or not broker_row.access_token:
             print("No FYERS access token found for WebSocket")
             return
