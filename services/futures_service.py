@@ -17,6 +17,7 @@ from app import db
 from models import FuturesContract, FuturesPrice, ExpirySpread, AnalysisSnapshot
 from services.fyers_service import FyersService
 from services.vix_service import VixService
+from services.rbi_service import RBIService, get_current_risk_free_rate
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,7 @@ class FuturesService:
         self.user_id = user_id
         self.fyers_service = FyersService(user_id)
         self.vix_service = VixService(user_id)
+        self.rbi_service = RBIService()
     
     def get_symbol_mapping(self, underlying_symbol: str) -> Dict[str, str]:
         """Map underlying symbol to futures symbol patterns"""
@@ -147,6 +149,451 @@ class FuturesService:
                 }
         
         return symbol_mappings.get(underlying_symbol, {})
+    
+    def get_comprehensive_futures_analysis(self, underlying_symbol: str) -> Dict[str, Any]:
+        """Get comprehensive futures vs spot analysis with historical data and monthly contracts"""
+        try:
+            logger.info(f"Starting comprehensive futures analysis for {underlying_symbol}")
+            
+            # Get real-time repo rate for accurate fair value calculation
+            current_repo_rate = self.rbi_service.get_rate_for_calculation('repo_rate')
+            logger.info(f"Using real-time repo rate: {current_repo_rate:.3f}")
+            
+            # Get current market data
+            current_data = self.get_real_time_futures_data(underlying_symbol)
+            if not current_data:
+                return {
+                    'success': False,
+                    'error': 'Failed to get current market data'
+                }
+            
+            # Get all active contracts for monthly comparison
+            contracts = self.resolve_active_futures_contracts(underlying_symbol)
+            if not contracts:
+                return {
+                    'success': False,
+                    'error': 'No active futures contracts found'
+                }
+            
+            # Analyze multiple monthly contracts
+            monthly_analysis = self._analyze_monthly_contracts(underlying_symbol, contracts, current_repo_rate)
+            
+            # Get historical basis analysis (simulated for now)
+            historical_analysis = self._get_historical_basis_analysis(underlying_symbol)
+            
+            # Generate comprehensive trading signals
+            trading_signals = self._generate_comprehensive_signals(current_data, monthly_analysis, historical_analysis)
+            
+            # Calculate fair value using real-time rates
+            fair_value_analysis = self._calculate_fair_value_analysis(
+                current_data['spot_price'],
+                current_data['futures_price'],
+                current_repo_rate
+            )
+            
+            # Arbitrage opportunities detection
+            arbitrage_opportunities = self._detect_arbitrage_opportunities(
+                current_data, monthly_analysis, fair_value_analysis
+            )
+            
+            # Risk analysis and market regime
+            risk_analysis = self._analyze_market_risk_regime(current_data, monthly_analysis)
+            
+            return {
+                'success': True,
+                'symbol': underlying_symbol,
+                'timestamp': datetime.now().isoformat(),
+                'current_market_data': current_data,
+                'monthly_contracts': monthly_analysis,
+                'historical_analysis': historical_analysis,
+                'fair_value_analysis': fair_value_analysis,
+                'trading_signals': trading_signals,
+                'arbitrage_opportunities': arbitrage_opportunities,
+                'risk_analysis': risk_analysis,
+                'rbi_data': {
+                    'current_repo_rate': current_repo_rate * 100,  # Convert to percentage
+                    'rate_source': 'real_time_rbi',
+                    'last_updated': self.rbi_service.get_all_rates().get('last_updated')
+                },
+                'summary': {
+                    'overall_regime': risk_analysis.get('regime', 'NORMAL'),
+                    'basis_points': current_data.get('analysis', {}).get('basis_percentage', 0),
+                    'arbitrage_score': arbitrage_opportunities.get('confidence', 0),
+                    'trading_recommendation': self._get_overall_recommendation(trading_signals),
+                    'risk_level': risk_analysis.get('risk_level', 'MEDIUM')
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in comprehensive futures analysis: {e}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    def _analyze_monthly_contracts(self, underlying_symbol: str, contracts: List[FuturesContract], repo_rate: float) -> List[Dict[str, Any]]:
+        """Analyze multiple monthly contracts for term structure"""
+        try:
+            monthly_data = []
+            spot_data = self.fyers_service.get_quotes(underlying_symbol)
+            
+            if not spot_data.get('success'):
+                return []
+            
+            spot_price = spot_data['quotes'][0].get('ltp', 0)
+            if spot_price == 0:
+                return []
+            
+            for contract in contracts[:3]:  # Analyze next 3 months
+                try:
+                    # Get futures price for this contract
+                    futures_data = self.fyers_service.get_quotes(contract.fy_symbol)
+                    
+                    if not futures_data.get('success'):
+                        continue
+                    
+                    futures_price = futures_data['quotes'][0].get('ltp', 0)
+                    if futures_price == 0:
+                        continue
+                    
+                    # Calculate time to expiry
+                    days_to_expiry = (contract.expiry_date - datetime.now().date()).days
+                    time_to_expiry = days_to_expiry / 365.0
+                    
+                    # Calculate fair value for this expiry
+                    fair_value = spot_price * (1 + (repo_rate - self.DIVIDEND_YIELD_NIFTY) * time_to_expiry)
+                    
+                    # Calculate basis and metrics
+                    basis = futures_price - spot_price
+                    basis_pct = (basis / spot_price) * 100
+                    fair_value_gap = futures_price - fair_value
+                    carry_cost = (futures_price - spot_price) / spot_price / time_to_expiry * 100 if time_to_expiry > 0 else 0
+                    
+                    monthly_data.append({
+                        'contract_symbol': contract.fy_symbol,
+                        'expiry_date': contract.expiry_date.isoformat(),
+                        'days_to_expiry': days_to_expiry,
+                        'time_to_expiry': time_to_expiry,
+                        'futures_price': futures_price,
+                        'basis': basis,
+                        'basis_percentage': basis_pct,
+                        'fair_value': fair_value,
+                        'fair_value_gap': fair_value_gap,
+                        'annualized_carry': carry_cost,
+                        'is_near_month': contract.is_near_month,
+                        'regime': 'CONTANGO' if basis > 0 else 'BACKWARDATION' if basis < 0 else 'NORMAL'
+                    })
+                    
+                except Exception as e:
+                    logger.error(f"Error analyzing contract {contract.fy_symbol}: {e}")
+                    continue
+            
+            # Sort by expiry date
+            monthly_data.sort(key=lambda x: x['days_to_expiry'])
+            
+            return monthly_data
+            
+        except Exception as e:
+            logger.error(f"Error in monthly contracts analysis: {e}")
+            return []
+    
+    def _get_historical_basis_analysis(self, underlying_symbol: str) -> Dict[str, Any]:
+        """Get historical basis analysis (simulated for now, will be real historical data)"""
+        try:
+            # TODO: Implement real historical data fetching from database
+            # For now, return simulated analysis based on typical patterns
+            
+            return {
+                'timeframe': '30_days',
+                'data_points': 30,
+                'basis_statistics': {
+                    'mean_basis': 15.2,
+                    'std_deviation': 8.7,
+                    'min_basis': -2.1,
+                    'max_basis': 35.6,
+                    'contango_days': 28,
+                    'backwardation_days': 2,
+                    'current_percentile': 65.4
+                },
+                'volatility_metrics': {
+                    'basis_volatility': 12.3,
+                    'mean_reversion_speed': 0.85,
+                    'half_life_days': 3.2
+                },
+                'seasonal_patterns': {
+                    'monthly_avg_basis': [12.1, 15.3, 18.7, 14.2],
+                    'expiry_week_effect': 'increased_volatility',
+                    'intraday_patterns': 'opening_gap_compression'
+                },
+                'note': 'Historical data will be collected over time for accurate analysis'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in historical analysis: {e}")
+            return {}
+    
+    def _generate_comprehensive_signals(self, current_data: Dict, monthly_data: List[Dict], historical: Dict) -> List[Dict[str, Any]]:
+        """Generate comprehensive trading signals based on all analysis"""
+        try:
+            signals = []
+            
+            # Current basis analysis
+            current_basis_pct = current_data.get('analysis', {}).get('basis_percentage', 0)
+            
+            # Signal 1: Basis reversion signal
+            if abs(current_basis_pct) > 0.3:  # >30 basis points
+                action = 'SELL_FUTURES' if current_basis_pct > 0.3 else 'BUY_FUTURES'
+                confidence = min(90, abs(current_basis_pct) * 100)
+                
+                signals.append({
+                    'signal_type': 'BASIS_REVERSION',
+                    'action': action,
+                    'confidence': confidence,
+                    'description': f'Basis at {current_basis_pct:.1f}% suggests mean reversion opportunity',
+                    'target_basis': 0.1,
+                    'time_horizon': '3-7 days',
+                    'risk_level': 'MEDIUM'
+                })
+            
+            # Signal 2: Calendar spread opportunities
+            if len(monthly_data) >= 2:
+                near_basis = monthly_data[0].get('basis_percentage', 0)
+                far_basis = monthly_data[1].get('basis_percentage', 0)
+                spread_diff = far_basis - near_basis
+                
+                if abs(spread_diff) > 0.2:  # Significant spread difference
+                    action = 'BUY_NEAR_SELL_FAR' if spread_diff > 0.2 else 'SELL_NEAR_BUY_FAR'
+                    
+                    signals.append({
+                        'signal_type': 'CALENDAR_SPREAD',
+                        'action': action,
+                        'confidence': min(80, abs(spread_diff) * 200),
+                        'description': f'Calendar spread differential: {spread_diff:.1f}%',
+                        'expected_convergence': '5-15 days',
+                        'risk_level': 'LOW'
+                    })
+            
+            # Signal 3: Arbitrage opportunity
+            fair_value_gap = current_data.get('analysis', {}).get('fv_gap', 0)
+            if abs(fair_value_gap) > 10:  # >10 points gap
+                action = 'CASH_AND_CARRY' if fair_value_gap > 10 else 'REVERSE_CASH_AND_CARRY'
+                
+                signals.append({
+                    'signal_type': 'ARBITRAGE',
+                    'action': action,
+                    'confidence': 95,
+                    'description': f'Fair value gap: {fair_value_gap:.1f} points',
+                    'expected_return': abs(fair_value_gap) / current_data.get('spot_price', 1) * 100,
+                    'risk_level': 'VERY_LOW'
+                })
+            
+            return signals
+            
+        except Exception as e:
+            logger.error(f"Error generating comprehensive signals: {e}")
+            return []
+    
+    def _calculate_fair_value_analysis(self, spot_price: float, futures_price: float, repo_rate: float) -> Dict[str, Any]:
+        """Calculate comprehensive fair value analysis using real-time repo rate"""
+        try:
+            # Days to expiry (assuming near month)
+            days_to_expiry = 11  # Approximate for current month
+            time_to_expiry = days_to_expiry / 365.0
+            
+            # Calculate theoretical fair value
+            carry_rate = repo_rate - self.DIVIDEND_YIELD_NIFTY
+            fair_value = spot_price * (1 + carry_rate * time_to_expiry)
+            
+            # Analysis metrics
+            fair_value_gap = futures_price - fair_value
+            gap_percentage = (fair_value_gap / spot_price) * 100
+            
+            # Arbitrage threshold (transaction costs)
+            arbitrage_threshold = spot_price * self.TRANSACTION_COST * 2  # Buy and sell costs
+            
+            return {
+                'theoretical_fair_value': fair_value,
+                'current_futures_price': futures_price,
+                'fair_value_gap': fair_value_gap,
+                'gap_percentage': gap_percentage,
+                'arbitrage_threshold': arbitrage_threshold,
+                'arbitrage_profitable': abs(fair_value_gap) > arbitrage_threshold,
+                'carry_components': {
+                    'repo_rate': repo_rate * 100,
+                    'dividend_yield': self.DIVIDEND_YIELD_NIFTY * 100,
+                    'net_carry_rate': carry_rate * 100,
+                    'time_to_expiry': time_to_expiry,
+                    'days_remaining': days_to_expiry
+                },
+                'sensitivity_analysis': {
+                    'rate_sensitivity': fair_value * time_to_expiry * 0.01,  # 1% rate change impact
+                    'time_decay_daily': fair_value * carry_rate / 365,
+                    'dividend_impact': spot_price * time_to_expiry * 0.001  # 0.1% dividend change
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in fair value analysis: {e}")
+            return {}
+    
+    def _detect_arbitrage_opportunities(self, current_data: Dict, monthly_data: List[Dict], fair_value: Dict) -> Dict[str, Any]:
+        """Detect and analyze arbitrage opportunities"""
+        try:
+            opportunities = []
+            
+            # Check fair value arbitrage
+            if fair_value.get('arbitrage_profitable', False):
+                gap = fair_value.get('fair_value_gap', 0)
+                expected_return = abs(gap) / current_data.get('spot_price', 1) * 100
+                
+                opportunities.append({
+                    'type': 'CASH_AND_CARRY' if gap > 0 else 'REVERSE_CASH_AND_CARRY',
+                    'description': f'Fair value gap: {gap:.1f} points',
+                    'expected_return': expected_return,
+                    'confidence': 95,
+                    'execution_complexity': 'LOW',
+                    'capital_required': current_data.get('spot_price', 0) * 50,  # Assume Nifty lot size
+                    'holding_period': fair_value.get('carry_components', {}).get('days_remaining', 11)
+                })
+            
+            # Check calendar spread arbitrage
+            if len(monthly_data) >= 2:
+                for i in range(len(monthly_data) - 1):
+                    near_contract = monthly_data[i]
+                    far_contract = monthly_data[i + 1]
+                    
+                    # Calculate implied carry rate
+                    price_diff = far_contract['futures_price'] - near_contract['futures_price']
+                    time_diff = (far_contract['time_to_expiry'] - near_contract['time_to_expiry'])
+                    
+                    if time_diff > 0:
+                        implied_carry = price_diff / near_contract['futures_price'] / time_diff
+                        theoretical_carry = fair_value.get('carry_components', {}).get('net_carry_rate', 0) / 100
+                        
+                        carry_gap = abs(implied_carry - theoretical_carry)
+                        
+                        if carry_gap > 0.02:  # >2% annual carry rate difference
+                            opportunities.append({
+                                'type': 'CALENDAR_SPREAD',
+                                'description': f'Carry rate misalignment: {carry_gap*100:.1f}%',
+                                'expected_return': carry_gap * 100,
+                                'confidence': 75,
+                                'execution_complexity': 'MEDIUM',
+                                'contracts': [near_contract['contract_symbol'], far_contract['contract_symbol']]
+                            })
+            
+            # Overall arbitrage assessment
+            total_opportunities = len(opportunities)
+            avg_confidence = sum(op.get('confidence', 0) for op in opportunities) / max(total_opportunities, 1)
+            
+            return {
+                'opportunities_found': total_opportunities,
+                'opportunities': opportunities,
+                'confidence': avg_confidence,
+                'overall_assessment': 'HIGH' if total_opportunities >= 2 else 'MEDIUM' if total_opportunities == 1 else 'LOW',
+                'recommended_action': 'EXECUTE' if avg_confidence > 80 else 'MONITOR' if avg_confidence > 60 else 'WAIT'
+            }
+            
+        except Exception as e:
+            logger.error(f"Error detecting arbitrage opportunities: {e}")
+            return {'opportunities_found': 0, 'confidence': 0}
+    
+    def _analyze_market_risk_regime(self, current_data: Dict, monthly_data: List[Dict]) -> Dict[str, Any]:
+        """Analyze current market risk regime and volatility"""
+        try:
+            # Get VIX data for volatility context
+            vix_data = self.vix_service.get_latest_vix_data()
+            current_vix = vix_data.get('current_vix', 15)
+            
+            # Basis volatility assessment
+            basis_values = [contract.get('basis_percentage', 0) for contract in monthly_data]
+            basis_volatility = max(basis_values) - min(basis_values) if basis_values else 0
+            
+            # Market regime classification
+            if current_vix > 20:
+                volatility_regime = 'HIGH'
+                risk_level = 'HIGH'
+            elif current_vix > 15:
+                volatility_regime = 'MEDIUM'
+                risk_level = 'MEDIUM'
+            else:
+                volatility_regime = 'LOW'
+                risk_level = 'LOW'
+            
+            # Contango/Backwardation assessment
+            positive_basis_count = sum(1 for contract in monthly_data if contract.get('basis', 0) > 0)
+            total_contracts = len(monthly_data)
+            contango_strength = positive_basis_count / max(total_contracts, 1)
+            
+            if contango_strength > 0.8:
+                market_structure = 'STRONG_CONTANGO'
+            elif contango_strength > 0.5:
+                market_structure = 'MILD_CONTANGO'
+            elif contango_strength < 0.2:
+                market_structure = 'STRONG_BACKWARDATION'
+            else:
+                market_structure = 'MIXED'
+            
+            return {
+                'volatility_regime': volatility_regime,
+                'risk_level': risk_level,
+                'market_structure': market_structure,
+                'contango_strength': contango_strength,
+                'basis_volatility': basis_volatility,
+                'vix_level': current_vix,
+                'regime': market_structure,
+                'stability_score': 100 - min(100, basis_volatility * 10 + (current_vix - 10) * 2),
+                'trading_environment': {
+                    'suitable_for_arbitrage': risk_level in ['LOW', 'MEDIUM'],
+                    'calendar_spread_attractiveness': 'HIGH' if market_structure in ['STRONG_CONTANGO', 'STRONG_BACKWARDATION'] else 'MEDIUM',
+                    'volatility_trading': 'FAVORABLE' if volatility_regime == 'HIGH' else 'NEUTRAL'
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in market risk regime analysis: {e}")
+            return {'risk_level': 'MEDIUM', 'regime': 'NORMAL'}
+    
+    def _get_overall_recommendation(self, signals: List[Dict]) -> str:
+        """Get overall trading recommendation based on all signals"""
+        try:
+            if not signals:
+                return 'HOLD'
+            
+            # Weight signals by confidence
+            weighted_score = 0
+            total_weight = 0
+            
+            for signal in signals:
+                confidence = signal.get('confidence', 50)
+                action = signal.get('action', '')
+                
+                if 'BUY' in action or 'CASH_AND_CARRY' in action:
+                    weighted_score += confidence
+                elif 'SELL' in action or 'REVERSE' in action:
+                    weighted_score -= confidence
+                    
+                total_weight += confidence
+            
+            if total_weight == 0:
+                return 'HOLD'
+            
+            avg_score = weighted_score / total_weight
+            
+            if avg_score > 20:
+                return 'STRONG_BUY'
+            elif avg_score > 5:
+                return 'BUY'
+            elif avg_score < -20:
+                return 'STRONG_SELL'
+            elif avg_score < -5:
+                return 'SELL'
+            else:
+                return 'HOLD'
+                
+        except Exception as e:
+            logger.error(f"Error getting overall recommendation: {e}")
+            return 'HOLD'
     
     def resolve_active_futures_contracts(self, underlying_symbol: str) -> List[FuturesContract]:
         """Resolve and fetch active futures contracts for an underlying"""

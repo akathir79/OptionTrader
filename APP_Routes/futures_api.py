@@ -51,7 +51,7 @@ def get_current_futures_data():
             'error': 'Internal server error'
         }), 500
 
-@futures_bp.route('/analysis')
+@futures_bp.route('/deep-analysis')
 def get_futures_spot_analysis():
     """Get comprehensive futures vs spot analysis with historical data and monthly contracts"""
     try:
