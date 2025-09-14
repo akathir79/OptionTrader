@@ -5768,20 +5768,24 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   overflow: auto !important;
 }
 
-/* Symbol Selection Card - Forced height reduction with high specificity */
+/* Symbol Selection Card - Ultra-aggressive vertical height reduction */
 .left-panel .symbol-selection-card {
   background: #e8eaf6 !important;
   background-color: #e8eaf6 !important;
-  max-height: 60px !important; /* Even smaller forced height */
+  height: 45px !important; /* Fixed ultra-small height */
+  max-height: 45px !important; 
+  min-height: 45px !important;
   overflow: hidden !important;
-  margin-bottom: 4px !important;
+  margin-bottom: 2px !important;
 }
 
 .left-panel .symbol-selection-card .card-body {
   background: #e8eaf6 !important;
   background-color: #e8eaf6 !important;
-  padding: 3px 6px !important; /* Minimal padding */
+  padding: 2px 4px !important; /* Ultra-minimal padding */
+  height: 41px !important; /* Fixed body height */
   line-height: 1 !important;
+  overflow: hidden !important;
 }
 
 /* Market Data Carousel - Forced height reduction */
@@ -5827,32 +5831,41 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
 
 /* Aggressive padding reduction for all elements */
 .left-panel .symbol-selection-card .row {
-  margin-bottom: 0 !important; /* Remove all row margins */
-  margin-top: 0 !important;
+  margin: 0 !important; /* Remove all margins */
+  height: 18px !important; /* Fixed row height */
+  align-items: center !important;
 }
 
 .left-panel .symbol-selection-card .col-md-4, 
 .left-panel .symbol-selection-card .col-md-3,
 .left-panel .symbol-selection-card .col-auto {
-  padding: 2px !important; /* Minimal column padding */
+  padding: 0 2px !important; /* Minimal column padding */
+  height: 18px !important; /* Match row height */
+  display: flex !important;
+  align-items: center !important;
 }
 
 .left-panel .symbol-selection-card .form-select {
-  padding: 2px 6px !important; /* Ultra-minimal padding */
-  font-size: 10px !important; /* Very small font */
-  height: 20px !important; /* Fixed small height */
+  padding: 1px 4px !important; /* Ultra-minimal padding */
+  font-size: 9px !important; /* Tiny font */
+  height: 16px !important; /* Very small height */
   line-height: 1 !important;
+  border: 1px solid #ccc !important;
+  margin: 0 !important;
 }
 
 .left-panel .symbol-selection-card .form-label {
-  font-size: 9px !important; /* Tiny labels */
-  margin-bottom: 2px !important;
+  font-size: 8px !important; /* Very tiny labels */
+  margin-bottom: 1px !important;
+  margin-top: 0 !important;
   line-height: 1 !important;
+  padding: 0 !important;
 }
 
 .left-panel .symbol-selection-card hr {
-  margin: 2px 0 !important; /* Almost no separator spacing */
+  margin: 1px 0 !important; /* Minimal separator spacing */
   border-width: 0.5px !important;
+  height: 1px !important;
 }
 
 /* Market data text - ultra compact */
