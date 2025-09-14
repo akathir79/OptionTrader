@@ -230,6 +230,16 @@
   overflow-y: scroll !important;
   overflow-x: hidden !important;
   height: 100% !important;
+  border: 2px solid #6c757d !important;
+  border-radius: 4px !important;
+  animation: borderPulse 3s ease-in-out infinite !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+}
+
+/* Professional border animation */
+@keyframes borderPulse {
+  0%, 100% { border-color: #6c757d; }
+  50% { border-color: #007bff; }
 }
 
 /* Ensure scrollbar is always visible when needed */
