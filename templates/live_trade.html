@@ -219,13 +219,34 @@
 .panel-fullscreen #optionChainContainer {
   flex: 1 1 auto !important;
   min-height: 0 !important;
-  overflow: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .panel-fullscreen .table-container {
   flex: 1 1 auto !important;
   min-height: 0 !important;
-  overflow: auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: 100% !important;
+}
+
+/* Ensure scrollbar is always visible when needed */
+.panel-fullscreen .table-container::-webkit-scrollbar {
+  width: 8px !important;
+}
+
+.panel-fullscreen .table-container::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+}
+
+.panel-fullscreen .table-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1 !important;
+  border-radius: 4px !important;
+}
+
+.panel-fullscreen .table-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8 !important;
 }
 
 /* Compact card spacing in fullscreen mode */
