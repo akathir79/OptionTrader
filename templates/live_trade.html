@@ -225,8 +225,9 @@
 
 .panel-fullscreen .table-container {
   flex: 1 1 auto !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
+  min-height: 500px !important;
+  max-height: calc(100vh - 250px) !important;
+  overflow-y: scroll !important;
   overflow-x: hidden !important;
   height: 100% !important;
 }
