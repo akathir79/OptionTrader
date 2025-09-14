@@ -111,15 +111,54 @@ class WebSocketHandler {
             const data = await response.json();
             
             if (data.success) {
+                // Store full quote data globally for modal access
+                window.currentQuoteData = {
+                    symbol: data.symbol,
+                    spot_price: data.spot_price,
+                    day_open: data.day_open,
+                    change: data.change,
+                    change_percent: data.change_percent,
+                    gap_abs: data.gap_abs,
+                    gap_pct: data.gap_pct,
+                    fyers_symbol: data.fyers_symbol,
+                    timestamp: data.timestamp
+                };
+                
                 this.updateSpotPriceDisplay(data.spot_price);
                 this.updateATMDisplay(data.spot_price);
-                console.log(`Spot price updated: ${data.spot_price} for ${this.currentSymbol}`);
+                
+                // Update day open display if element exists
+                this.updateDayOpenDisplay(data.day_open, data.gap_abs, data.gap_pct);
+                
+                console.log(`Spot updated: ${data.spot_price} | Open: ${data.day_open} | Gap: ${data.gap_abs?.toFixed(2)} (${data.gap_pct?.toFixed(2)}%)`);
             } else {
                 console.error('Spot price update failed:', data.error);
             }
         } catch (error) {
             console.error('Error updating spot price:', error);
         }
+    }
+    
+    updateDayOpenDisplay(dayOpen, gapAbs, gapPct) {
+        // Update day open price display elements
+        const dayOpenElements = document.querySelectorAll('.day-open-value');
+        dayOpenElements.forEach(element => {
+            element.textContent = dayOpen ? dayOpen.toFixed(2) : '--';
+        });
+        
+        // Update gap analysis display
+        const gapElements = document.querySelectorAll('.gap-analysis');
+        gapElements.forEach(element => {
+            if (gapAbs && gapPct) {
+                const gapText = `${gapAbs > 0 ? '+' : ''}${gapAbs.toFixed(2)} (${gapPct.toFixed(2)}%)`;
+                const gapClass = gapAbs > 0 ? 'text-success' : gapAbs < 0 ? 'text-danger' : 'text-muted';
+                element.innerHTML = `<span class="${gapClass}">${gapText}</span>`;
+                element.style.cursor = 'pointer';
+                element.title = 'Click for gap analysis';
+            } else {
+                element.textContent = '--';
+            }
+        });
     }
     
     startVolumeOIUpdates() {

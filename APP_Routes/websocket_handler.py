@@ -11,6 +11,7 @@ from datetime import datetime
 import pytz
 from app import db
 from models import BrokerSettings
+from services.fyers_service import FyersService
 
 websocket_bp = Blueprint('websocket', __name__)
 
@@ -44,31 +45,33 @@ def get_fyers_client():
 
 @websocket_bp.route('/get_spot_price', methods=['GET'])
 def get_spot_price():
-    """Get current spot price for a symbol"""
+    """Get current spot price and day open data for a symbol with gap analysis"""
     try:
         symbol = request.args.get('symbol', '')
         if not symbol:
             return jsonify({"error": "Symbol parameter required"}), 400
             
-        fyers, error = get_fyers_client()
-        if error:
-            return jsonify({"error": error}), 500
-            
-        # Get spot price
-        spot_data = fyers.quotes({"symbols": symbol})
+        # Use FyersService to get comprehensive quote data
+        fyers_service = FyersService(user_id=0)  # Using default user_id for now
+        quotes_data = fyers_service.get_quotes(symbol)
         
-        # ⚠️ CRITICAL: Fyers API response format - response['d'] is LIST not dict!
-        # response['d'][0] gets first element, then ['v'] gets values dict
-        if spot_data.get('s') == 'ok' and spot_data.get('d'):
-            spot_price = spot_data['d'][0]['v'].get('lp', 0)
-            return jsonify({
-                "success": True,
-                "symbol": symbol,
-                "spot_price": spot_price,
-                "timestamp": datetime.now(pytz.timezone('Asia/Kolkata')).isoformat()
-            })
-        else:
-            return jsonify({"error": "Failed to get spot price"}), 500
+        if 'error' in quotes_data:
+            return jsonify({"error": quotes_data['error']}), 500
+            
+        # Return comprehensive data including day open and gap analysis
+        return jsonify({
+            "success": True,
+            "symbol": quotes_data['symbol'],
+            "spot_price": quotes_data['ltp'],
+            "day_open": quotes_data['day_open'],
+            "change": quotes_data['change'],
+            "change_percent": quotes_data['change_percent'],
+            "gap_abs": quotes_data['gap_abs'],
+            "gap_pct": quotes_data['gap_pct'],
+            "fyers_symbol": quotes_data['fyers_symbol'],
+            "is_cached": quotes_data.get('is_cached', False),
+            "timestamp": quotes_data['timestamp']
+        })
             
     except Exception as e:
         return jsonify({"error": str(e)}), 500

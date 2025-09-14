@@ -27,6 +27,9 @@ class FyersService:
         self.user_id = user_id
         self.client = None
         self._settings = None
+        # Cache for day open prices (constant during trading day)
+        self._day_open_cache = {}
+        self._cache_date = None
     
     def get_required_credentials(self) -> Dict[str, str]:
         """Get required credentials for Fyers setup"""
@@ -496,4 +499,101 @@ class FyersService:
             return response
         except Exception as e:
             logger.error(f"Failed to get tradebook: {str(e)}")
+            return {'error': str(e)}
+    
+    def _map_symbol_to_fyers(self, symbol: str) -> str:
+        """Map symbol from UI to Fyers format"""
+        symbol = symbol.upper().strip()
+        
+        # Index symbols
+        if symbol in ['NIFTY', 'NIFTY50', 'NIFTY 50']:
+            return 'NSE:NIFTY50-INDEX'
+        elif symbol in ['BANKNIFTY', 'NIFTYBANK', 'BANK NIFTY']:
+            return 'NSE:NIFTYBANK-INDEX'
+        elif symbol == 'FINNIFTY':
+            return 'NSE:FINNIFTY-INDEX'
+        elif symbol == 'MIDCPNIFTY':
+            return 'NSE:MIDCPNIFTY-INDEX'
+        
+        # For individual stocks, assume NSE equity format
+        # Remove any suffixes like -EQ if already present
+        if '-EQ' in symbol:
+            base_symbol = symbol.split('-')[0]
+        else:
+            base_symbol = symbol
+            
+        return f'NSE:{base_symbol}-EQ'
+    
+    def get_quotes(self, symbol: str) -> Dict[str, Any]:
+        """Get real-time quotes including day open price for a symbol"""
+        client = self.get_client()
+        if not client:
+            return {'error': 'Client not available'}
+        
+        # Map symbol to Fyers format
+        fyers_symbol = self._map_symbol_to_fyers(symbol)
+        
+        # Check cache date (reset cache on new trading day)
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        if self._cache_date != current_date:
+            self._day_open_cache.clear()
+            self._cache_date = current_date
+        
+        try:
+            # Fetch quotes from Fyers API
+            data = {"symbols": fyers_symbol}
+            response = client.quotes(data=data)
+            
+            if response.get('s') == 'ok' and response.get('d'):
+                quote_data = response['d'][0]['v']
+                
+                # Successfully got quotes data from Fyers API
+                
+                # Extract relevant fields from Fyers response
+                # Fields: lp=last_price, open_price=day_open, ch=change, chp=change_percent
+                ltp = quote_data.get('lp', 0)
+                day_open = quote_data.get('open_price', 0)
+                change = quote_data.get('ch', 0)
+                change_percent = quote_data.get('chp', 0)
+                
+                # Calculate gap analysis
+                gap_abs = ltp - day_open if (ltp and day_open) else 0
+                gap_pct = (gap_abs / day_open * 100) if day_open else 0
+                
+                # Cache day open price (constant during trading day)
+                self._day_open_cache[symbol] = day_open
+                
+                result = {
+                    'symbol': symbol,
+                    'fyers_symbol': fyers_symbol,
+                    'ltp': ltp,
+                    'day_open': day_open,
+                    'change': change,
+                    'change_percent': change_percent,
+                    'gap_abs': gap_abs,
+                    'gap_pct': gap_pct,
+                    'timestamp': datetime.now().isoformat(),
+                    'is_cached': False
+                }
+                
+                logger.info(f"Fetched quotes for {symbol}: LTP={ltp}, Open={day_open}, Gap={gap_abs:.2f}({gap_pct:.2f}%)")
+                return result
+                
+            else:
+                logger.error(f"Failed to get quotes for {fyers_symbol}: {response}")
+                return {'error': f'No data available for symbol {symbol}'}
+                
+        except Exception as e:
+            logger.error(f"Failed to get quotes for {symbol}: {str(e)}")
+            
+            # Return cached open price if available
+            if symbol in self._day_open_cache:
+                return {
+                    'symbol': symbol,
+                    'fyers_symbol': fyers_symbol,
+                    'day_open': self._day_open_cache[symbol],
+                    'error': f'Live data unavailable: {str(e)}',
+                    'is_cached': True
+                }
+            
             return {'error': str(e)}
