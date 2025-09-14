@@ -853,9 +853,9 @@ class WebSocketHandler {
                     window.updatePositionTableLivePrices();
                 }
                 
-                // Update spot price if available
-                if (result.data['NSE:NIFTY50-INDEX']) {
-                    const newSpotPrice = result.data['NSE:NIFTY50-INDEX'].ltp;
+                // Update spot price if available for current symbol
+                if (this.currentSymbol && result.data[this.currentSymbol]) {
+                    const newSpotPrice = result.data[this.currentSymbol].ltp;
                     if (newSpotPrice !== this.currentSpotPrice) {
                         this.updateSpotPriceDisplay(newSpotPrice);
                         this.updateATMDisplay(newSpotPrice);
