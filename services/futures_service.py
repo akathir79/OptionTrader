@@ -132,6 +132,20 @@ class FuturesService:
                     'index_token': underlying_symbol
                 }
         
+        # Handle MCX commodity futures (MCX:CRUDEOIL format)
+        if underlying_symbol.startswith('MCX:'):
+            # Extract commodity symbol (e.g., MCX:CRUDEOIL -> CRUDEOIL)
+            parts = underlying_symbol.split(':')
+            if len(parts) == 2:
+                exchange_part = parts[0]  # MCX
+                commodity_part = parts[1]  # CRUDEOIL
+                
+                return {
+                    'root': commodity_part,
+                    'pattern': f'{exchange_part}:{commodity_part}{{expiry_code}}',
+                    'index_token': underlying_symbol
+                }
+        
         return symbol_mappings.get(underlying_symbol, {})
     
     def resolve_active_futures_contracts(self, underlying_symbol: str) -> List[FuturesContract]:
@@ -261,6 +275,46 @@ class FuturesService:
     def get_real_time_futures_data(self, underlying_symbol: str) -> Optional[Dict[str, Any]]:
         """Get real-time futures price data with basis analysis"""
         try:
+            # Special handling for MCX commodities - they are traded as futures, not spot
+            if underlying_symbol.startswith('MCX:') and '25SEP' in underlying_symbol:
+                # This is already a commodity futures contract
+                futures_data = self.fyers_service.get_quotes(underlying_symbol)
+                logger.info(f"MCX Commodity futures data: {futures_data}")
+                
+                if not futures_data.get('success'):
+                    logger.error(f"Failed to get MCX futures data for {underlying_symbol}")
+                    return None
+                    
+                if not futures_data.get('quotes') or len(futures_data['quotes']) == 0:
+                    logger.error(f"No MCX futures quotes data: {futures_data}")
+                    return None
+                
+                quote_data = futures_data['quotes'][0]
+                if isinstance(quote_data, dict) and 'v' in quote_data:
+                    futures_price = quote_data['v'].get('lp', 0)
+                else:
+                    futures_price = quote_data.get('ltp', 0)
+                
+                if futures_price == 0:
+                    logger.error(f"No valid MCX futures price found: {quote_data}")
+                    return None
+                
+                # For commodities, spot = futures (no basis analysis needed)
+                return {
+                    'underlying_symbol': underlying_symbol,
+                    'spot_price': futures_price,
+                    'futures_price': futures_price,
+                    'futures_symbol': underlying_symbol,
+                    'expiry_date': '2025-09-17',  # September expiry
+                    'analysis': {
+                        'basis_percentage': 0.0,
+                        'regime': 'NEUTRAL',
+                        'arbitrage_opportunity': False,
+                        'confidence_score': 1.0
+                    }
+                }
+            
+            # Standard handling for NSE/BSE equity symbols
             # Get spot price
             spot_data = self.fyers_service.get_quotes(underlying_symbol)
             logger.info(f"Spot data response: {spot_data}")

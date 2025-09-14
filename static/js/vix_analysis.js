@@ -245,8 +245,14 @@ function getCurrentSelectedSymbol() {
         const exchange = exchangeSelect?.value || 'NSE';
         const symbol = symbolSelect.value;
         
-        // Construct symbol for stocks: NSE:SYMBOL-EQ, BSE:SYMBOL-EQ
-        return `${exchange}:${symbol}-EQ`;
+        // Handle different exchange types
+        if (exchange === 'MCX') {
+            // MCX commodities: MCX:CRUDEOIL, MCX:GOLD, etc.
+            return `${exchange}:${symbol}`;
+        } else {
+            // Equity markets: NSE:SYMBOL-EQ, BSE:SYMBOL-EQ
+            return `${exchange}:${symbol}-EQ`;
+        }
     }
     
     // Priority 2: Check if an index is selected (NIFTY, BANKNIFTY, etc.)
