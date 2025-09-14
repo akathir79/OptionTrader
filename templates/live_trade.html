@@ -1234,9 +1234,9 @@
       <div class="card shadow-sm mb-1 market-data-card" id="marketDataCard">
         <div class="card-body" style="padding: 0.5rem !important;">
           <!-- Market Data Carousel -->
-          <div class="d-flex align-items-center position-relative">
+          <div class="d-flex align-items-center position-relative" onmouseenter="document.getElementById('leftPanelToggle').style.opacity='1'" onmouseleave="document.getElementById('leftPanelToggle').style.opacity='0'">
             <!-- Panel Toggle Button on Market Data Card -->
-            <div class="panel-toggle-btn" id="leftPanelToggle" title="Collapse/Expand Symbol Selector" style="position: absolute; top: -8px; left: 5px; width: 20px; height: 20px; background: rgba(255, 255, 255, 0.95); border: 2px solid #007bff; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; color: #007bff; font-weight: bold; transition: all 0.2s ease; font-size: 10px;">
+            <div class="panel-toggle-btn" id="leftPanelToggle" title="Collapse/Expand Symbol Selector" style="position: absolute; top: -8px; left: 5px; width: 20px; height: 20px; background: rgba(255, 255, 255, 0.95); border: 2px solid #007bff; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; color: #007bff; font-weight: bold; transition: all 0.2s ease; font-size: 10px; opacity: 0;">
               ^
             </div>
             <button id="marketDataPrevBtn" class="nav-btn-modern me-2">
