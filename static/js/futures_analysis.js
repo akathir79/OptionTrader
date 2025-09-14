@@ -50,8 +50,19 @@ async function fetchFuturesAnalysis(symbol) {
         
         const data = await response.json();
         
+        // Check if data exists and is valid
+        if (!data) {
+            throw new Error('No data received from futures analysis API');
+        }
+        
         if (!data.success) {
             throw new Error(data.error || 'Failed to fetch futures analysis');
+        }
+        
+        // Validate required data structure
+        if (!data.symbol) {
+            console.warn('⚠️ Data missing symbol field, using provided symbol:', symbol);
+            data.symbol = symbol;
         }
         
         console.log('✅ Futures analysis data received:', data);
@@ -106,9 +117,14 @@ function createFuturesAnalysisModalHTML(data, loading) {
         `;
     }
     
-    // Full modal with data
-    const symbol = data.symbol;
-    const currentData = data.current_market_data;
+    // Full modal with data - add null checking
+    if (!data) {
+        console.error('❌ No data provided to createFuturesAnalysisModalHTML');
+        return showErrorInFuturesModal('No analysis data available');
+    }
+    
+    const symbol = data.symbol || 'Unknown Symbol';
+    const currentData = data.current_market_data || {};
     const monthlyContracts = data.monthly_contracts || [];
     const fairValue = data.fair_value_analysis || {};
     const signals = data.trading_signals || [];
