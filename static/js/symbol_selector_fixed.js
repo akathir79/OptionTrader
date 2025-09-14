@@ -241,9 +241,9 @@ document.addEventListener("DOMContentLoaded", () => {
       window.tradingState.currentExpiry = e.target.value;
       
       // Start WebSocket for option chain updates if we have both symbol and expiry
-      if (window.webSocketHandler && window.tradingState.currentSymbol) {
-        console.log(`Starting WebSocket for symbol: ${window.tradingState.currentSymbol}, expiry: ${e.target.value}`);
-        window.webSocketHandler.startLiveData(window.tradingState.currentSymbol, e.target.value);
+      if (window.webSocketHandler && window.webSocketHandler.currentSymbol) {
+        console.log(`Starting WebSocket for symbol: ${window.webSocketHandler.currentSymbol}, expiry: ${e.target.value}`);
+        window.webSocketHandler.startLiveData(window.webSocketHandler.currentSymbol, e.target.value);
       }
     }
 
@@ -301,9 +301,22 @@ document.addEventListener("DOMContentLoaded", () => {
           
           console.log(`Symbol lookup: ${data.symbol_code}, Lot Size: ${data.lot_size}`);
           
+          // Clear existing option chain table when symbol changes
+          const tableBody = document.querySelector('#optionChainTable tbody');
+          if (tableBody) {
+            tableBody.innerHTML = '';
+            console.log('🗑️ Cleared option chain table for new symbol');
+          }
+          
           // Start spot price updates immediately after symbol lookup
           if (window.webSocketHandler) {
             window.webSocketHandler.startLiveData(data.symbol_code);
+            
+            // If there's already an expiry selected, refresh the option chain with new symbol
+            if (window.tradingState && window.tradingState.currentExpiry) {
+              console.log(`🔄 Refreshing option chain for new symbol: ${data.symbol_code} with existing expiry: ${window.tradingState.currentExpiry}`);
+              window.webSocketHandler.startLiveData(data.symbol_code, window.tradingState.currentExpiry);
+            }
           }
         } else {
           console.warn("Symbol lookup failed:", data.error);

@@ -71,6 +71,12 @@ class WebSocketHandler {
                 this.updateInterval = null;
             }
             
+            // Clear volume/OI update interval to prevent using stale symbol
+            if (this.volumeOIUpdateInterval) {
+                clearInterval(this.volumeOIUpdateInterval);
+                this.volumeOIUpdateInterval = null;
+            }
+            
             // Start spot price updates
             this.startSpotPriceUpdates();
             
