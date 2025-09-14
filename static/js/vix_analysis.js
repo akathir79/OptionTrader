@@ -15,6 +15,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update VIX data every 30 seconds
     updateVixData();
     setInterval(updateVixData, 30000);
+    
+    // Update futures data every 30 seconds
+    updateFuturesData();
+    setInterval(updateFuturesData, 30000);
 });
 
 /**
@@ -107,6 +111,164 @@ function setVixError() {
     
     if (vixChangeEl) {
         vixChangeEl.textContent = '';
+    }
+}
+
+/**
+ * Fetch and update real-time futures data
+ */
+async function updateFuturesData() {
+    try {
+        // Get current symbol for futures lookup
+        const currentSymbol = getCurrentSelectedSymbol();
+        if (!currentSymbol) {
+            setFuturesError();
+            return;
+        }
+        
+        const response = await fetch(`/api/futures/current?symbol=${encodeURIComponent(currentSymbol)}`);
+        const result = await response.json();
+        
+        if (result.success && result.futures_price) {
+            updateFuturesDisplay(result);
+            console.log('📊 Futures data updated:', result.futures_price);
+        } else {
+            console.warn('⚠️ Failed to fetch futures data:', result.error);
+            setFuturesError();
+        }
+    } catch (error) {
+        console.error('❌ Error fetching futures data:', error);
+        setFuturesError();
+    }
+}
+
+/**
+ * Update futures display in the carousel
+ */
+function updateFuturesDisplay(futuresData) {
+    const futuresPriceEl = document.getElementById('futuresPrice');
+    const futuresChangeEl = document.getElementById('futuresChange');
+    
+    if (!futuresPriceEl) return;
+    
+    const futuresPrice = parseFloat(futuresData.futures_price);
+    const spotPrice = parseFloat(futuresData.spot_price);
+    const basis = futuresPrice - spotPrice;
+    const basisPercent = (basis / spotPrice) * 100;
+    
+    // Update futures price
+    futuresPriceEl.textContent = futuresPrice.toLocaleString('en-IN');
+    
+    // Update basis indicator
+    if (futuresChangeEl) {
+        const basisText = `${basis >= 0 ? '+' : ''}${basis.toFixed(1)} (${basisPercent >= 0 ? '+' : ''}${basisPercent.toFixed(2)}%)`;
+        futuresChangeEl.textContent = basisText;
+        
+        // Color based on contango/backwardation
+        if (basis > 0) {
+            futuresChangeEl.className = 'ms-1 text-info'; // Contango - blue
+        } else if (basis < 0) {
+            futuresChangeEl.className = 'ms-1 text-warning'; // Backwardation - orange
+        } else {
+            futuresChangeEl.className = 'ms-1 text-muted';
+        }
+    }
+    
+    // Color futures price based on regime
+    updateFuturesColor(futuresPriceEl, futuresData.analysis?.regime || 'NORMAL');
+}
+
+/**
+ * Set futures color based on basis regime
+ */
+function updateFuturesColor(element, regime) {
+    element.className = element.className.replace(/text-\w+/g, '');
+    
+    switch (regime) {
+        case 'STRONG_CONTANGO':
+            element.classList.add('text-primary'); // Strong contango - blue
+            break;
+        case 'MILD_CONTANGO':
+            element.classList.add('text-info'); // Mild contango - light blue
+            break;
+        case 'NORMAL':
+            element.classList.add('text-secondary'); // Normal - gray
+            break;
+        case 'MILD_BACKWARDATION':
+            element.classList.add('text-warning'); // Mild backwardation - orange
+            break;
+        case 'STRONG_BACKWARDATION':
+            element.classList.add('text-danger'); // Strong backwardation - red
+            break;
+        default:
+            element.classList.add('text-secondary');
+    }
+}
+
+/**
+ * Set futures error state
+ */
+function setFuturesError() {
+    const futuresPriceEl = document.getElementById('futuresPrice');
+    const futuresChangeEl = document.getElementById('futuresChange');
+    
+    if (futuresPriceEl) {
+        futuresPriceEl.textContent = '--';
+        futuresPriceEl.className = 'text-secondary';
+    }
+    
+    if (futuresChangeEl) {
+        futuresChangeEl.textContent = '';
+        futuresChangeEl.className = 'ms-1 text-muted';
+    }
+}
+
+/**
+ * Get current selected symbol from the application
+ */
+function getCurrentSelectedSymbol() {
+    // Try to get symbol from WebSocket handler if available
+    if (window.webSocketHandler && window.webSocketHandler.currentSymbol) {
+        return window.webSocketHandler.currentSymbol;
+    }
+    
+    // Fallback to checking symbol selector dropdown
+    const symbolSelect = document.getElementById('indexSelect');
+    if (symbolSelect && symbolSelect.value) {
+        // Map display name to API symbol
+        const symbolMap = {
+            'NIFTY': 'NSE:NIFTY50-INDEX',
+            'NIFTY50': 'NSE:NIFTY50-INDEX',
+            'BANKNIFTY': 'NSE:BANKNIFTY-INDEX'
+        };
+        return symbolMap[symbolSelect.value.toUpperCase()] || symbolSelect.value;
+    }
+    
+    // Default to NIFTY if nothing selected
+    return 'NSE:NIFTY50-INDEX';
+}
+
+/**
+ * Open comprehensive futures analysis popup
+ */
+async function openFuturesAnalysis() {
+    console.log('🔍 Opening futures analysis...');
+    
+    try {
+        // Get current symbol
+        const currentSymbol = getCurrentSelectedSymbol();
+        if (!currentSymbol) {
+            console.warn('No symbol selected for futures analysis');
+            return;
+        }
+        
+        // Show loading state
+        // TODO: Create futures analysis modal similar to VIX
+        console.log('📊 Futures analysis for', currentSymbol);
+        alert('Futures analysis coming soon!');
+        
+    } catch (error) {
+        console.error('❌ Error opening futures analysis:', error);
     }
 }
 

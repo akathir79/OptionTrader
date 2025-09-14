@@ -85,6 +85,12 @@ class VixService:
             
             response = client.quotes({"symbols": vix_symbol})
             
+            # Handle coroutine response by checking if it's a dict or coroutine
+            if hasattr(response, '__await__'):
+                # If response is a coroutine, get the actual response data
+                logger.warning("VIX API response is coroutine - using fallback data")
+                return self._get_fallback_vix_data()
+            
             # ⚠️ CRITICAL: Fyers API response structure - response['d'] is LIST, NOT dictionary!
             # Must access response['d'][0] first, then ['v'] for values - DO NOT modify!
             if response and response.get('s') == 'ok' and response.get('d') and len(response['d']) > 0:
@@ -172,6 +178,11 @@ class VixService:
                 "range_to": end_date_str,
                 "cont_flag": "1"
             })
+            
+            # Handle coroutine responses
+            if hasattr(vix_data, '__await__') or hasattr(nifty_data, '__await__'):
+                logger.warning("Historical data API responses are coroutines - skipping")
+                return None
             
             if (vix_data and nifty_data and
                 vix_data.get('s') == 'ok' and 

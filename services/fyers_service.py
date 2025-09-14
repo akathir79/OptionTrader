@@ -358,25 +358,85 @@ class FyersService:
             }
     
     # Market Data Methods
-    def get_quotes(self, symbols: List[str]) -> Dict[str, Any]:
+    def get_quotes(self, symbols) -> Dict[str, Any]:
         """Get real-time quotes for symbols"""
         client = self.get_client()
         if not client:
-            return {'error': 'Client not available'}
+            return {'success': False, 'error': 'Client not available'}
         
         try:
-            symbol_string = ','.join(symbols)
-            response = client.quotes({"symbols": symbol_string})
-            return response
+            # Handle both single string and list inputs
+            if isinstance(symbols, str):
+                symbol = symbols
+                # Map symbol to Fyers format
+                fyers_symbol = self._map_symbol_to_fyers(symbol)
+            elif isinstance(symbols, list):
+                fyers_symbol = ','.join([self._map_symbol_to_fyers(s) for s in symbols])
+                symbol = symbols[0] if symbols else ""
+            else:
+                return {'success': False, 'error': 'Invalid symbols format'}
+                
+            logger.info(f"get_quotes called with symbol: '{symbol}'")
+            logger.info(f"Mapped to Fyers symbol: '{fyers_symbol}'")
+                
+            response = client.quotes({"symbols": fyers_symbol})
+            
+            # Handle coroutine response
+            if hasattr(response, '__await__'):
+                logger.warning("Quotes API response is coroutine - returning error")
+                return {'success': False, 'error': 'API response is async coroutine'}
+            
+            # Ensure consistent response format
+            if response.get('s') == 'ok' and response.get('d'):
+                # Transform Fyers response format to standardized format
+                quotes_data = []
+                for quote_item in response.get('d', []):
+                    quote_values = quote_item.get('v', {})
+                    quotes_data.append({
+                        'ltp': quote_values.get('lp', 0),
+                        'v': quote_values  # Include original values for compatibility
+                    })
+                
+                logger.info(f"Fetched quotes for {symbol}: LTP={quotes_data[0]['ltp'] if quotes_data else 'N/A'}")
+                
+                return {
+                    'success': True,
+                    'quotes': quotes_data
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': response.get('message', 'No data available')
+                }
         except Exception as e:
             logger.error(f"Failed to get quotes: {str(e)}")
-            return {'error': str(e)}
+            return {'success': False, 'error': str(e)}
     
+    def get_option_chain(self, symbol: str, strike_count: int = 15) -> Dict[str, Any]:
+        """Get option chain data for a symbol (placeholder implementation)"""
+        client = self.get_client()
+        if not client:
+            return {'success': False, 'error': 'Client not available'}
+        
+        try:
+            # For now, return a basic success response indicating available expiries
+            # In production, this would call the actual Fyers option chain API
+            return {
+                'success': True,
+                'symbol': symbol,
+                'strike_count': strike_count,
+                'expiries': [],  # Would contain actual expiry data
+                'note': 'Option chain API integration pending'
+            }
+        except Exception as e:
+            logger.error(f"Failed to get option chain: {str(e)}")
+            return {'success': False, 'error': str(e)}
+
     def get_historical_data(self, symbol: str, timeframe: str, start_date: str, end_date: str) -> Dict[str, Any]:
         """Get historical data for a symbol"""
         client = self.get_client()
         if not client:
-            return {'error': 'Client not available'}
+            return {'success': False, 'error': 'Client not available'}
         
         try:
             data = {
@@ -388,10 +448,25 @@ class FyersService:
                 "cont_flag": "1"
             }
             response = client.history(data=data)
-            return response
+            
+            # Handle coroutine response
+            if hasattr(response, '__await__'):
+                logger.warning("History API response is coroutine - returning error")
+                return {'success': False, 'error': 'API response is async coroutine'}
+            
+            if response.get('s') == 'ok':
+                return {
+                    'success': True,
+                    'data': response.get('candles', [])
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': response.get('message', 'Unknown error')
+                }
         except Exception as e:
             logger.error(f"Failed to get historical data: {str(e)}")
-            return {'error': str(e)}
+            return {'success': False, 'error': str(e)}
     
     # Portfolio Methods  
     def get_positions(self) -> Dict[str, Any]:
@@ -528,14 +603,14 @@ class FyersService:
             
         return f'NSE:{base_symbol}-EQ'
     
-    def get_quotes(self, symbol: str) -> Dict[str, Any]:
-        """Get real-time quotes including day open price for a symbol"""
+    def get_quotes_detailed(self, symbol: str) -> Dict[str, Any]:
+        """Get real-time quotes including day open price for a symbol - detailed version"""
         client = self.get_client()
         if not client:
-            return {'error': 'Client not available'}
+            return {'success': False, 'error': 'Client not available'}
         
         # DEBUG: Log the incoming symbol
-        logger.info(f"get_quotes called with symbol: '{symbol}'")
+        logger.info(f"get_quotes_detailed called with symbol: '{symbol}'")
         
         # Map symbol to Fyers format
         fyers_symbol = self._map_symbol_to_fyers(symbol)
