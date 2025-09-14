@@ -199,27 +199,45 @@
 }
 
 /* Compact card spacing in fullscreen mode */
-.option-chain-fullscreen .left-panel .card {
+body.fullscreen-active .left-panel .card {
   margin-bottom: 0.125rem !important;
   margin-top: 0 !important;
 }
 
-.option-chain-fullscreen .left-panel .symbol-selection-card {
+body.fullscreen-active .left-panel .symbol-selection-card {
   margin-bottom: 0.125rem !important;
 }
 
-.option-chain-fullscreen .left-panel .market-data-card {
+body.fullscreen-active .left-panel .market-data-card {
   margin-bottom: 0.125rem !important;
   margin-top: 0 !important;
 }
 
 /* Reduce card body padding in fullscreen */
-.option-chain-fullscreen .left-panel .card-body {
+body.fullscreen-active .left-panel .card-body {
   padding: 0.25rem !important;
 }
 
-.option-chain-fullscreen .left-panel .market-data-card .card-body {
+body.fullscreen-active .left-panel .market-data-card .card-body {
   padding: 0.25rem !important;
+}
+
+/* Override Bootstrap utility classes in fullscreen */
+body.fullscreen-active .left-panel .row.mb-3 {
+  margin-bottom: 0.25rem !important;
+}
+
+body.fullscreen-active .left-panel hr.my-2 {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+}
+
+body.fullscreen-active .left-panel .mb-1 {
+  margin-bottom: 0.125rem !important;
+}
+
+body.fullscreen-active .left-panel .mb-2 {
+  margin-bottom: 0.125rem !important;
 }
 
 /* Clean B/S Button Styles - Match original design */
@@ -1255,7 +1273,7 @@
       </div>
 
       <!-- Market Data Card -->
-      <div class="card shadow-sm market-data-card" id="marketDataCard" style="margin-bottom: 0.25rem !important;">
+      <div class="card shadow-sm market-data-card mb-1" id="marketDataCard">
         <div class="card-body" style="padding: 0.5rem !important;">
           <!-- Market Data Carousel -->
           <div class="d-flex align-items-center position-relative" onmouseenter="document.getElementById('leftPanelToggle').style.opacity='1'" onmouseleave="document.getElementById('leftPanelToggle').style.opacity='0'">
@@ -2102,6 +2120,44 @@ window.addEventListener('DOMContentLoaded', function() {
 
 <!-- VIX Analysis -->
 <script src="{{ url_for('static', filename='js/vix_analysis.js') }}"></script>
+
+<!-- Option Chain Fullscreen Functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fullscreenBtn = document.getElementById('fullscreenOptionChain');
+    
+    if (fullscreenBtn) {
+        fullscreenBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Find the option chain card
+            const optionChainCard = fullscreenBtn.closest('.card');
+            
+            if (optionChainCard) {
+                if (optionChainCard.classList.contains('option-chain-fullscreen')) {
+                    // Exit fullscreen
+                    optionChainCard.classList.remove('option-chain-fullscreen');
+                    document.body.classList.remove('fullscreen-active');
+                    fullscreenBtn.querySelector('i').className = 'fas fa-expand';
+                    fullscreenBtn.title = 'Fullscreen View';
+                    console.log('✅ Exited option chain fullscreen mode');
+                } else {
+                    // Enter fullscreen
+                    optionChainCard.classList.add('option-chain-fullscreen');
+                    document.body.classList.add('fullscreen-active');
+                    fullscreenBtn.querySelector('i').className = 'fas fa-compress';
+                    fullscreenBtn.title = 'Exit Fullscreen';
+                    console.log('✅ Entered option chain fullscreen mode');
+                }
+            }
+        });
+        
+        console.log('✅ Option chain fullscreen functionality initialized');
+    } else {
+        console.log('❌ Fullscreen button not found');
+    }
+});
+</script>
 
 <!-- Left Panel Cards Toggle Functionality -->
 <script>
