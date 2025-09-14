@@ -116,6 +116,7 @@ class WebSocketHandler {
                     symbol: data.symbol,
                     spot_price: data.spot_price,
                     day_open: data.day_open,
+                    prev_close: data.prev_close,
                     change: data.change,
                     change_percent: data.change_percent,
                     gap_abs: data.gap_abs,
@@ -149,7 +150,7 @@ class WebSocketHandler {
         // Update gap analysis display
         const gapElements = document.querySelectorAll('.gap-analysis');
         gapElements.forEach(element => {
-            if (gapAbs && gapPct) {
+            if (gapAbs !== undefined && gapPct !== undefined) {
                 const gapText = `${gapAbs > 0 ? '+' : ''}${gapAbs.toFixed(2)} (${gapPct.toFixed(2)}%)`;
                 const gapClass = gapAbs > 0 ? 'text-success' : gapAbs < 0 ? 'text-danger' : 'text-muted';
                 element.innerHTML = `<span class="${gapClass}">${gapText}</span>`;

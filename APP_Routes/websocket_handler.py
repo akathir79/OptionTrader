@@ -64,6 +64,7 @@ def get_spot_price():
             "symbol": quotes_data['symbol'],
             "spot_price": quotes_data['ltp'],
             "day_open": quotes_data['day_open'],
+            "prev_close": quotes_data['prev_close'],
             "change": quotes_data['change'],
             "change_percent": quotes_data['change_percent'],
             "gap_abs": quotes_data['gap_abs'],

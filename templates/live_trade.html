@@ -1256,7 +1256,12 @@
                          onclick="openCandlestickChart()"></span>
                     </div>
                     <div class="text-center">
-                      <small class="fw-semibold me-1" style="font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;">Day Open:</small><strong class="text-secondary">23,649</strong>
+                      <small class="fw-semibold me-1" style="font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;">Day Open:</small>
+                      <strong class="day-open-value text-secondary">--</strong>
+                      <br>
+                      <small class="gap-analysis text-muted" style="font-size: 10px; cursor: pointer;" 
+                             onclick="openGapAnalysis()" 
+                             title="Click for gap analysis">Gap: --</small>
                     </div>
                     <div class="text-center">
                       <small class="fw-semibold me-1" style="font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;">Future:</small><strong class="text-secondary">23,700</strong>
@@ -2108,6 +2113,128 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }, 500);
 });
+</script>
+
+<!-- Gap Analysis Function -->
+<script>
+// Gap Analysis Modal Function
+function openGapAnalysis() {
+    if (!window.currentQuoteData) {
+        alert('Please select a symbol first to see gap analysis.');
+        return;
+    }
+
+    const data = window.currentQuoteData;
+    const modal = new bootstrap.Modal(document.getElementById('gapAnalysisModal'));
+    
+    // Populate modal with live data
+    document.getElementById('modalDayOpen').textContent = data.day_open ? `₹${data.day_open.toFixed(2)}` : '--';
+    document.getElementById('modalPrevClose').textContent = data.prev_close ? `₹${data.prev_close.toFixed(2)}` : '--';
+    
+    // Calculate and display gap analysis
+    if (data.gap_abs !== undefined && data.gap_pct !== undefined) {
+        const gapText = `${data.gap_abs > 0 ? '+' : ''}₹${data.gap_abs.toFixed(2)} (${data.gap_pct.toFixed(2)}%)`;
+        const gapClass = data.gap_abs > 0 ? 'text-success' : data.gap_abs < 0 ? 'text-danger' : 'text-muted';
+        
+        document.getElementById('modalGapValue').innerHTML = `<span class="${gapClass}">${gapText}</span>`;
+        
+        // Determine gap bias and magnitude
+        const gapBias = getGapBias(data.gap_pct);
+        document.getElementById('modalGapBias').textContent = gapBias;
+        
+        // Generate strategy recommendations
+        generateStrategyRecommendations(data);
+        generateStrikeSelectionGuide(data);
+    }
+    
+    modal.show();
+}
+
+// Gap Analysis Functions based on user's comprehensive guide
+function getGapBias(gapPct) {
+    const absGap = Math.abs(gapPct);
+    
+    if (absGap < 0.2) {
+        return gapPct > 0 ? "Flat/Neutral Gap (Slight Bullish)" : "Flat/Neutral Gap (Slight Bearish)";
+    } else if (absGap < 0.5) {
+        return gapPct > 0 ? "Mild Bullish Gap" : "Mild Bearish Gap";
+    } else if (absGap < 1.0) {
+        return gapPct > 0 ? "Moderate Bullish Gap" : "Moderate Bearish Gap";
+    } else {
+        return gapPct > 0 ? "Large Bullish Gap (Strong Momentum)" : "Large Bearish Gap (Strong Momentum)";
+    }
+}
+
+function generateStrategyRecommendations(data) {
+    const vixValue = window.vixData?.ltp || 15; // Default VIX if not available
+    const gapPct = data.gap_pct || 0;
+    const strategies = [];
+    
+    if (Math.abs(gapPct) > 1.0) {
+        // Large gap strategies
+        if (gapPct > 0) {
+            strategies.push("🔵 <strong>Bullish Gap (>1%)</strong>: Consider buying ATM calls or bull call spreads");
+            strategies.push("🔴 <strong>Put Strategy</strong>: Sell OTM puts to collect premium as puts lose value");
+            if (vixValue < 15) {
+                strategies.push("💡 <strong>Low VIX</strong>: Favor credit spreads over buying options");
+            }
+        } else {
+            strategies.push("🔴 <strong>Bearish Gap (>1%)</strong>: Consider buying ATM puts or bear put spreads");
+            strategies.push("🔵 <strong>Call Strategy</strong>: Sell OTM calls to benefit from declining call premiums");
+        }
+    } else if (Math.abs(gapPct) > 0.5) {
+        // Moderate gap strategies
+        if (gapPct > 0) {
+            strategies.push("🔵 <strong>Moderate Bullish Gap</strong>: Bull call spreads or covered calls");
+        } else {
+            strategies.push("🔴 <strong>Moderate Bearish Gap</strong>: Bear put spreads or protective puts");
+        }
+    } else {
+        // Flat/Small gap strategies
+        strategies.push("⚖️ <strong>Flat Open</strong>: Consider neutral strategies");
+        if (vixValue > 20) {
+            strategies.push("📈 <strong>High VIX</strong>: Buy straddles/strangles for breakout");
+        } else {
+            strategies.push("📉 <strong>Low VIX</strong>: Sell iron condors for range-bound trading");
+        }
+    }
+    
+    // VIX context
+    if (vixValue > 20) {
+        strategies.push(`🔥 <strong>High VIX (${vixValue})</strong>: Premiums inflated - favor buying options`);
+    } else if (vixValue < 12) {
+        strategies.push(`❄️ <strong>Low VIX (${vixValue})</strong>: Premiums compressed - favor selling options`);
+    }
+    
+    document.getElementById('strategyRecommendations').innerHTML = strategies.join('<br>');
+}
+
+function generateStrikeSelectionGuide(data) {
+    const spotPrice = data.spot_price || 0;
+    const dayOpen = data.day_open || 0;
+    const gapPct = data.gap_pct || 0;
+    
+    const guide = [];
+    
+    guide.push(`🎯 <strong>ATM Strike</strong>: ${Math.round(spotPrice / 50) * 50} (closest to current spot)`);
+    guide.push(`📈 <strong>Day Open Level</strong>: ${Math.round(dayOpen / 50) * 50} (potential support/resistance)`);
+    
+    if (Math.abs(gapPct) > 0.5) {
+        if (gapPct > 0) {
+            guide.push(`🔵 <strong>Bullish Gap Strategy</strong>:`);
+            guide.push(`&nbsp;&nbsp;• Buy ${Math.round(spotPrice / 50) * 50} ATM calls for momentum`);
+            guide.push(`&nbsp;&nbsp;• Sell ${Math.round(dayOpen / 50) * 50} puts near open for mean reversion`);
+        } else {
+            guide.push(`🔴 <strong>Bearish Gap Strategy</strong>:`);
+            guide.push(`&nbsp;&nbsp;• Buy ${Math.round(spotPrice / 50) * 50} ATM puts for momentum`);
+            guide.push(`&nbsp;&nbsp;• Sell ${Math.round(dayOpen / 50) * 50} calls near open for mean reversion`);
+        }
+    } else {
+        guide.push(`⚖️ <strong>Neutral Strategy</strong>: Consider strikes around ${Math.round(spotPrice / 50) * 50} ± 100-200 points`);
+    }
+    
+    document.getElementById('strikeSelectionGuide').innerHTML = guide.join('<br>');
+}
 </script>
 
 <!-- Broker settings -->
@@ -5275,6 +5402,79 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Gap Analysis Modal -->
+<div class="modal fade" id="gapAnalysisModal" tabindex="-1" aria-labelledby="gapAnalysisModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="gapAnalysisModalLabel">
+          <i class="fas fa-chart-area text-primary me-2"></i>
+          Gap Analysis & Trading Strategy
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Gap Overview -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <div class="card bg-light">
+              <div class="card-body text-center py-3">
+                <h6 class="card-title mb-1">Today's Open</h6>
+                <h4 class="text-primary mb-0" id="modalDayOpen">--</h4>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="card bg-light">
+              <div class="card-body text-center py-3">
+                <h6 class="card-title mb-1">Yesterday's Close</h6>
+                <h4 class="text-secondary mb-0" id="modalPrevClose">--</h4>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gap Analysis -->
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-body text-center py-3">
+                <h6 class="card-title mb-2">Gap Analysis</h6>
+                <h3 class="mb-1" id="modalGapValue">--</h3>
+                <p class="mb-0" id="modalGapBias">Select symbol to analyze</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Strategy Recommendations -->
+        <div class="row">
+          <div class="col-12">
+            <h6><i class="fas fa-lightbulb text-warning me-2"></i>Strategy Recommendations</h6>
+            <div id="strategyRecommendations" class="bg-light p-3 rounded">
+              <p class="mb-0 text-muted">Select a symbol to see personalized trading strategies based on gap analysis and VIX levels.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Strike Selection Guide -->
+        <div class="row mt-3">
+          <div class="col-12">
+            <h6><i class="fas fa-target text-success me-2"></i>Strike Selection Guide</h6>
+            <div id="strikeSelectionGuide" class="bg-light p-3 rounded">
+              <p class="mb-0 text-muted">Gap-based strike selection recommendations will appear here.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <small class="text-muted me-auto">Analysis based on gap: Today's Open - Yesterday's Close</small>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
       </div>
     </div>
   </div>

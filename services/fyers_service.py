@@ -550,15 +550,16 @@ class FyersService:
                 # Successfully got quotes data from Fyers API
                 
                 # Extract relevant fields from Fyers response
-                # Fields: lp=last_price, open_price=day_open, ch=change, chp=change_percent
+                # Fields: lp=last_price, open_price=day_open, prev_close_price=yesterday_close
                 ltp = quote_data.get('lp', 0)
                 day_open = quote_data.get('open_price', 0)
+                prev_close = quote_data.get('prev_close_price', 0)
                 change = quote_data.get('ch', 0)
                 change_percent = quote_data.get('chp', 0)
                 
-                # Calculate gap analysis
-                gap_abs = ltp - day_open if (ltp and day_open) else 0
-                gap_pct = (gap_abs / day_open * 100) if day_open else 0
+                # Calculate correct gap analysis: Today's Open - Yesterday's Close
+                gap_abs = day_open - prev_close if (day_open and prev_close) else 0
+                gap_pct = (gap_abs / prev_close * 100) if prev_close else 0
                 
                 # Cache day open price (constant during trading day)
                 self._day_open_cache[symbol] = day_open
@@ -568,6 +569,7 @@ class FyersService:
                     'fyers_symbol': fyers_symbol,
                     'ltp': ltp,
                     'day_open': day_open,
+                    'prev_close': prev_close,
                     'change': change,
                     'change_percent': change_percent,
                     'gap_abs': gap_abs,
