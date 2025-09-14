@@ -2069,7 +2069,7 @@ window.addEventListener('DOMContentLoaded', function() {
 <!-- VIX Analysis -->
 <script src="{{ url_for('static', filename='js/vix_analysis.js') }}"></script>
 
-<!-- Left Panel Symbol Toggle Functionality -->
+<!-- Left Panel Cards Toggle Functionality -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const leftPanel = document.querySelector('.left-panel');
@@ -2085,15 +2085,15 @@ document.addEventListener('DOMContentLoaded', function() {
             isCollapsed = !isCollapsed;
             
             if (isCollapsed) {
-                leftPanel.classList.add('symbols-collapsed');
-                console.log('✅ Symbol selection area collapsed');
+                leftPanel.classList.add('cards-collapsed');
+                console.log('✅ Symbol selection and market data cards collapsed');
             } else {
-                leftPanel.classList.remove('symbols-collapsed');
-                console.log('✅ Symbol selection area expanded');
+                leftPanel.classList.remove('cards-collapsed');
+                console.log('✅ Symbol selection and market data cards expanded');
             }
         });
         
-        console.log('✅ Left panel symbol toggle functionality initialized');
+        console.log('✅ Left panel cards toggle functionality initialized');
     }
 });
 </script>
@@ -5902,55 +5902,40 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   height: 1px !important;
 }
 
-/* Left Panel Toggle Button Styles */
+/* Left Panel Toggle Button - Always visible at top-right */
 .panel-toggle-btn {
   position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 22px;
-  height: 22px;
+  top: 8px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
   background: rgba(255, 255, 255, 0.95);
-  border: 1px solid #ddd;
+  border: 1px solid #007bff;
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  opacity: 0;
+  opacity: 1; /* Always visible */
   transition: all 0.2s ease;
   z-index: 100;
   font-size: 12px;
-  color: #666;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.left-panel:hover .panel-toggle-btn {
-  opacity: 1;
+  color: #007bff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
 .panel-toggle-btn:hover {
-  background: rgba(255, 255, 255, 1);
-  border-color: #007bff;
-  color: #007bff;
-  transform: scale(1.05);
+  background: #007bff;
+  color: white;
+  transform: scale(1.1);
 }
 
-/* Collapsed state for symbol selection area */
-.left-panel.symbols-collapsed .symbol-selection-card {
-  height: 8px !important;
-  max-height: 8px !important;
-  min-height: 8px !important;
-  overflow: hidden !important;
-  margin-bottom: 2px !important;
+/* Collapsed state for both symbol selection and market data cards */
+.left-panel.cards-collapsed .symbol-selection-card {
+  display: none !important;
 }
 
-.left-panel.symbols-collapsed .symbol-selection-card .card-body {
-  height: 0 !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-}
-
-.left-panel.symbols-collapsed .panel-toggle-btn i {
+.left-panel.cards-collapsed .panel-toggle-btn i {
   transform: rotate(180deg);
 }
 
