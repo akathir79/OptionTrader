@@ -653,18 +653,22 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
   transition: 0.3s;
 }
 
-/* Position Management Card Styles */
+/* Position Management Card Styles - Fixed Layout */
 .position-management-card {
-  position: absolute;
-  top: calc(100% + 5px);
-  left: 0;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   background: #fff;
   border: 1px solid #dee2e6;
   border-radius: 8px;
-  min-width: 280px;
+  width: 350px;
+  max-width: 90vw;
+  max-height: 500px;
   z-index: 10000;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  overflow-y: auto;
 }
 
 .position-card-header {
@@ -686,8 +690,20 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
 
 .position-card-content {
   padding: 16px;
-  max-height: 300px;
+  max-height: 350px;
   overflow-y: auto;
+}
+
+/* Position Management Modal Backdrop */
+.position-management-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.3);
+  z-index: 9999;
+  display: none;
 }
 
 .position-entry {
@@ -3308,23 +3324,47 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Toggle position card - using attached code approach
+    // Toggle position card with backdrop - Modal behavior
     function togglePositionCard(rowIndex, key) {
         closeAllPositionCards();
         const card = document.getElementById(`${key}Card_${rowIndex}`);
         if (card) {
             card.style.display = card.style.display === 'block' ? 'none' : 'block';
             if (card.style.display === 'block') {
+                showModalBackdrop();
                 updatePositionCard(rowIndex, key);
+            } else {
+                hideModalBackdrop();
             }
         }
     }
     
-    // Close all position cards
+    // Close all position cards with backdrop
     function closeAllPositionCards() {
         document.querySelectorAll('.position-management-card').forEach(card => {
             card.style.display = 'none';
         });
+        hideModalBackdrop();
+    }
+    
+    // Show modal backdrop
+    function showModalBackdrop() {
+        let backdrop = document.querySelector('.position-management-backdrop');
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'position-management-backdrop';
+            backdrop.addEventListener('click', closeAllPositionCards);
+            document.body.appendChild(backdrop);
+        }
+        backdrop.style.display = 'block';
+    }
+    
+    // Hide modal backdrop
+    function hideModalBackdrop() {
+        const backdrop = document.querySelector('.position-management-backdrop');
+        if (backdrop) {
+            backdrop.style.display = 'none';
+        }
     }
     
     // Update position card content
@@ -5009,12 +5049,13 @@ document.addEventListener('DOMContentLoaded', function() {
         cardContent.innerHTML = content;
     }
     
-    // Close all position management cards
+    // Close all position management cards with backdrop
     function closeAllPositionCards() {
         const allCards = document.querySelectorAll('.position-management-card');
         allCards.forEach(card => {
             card.style.display = 'none';
         });
+        hideModalBackdrop();
     }
     
     // Format expiry display for position management cards
