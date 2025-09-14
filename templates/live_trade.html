@@ -2720,6 +2720,14 @@ document.addEventListener('DOMContentLoaded', function() {
         div.onclick = (e) => {
             e.stopPropagation();
             console.log(`🔥 BUTTON CLICKED: row=${rowIndex}, key=${key}, firstClickFlag=${firstClickFlags[rowIndex]?.[key]}`);
+            console.log(`🔥 DEBUG: Current firstClickFlags:`, firstClickFlags);
+            console.log(`🔥 DEBUG: Row ${rowIndex} exists:`, firstClickFlags[rowIndex] ? 'YES' : 'NO');
+            
+            if (!firstClickFlags[rowIndex]) {
+                console.log(`🔥 ERROR: Row ${rowIndex} not initialized in firstClickFlags!`);
+                return;
+            }
+            
             if (firstClickFlags[rowIndex][key]) {
                 console.log(`🔥 CALLING handleButtonClick for first click`);
                 handleButtonClick(rowIndex, key, 'add');
