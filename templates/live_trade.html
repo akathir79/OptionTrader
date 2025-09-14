@@ -187,28 +187,45 @@
   margin: 0 !important;
   border-radius: 0 !important;
   padding: 10px !important;
-  overflow-y: auto !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
-/* Optimize option chain table height in panel fullscreen */
-.panel-fullscreen .card:last-child .card-body {
-  height: calc(100vh - 180px) !important;
-  overflow: auto;
+/* Flex layout for fullscreen left panel */
+.panel-fullscreen .left-panel {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
 }
 
-.panel-fullscreen .card:last-child .table-container {
-  height: calc(100vh - 220px) !important;
-  overflow: auto;
+/* Make option chain card fill remaining space in fullscreen */
+.panel-fullscreen .left-panel .card:last-child {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
 }
 
-/* Make option chain table fill available space in fullscreen */
+.panel-fullscreen .left-panel .card:last-child .card-body {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+}
+
 .panel-fullscreen #optionChainContainer {
-  height: calc(100vh - 200px) !important;
-  overflow-y: auto;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: auto !important;
 }
 
-.panel-fullscreen #optionChainTable {
-  min-height: 100%;
+.panel-fullscreen .table-container {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow: auto !important;
 }
 
 /* Compact card spacing in fullscreen mode */
