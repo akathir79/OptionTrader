@@ -3361,10 +3361,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // New Standalone Modal System - Open Position Modal
     function openPositionModal(rowIndex, key) {
+        console.log(`🔥 openPositionModal CALLED: row=${rowIndex}, key=${key}`);
+        
         const modal = document.getElementById('positionModal');
         const backdrop = document.getElementById('positionModalBackdrop');
         const content = document.getElementById('positionModalContent');
         const title = document.getElementById('positionModalTitle');
+        
+        console.log(`🔥 Modal elements found: modal=${!!modal}, backdrop=${!!backdrop}, content=${!!content}`);
         
         if (!modal || !backdrop || !content) {
             console.error('Position modal elements not found');
