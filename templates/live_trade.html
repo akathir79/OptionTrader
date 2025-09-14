@@ -5664,14 +5664,47 @@ document.addEventListener('DOMContentLoaded', function() {
     function openFuturesAnalysis() {
         try {
             console.log('🔮 Opening futures analysis modal...');
-            showFuturesAnalysisModal();
+            
+            // Check if the function exists
+            if (typeof showFuturesAnalysisModal === 'function') {
+                showFuturesAnalysisModal();
+            } else {
+                console.error('❌ showFuturesAnalysisModal function not found');
+                alert('Futures analysis is loading. Please try again in a moment.');
+                
+                // Try to load the script if it's not loaded
+                if (typeof window.showFuturesAnalysisModal === 'undefined') {
+                    console.log('📦 Loading futures analysis script...');
+                    const script = document.createElement('script');
+                    script.src = '/static/js/futures_analysis.js';
+                    script.onload = function() {
+                        console.log('✅ Futures analysis script loaded, trying again...');
+                        if (typeof showFuturesAnalysisModal === 'function') {
+                            showFuturesAnalysisModal();
+                        }
+                    };
+                    document.head.appendChild(script);
+                }
+            }
         } catch (error) {
-            console.error('Error opening futures analysis:', error);
+            console.error('❌ Error opening futures analysis:', error);
+            alert('Error opening futures analysis: ' + error.message);
         }
     }
     
     // Make function globally available
     window.openFuturesAnalysis = openFuturesAnalysis;
+    
+    // Add click handler as backup
+    document.addEventListener('DOMContentLoaded', function() {
+        const futuresElement = document.getElementById('futuresPrice');
+        if (futuresElement) {
+            console.log('✅ Found futures price element, adding click handler');
+            futuresElement.addEventListener('click', openFuturesAnalysis);
+        } else {
+            console.warn('⚠️ Futures price element not found');
+        }
+    });
     </script>
     
     <!-- Panel Toggle Functionality -->
