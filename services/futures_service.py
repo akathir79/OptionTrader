@@ -117,6 +117,21 @@ class FuturesService:
                 'index_token': 'NSE:FINNIFTY-INDEX'
             }
         }
+        
+        # Handle stock futures (NSE:SYMBOL-EQ format)
+        if underlying_symbol.endswith('-EQ'):
+            # Extract stock symbol (e.g., NSE:ABB-EQ -> ABB)
+            parts = underlying_symbol.split(':')
+            if len(parts) == 2:
+                exchange_part = parts[0]  # NSE
+                symbol_part = parts[1].replace('-EQ', '')  # ABB
+                
+                return {
+                    'root': symbol_part,
+                    'pattern': f'{exchange_part}:{symbol_part}{{expiry_code}}FUT',
+                    'index_token': underlying_symbol
+                }
+        
         return symbol_mappings.get(underlying_symbol, {})
     
     def resolve_active_futures_contracts(self, underlying_symbol: str) -> List[FuturesContract]:

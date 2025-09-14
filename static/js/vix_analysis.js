@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update futures data every 30 seconds
     updateFuturesData();
     setInterval(updateFuturesData, 30000);
+    
+    // Add event listeners for dropdown changes to trigger immediate updates
+    addDropdownChangeListeners();
 });
 
 /**
@@ -232,20 +235,104 @@ function getCurrentSelectedSymbol() {
         return window.webSocketHandler.currentSymbol;
     }
     
-    // Fallback to checking symbol selector dropdown
-    const symbolSelect = document.getElementById('indexSelect');
-    if (symbolSelect && symbolSelect.value) {
-        // Map display name to API symbol
-        const symbolMap = {
+    // Check all three dropdowns dynamically
+    const indexSelect = document.getElementById('indexSelect');
+    const exchangeSelect = document.getElementById('exchangeSelect');
+    const symbolSelect = document.getElementById('extraSelect'); // This is the symbol dropdown
+    
+    // Priority 1: Check if a specific symbol is selected (like ABB, RELIANCE, etc.)
+    if (symbolSelect && symbolSelect.value && symbolSelect.value !== "" && symbolSelect.value !== "Select Symbol") {
+        const exchange = exchangeSelect?.value || 'NSE';
+        const symbol = symbolSelect.value;
+        
+        // Construct symbol for stocks: NSE:SYMBOL-EQ, BSE:SYMBOL-EQ
+        return `${exchange}:${symbol}-EQ`;
+    }
+    
+    // Priority 2: Check if an index is selected (NIFTY, BANKNIFTY, etc.)
+    if (indexSelect && indexSelect.value && indexSelect.value !== "" && indexSelect.value !== "Select Index") {
+        // Map index display names to API symbols
+        const indexMap = {
             'NIFTY': 'NSE:NIFTY50-INDEX',
-            'NIFTY50': 'NSE:NIFTY50-INDEX',
-            'BANKNIFTY': 'NSE:BANKNIFTY-INDEX'
+            'NIFTY50': 'NSE:NIFTY50-INDEX', 
+            'NIFTY 50': 'NSE:NIFTY50-INDEX',
+            'BANKNIFTY': 'NSE:NIFTYBANK-INDEX',  // Use NIFTYBANK for consistency
+            'BANK NIFTY': 'NSE:NIFTYBANK-INDEX',
+            'FINNIFTY': 'NSE:FINNIFTY-INDEX',
+            'FIN NIFTY': 'NSE:FINNIFTY-INDEX'
         };
-        return symbolMap[symbolSelect.value.toUpperCase()] || symbolSelect.value;
+        
+        const selectedIndex = indexSelect.value.toUpperCase().trim();
+        return indexMap[selectedIndex] || `NSE:${selectedIndex}-INDEX`;
     }
     
     // Default to NIFTY if nothing selected
+    console.log('⚠️ No symbol selected, defaulting to NIFTY50-INDEX');
     return 'NSE:NIFTY50-INDEX';
+}
+
+/**
+ * Add event listeners for dropdown changes to trigger immediate futures updates
+ */
+function addDropdownChangeListeners() {
+    const indexSelect = document.getElementById('indexSelect');
+    const exchangeSelect = document.getElementById('exchangeSelect'); 
+    const symbolSelect = document.getElementById('extraSelect');
+    
+    // Add event listeners to all dropdowns
+    [indexSelect, exchangeSelect, symbolSelect].forEach(dropdown => {
+        if (dropdown) {
+            dropdown.addEventListener('change', function() {
+                const currentSymbol = getCurrentSelectedSymbol();
+                console.log('📊 Dropdown changed, updating futures data for:', currentSymbol);
+                
+                // Immediately update futures data
+                updateFuturesData();
+                
+                // Also update spot data for market card
+                updateSpotPriceData();
+            });
+        }
+    });
+}
+
+/**
+ * Update spot price data for market card
+ */
+async function updateSpotPriceData() {
+    try {
+        const currentSymbol = getCurrentSelectedSymbol();
+        if (!currentSymbol) return;
+        
+        const response = await fetch(`/get_spot_price?symbol=${encodeURIComponent(currentSymbol)}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update spot price display in market card
+            const spotPriceEl = document.getElementById('spotPrice');
+            const dayOpenEl = document.getElementById('dayOpen');
+            const gapEl = document.getElementById('gapPercent');
+            
+            if (spotPriceEl) {
+                spotPriceEl.textContent = result.spot_price.toLocaleString('en-IN');
+            }
+            
+            if (dayOpenEl && result.day_open) {
+                dayOpenEl.textContent = result.day_open.toLocaleString('en-IN');
+            }
+            
+            if (gapEl && result.gap_pct) {
+                const gapClass = result.gap_pct >= 0 ? 'text-success' : 'text-danger';
+                const gapSign = result.gap_pct >= 0 ? '+' : '';
+                gapEl.textContent = `${gapSign}${result.gap_pct.toFixed(2)}%`;
+                gapEl.className = `ms-1 ${gapClass}`;
+            }
+            
+            console.log('💼 Spot price updated:', result.spot_price);
+        }
+    } catch (error) {
+        console.error('❌ Error updating spot price:', error);
+    }
 }
 
 /**
