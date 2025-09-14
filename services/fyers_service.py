@@ -50,7 +50,8 @@ class FyersService:
         settings.appkey = config.get('secret_key', '')  # Using appkey field for secret
         settings.redirect_url = config.get('redirect_uri', '')
         
-        # Ensure brokername is stored in uppercase for consistency
+        # ⚠️ CRITICAL: Broker name MUST be 'FYERS' (uppercase) - matches database queries!
+        # Changing case will break authentication completely
         settings.brokername = 'FYERS'
         # Set broker_user_id to avoid non-nullable constraint (will be updated during auth)
         if not settings.broker_user_id:

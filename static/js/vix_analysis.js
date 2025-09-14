@@ -1,6 +1,12 @@
 /**
- * VIX Analysis System
+ * ⚠️ CRITICAL: VIX Analysis System - PROTECTED FILE
  * Real-time India VIX data updates and comprehensive analysis popup
+ * 
+ * PROTECTION WARNINGS - DO NOT MODIFY WITHOUT EXTREME CARE:
+ * 1. API endpoints expect exact response format from Fyers
+ * 2. Chart initialization timing is critical (setTimeout timing must not change) 
+ * 3. Modal minimize/maximize functions must match HTML onclick handlers
+ * 4. Data table population depends on specific historical data structure
  */
 
 document.addEventListener('DOMContentLoaded', function() {

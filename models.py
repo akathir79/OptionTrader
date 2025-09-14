@@ -5,7 +5,8 @@ import pytz
 
 class BrokerSettings(db.Model):
     """
-    Stores per–broker credentials for every user.
+    ⚠️ CRITICAL DATABASE MODEL: Stores broker credentials for live trading
+    Contains access tokens and API keys - DO NOT modify field names or types!
     During development we keep user_id = 0 and do **NOT** enforce
     a foreign-key to a User table – this avoids FK-violations while
     you build the rest of the app.
@@ -15,7 +16,8 @@ class BrokerSettings(db.Model):
     id              = db.Column(db.Integer, primary_key=True)
     user_id         = db.Column(db.Integer, nullable=False, default=0)
 
-    # Broker identification
+    # ⚠️ CRITICAL: Broker identification fields - case sensitivity matters!
+    # brokername stored as 'FYERS' (uppercase) - queries must match exactly  
     brokername      = db.Column(db.String(50),  nullable=False)
     broker_user_id  = db.Column(db.String(50),  nullable=False)
 

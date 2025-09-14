@@ -22,6 +22,8 @@ live_market_data = {}
 def get_fyers_client():
     """Get FYERS client with access token"""
     try:
+        # ⚠️ CRITICAL: Database stores 'FYERS' (uppercase) - DO NOT change case!
+        # Changing to lowercase 'fyers' will break authentication completely
         broker_row = BrokerSettings.query.filter_by(brokername='FYERS').first()
         if not broker_row or not broker_row.access_token:
             return None, "No FYERS access token found"
@@ -55,6 +57,8 @@ def get_spot_price():
         # Get spot price
         spot_data = fyers.quotes({"symbols": symbol})
         
+        # ⚠️ CRITICAL: Fyers API response format - response['d'] is LIST not dict!
+        # response['d'][0] gets first element, then ['v'] gets values dict
         if spot_data.get('s') == 'ok' and spot_data.get('d'):
             spot_price = spot_data['d'][0]['v'].get('lp', 0)
             return jsonify({
@@ -92,7 +96,8 @@ def get_option_chain():
             print("ERROR: No symbol provided")
             return jsonify({"error": "Symbol parameter required"}), 400
         
-        # Get access token from database
+        # Get access token from database  
+        # ⚠️ CRITICAL: Must be 'FYERS' (uppercase) - matches database storage exactly
         broker_row = BrokerSettings.query.filter_by(brokername='FYERS').first()
         if not broker_row or not broker_row.access_token:
             return jsonify({"error": "No FYERS access token found"}), 500
@@ -108,6 +113,7 @@ def get_option_chain():
         # Get spot price
         spot_data = fyers.quotes({"symbols": symbol})
         spot_price = 0
+        # ⚠️ CRITICAL: Fyers API response structure - ['d'][0]['v'] is mandatory path!
         if spot_data.get('s') == 'ok' and spot_data.get('d'):
             spot_price = spot_data['d'][0]['v'].get('lp', 0)
         
@@ -293,6 +299,7 @@ def start_websocket_subscription(symbols):
             except:
                 pass
         
+        # ⚠️ CRITICAL: 'FYERS' case sensitivity - DO NOT modify!
         broker_row = BrokerSettings.query.filter_by(brokername='FYERS').first()
         if not broker_row or not broker_row.access_token:
             print("No FYERS access token found for WebSocket")

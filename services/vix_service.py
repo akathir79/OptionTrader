@@ -84,6 +84,8 @@ class VixService:
             
             response = client.quotes({"symbols": vix_symbol})
             
+            # ⚠️ CRITICAL: Fyers API response structure - response['d'] is LIST, NOT dictionary!
+            # Must access response['d'][0] first, then ['v'] for values - DO NOT modify!
             if response and response.get('s') == 'ok' and response.get('d') and len(response['d']) > 0:
                 vix_data = response['d'][0]  # Get first element from list
                 vix_values = vix_data.get('v', {})  # Get values dict

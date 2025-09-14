@@ -1,4 +1,6 @@
 import os
+# ⚠️ CRITICAL: Main Flask application - PROTECTED CONFIGURATION
+# DO NOT modify database URL, session secret, or proxy settings!
 from flask import Flask, render_template, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
@@ -54,7 +56,10 @@ db = SQLAlchemy(model_class=Base)
 
 # create the app
 app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET", "dev-key-change-in-production")
+# ⚠️ CRITICAL: Session secret MUST be provided - no hardcoded fallback!
+if not os.environ.get("SESSION_SECRET"):
+    raise ValueError("SESSION_SECRET environment variable is required for security!")
+app.secret_key = os.environ.get("SESSION_SECRET")
 
 # Detect if running on Replit (has DATABASE_URL) or local machine
 is_replit = bool(os.environ.get("DATABASE_URL"))
