@@ -808,14 +808,33 @@ function minimizeVixModal() {
 function maximizeVixModal() {
     const modal = document.getElementById('vixAnalysisModal');
     if (modal) {
+        // First ensure modal is visible and not minimized
+        modal.style.display = 'block';
         modal.style.transform = 'scale(1)';
         modal.style.transformOrigin = 'center';
         modal.style.transition = 'transform 0.3s ease';
-        modal.classList.add('modal-fullscreen');
+        
+        // Add fullscreen class to the modal dialog, not the modal itself
+        const modalDialog = modal.querySelector('.modal-dialog');
+        if (modalDialog) {
+            modalDialog.classList.add('modal-fullscreen');
+        }
+        
+        console.log('✅ VIX modal maximized to fullscreen');
     }
 }
 
 function closeVixModal() {
+    const modal = document.getElementById('vixAnalysisModal');
+    
+    // Remove fullscreen mode before closing
+    if (modal) {
+        const modalDialog = modal.querySelector('.modal-dialog');
+        if (modalDialog) {
+            modalDialog.classList.remove('modal-fullscreen');
+        }
+    }
+    
     // Ensure app remains selectable after modal close
     document.body.style.overflow = 'auto';
     document.body.classList.remove('modal-open');
@@ -862,7 +881,12 @@ function restoreVixModal() {
     if (modal) {
         modal.style.display = 'block';
         modal.style.transform = 'scale(1)';
-        modal.classList.remove('modal-fullscreen');
+        
+        // Remove fullscreen from modal dialog, not modal itself
+        const modalDialog = modal.querySelector('.modal-dialog');
+        if (modalDialog) {
+            modalDialog.classList.remove('modal-fullscreen');
+        }
     }
     
     if (indicator) {
