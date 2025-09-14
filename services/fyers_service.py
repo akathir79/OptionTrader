@@ -505,6 +505,10 @@ class FyersService:
         """Map symbol from UI to Fyers format"""
         symbol = symbol.upper().strip()
         
+        # If symbol is already in Fyers format (contains ':'), return as-is
+        if ':' in symbol:
+            return symbol
+        
         # Index symbols
         if symbol in ['NIFTY', 'NIFTY50', 'NIFTY 50']:
             return 'NSE:NIFTY50-INDEX'
@@ -530,8 +534,12 @@ class FyersService:
         if not client:
             return {'error': 'Client not available'}
         
+        # DEBUG: Log the incoming symbol
+        logger.info(f"get_quotes called with symbol: '{symbol}'")
+        
         # Map symbol to Fyers format
         fyers_symbol = self._map_symbol_to_fyers(symbol)
+        logger.info(f"Mapped '{symbol}' to Fyers symbol: '{fyers_symbol}'")
         
         # Check cache date (reset cache on new trading day)
         current_date = datetime.now().strftime('%Y-%m-%d')
