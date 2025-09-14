@@ -53,25 +53,44 @@ def get_spot_price():
             
         # Use FyersService to get comprehensive quote data
         fyers_service = FyersService(user_id=0)  # Using default user_id for now
-        quotes_data = fyers_service.get_quotes(symbol)
+        quotes_response = fyers_service.get_quotes(symbol)
         
-        if 'error' in quotes_data:
-            return jsonify({"error": quotes_data['error']}), 500
+        if not quotes_response.get('success') or 'error' in quotes_response:
+            error_msg = quotes_response.get('error', 'Failed to fetch quotes')
+            return jsonify({"error": error_msg}), 500
+        
+        # Extract quote data from the response structure
+        quotes_data = quotes_response.get('quotes', [])
+        if not quotes_data:
+            return jsonify({"error": "No quote data available"}), 500
+        
+        quote = quotes_data[0]  # Get first quote
+        quote_values = quote.get('v', {})
+        
+        # Calculate gap analysis
+        day_open = quote_values.get('open_price', 0)
+        prev_close = quote_values.get('prev_close_price', 0)
+        current_price = quote.get('ltp', 0)
+        
+        gap_abs = day_open - prev_close if (day_open and prev_close) else 0
+        gap_pct = (gap_abs / prev_close * 100) if prev_close else 0
+        change = current_price - prev_close if prev_close else 0
+        change_pct = (change / prev_close * 100) if prev_close else 0
             
         # Return comprehensive data including day open and gap analysis
         return jsonify({
             "success": True,
-            "symbol": quotes_data['symbol'],
-            "spot_price": quotes_data['ltp'],
-            "day_open": quotes_data['day_open'],
-            "prev_close": quotes_data['prev_close'],
-            "change": quotes_data['change'],
-            "change_percent": quotes_data['change_percent'],
-            "gap_abs": quotes_data['gap_abs'],
-            "gap_pct": quotes_data['gap_pct'],
-            "fyers_symbol": quotes_data['fyers_symbol'],
-            "is_cached": quotes_data.get('is_cached', False),
-            "timestamp": quotes_data['timestamp']
+            "symbol": symbol,
+            "spot_price": current_price,
+            "day_open": day_open,
+            "prev_close": prev_close,
+            "change": change,
+            "change_percent": change_pct,
+            "gap_abs": gap_abs,
+            "gap_pct": gap_pct,
+            "fyers_symbol": quote_values.get('symbol', symbol),
+            "is_cached": False,
+            "timestamp": quote_values.get('tt', '')
         })
             
     except Exception as e:
