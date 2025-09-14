@@ -653,31 +653,18 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
   transition: 0.3s;
 }
 
-/* Position Management Card Styles - Modal Layout */
+/* Position Management Card Styles */
 .position-management-card {
-  position: fixed;
-  top: 10%;
-  left: 50%;
-  transform: translateX(-50%);
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
   background: #fff;
   border: 1px solid #dee2e6;
   border-radius: 8px;
-  width: 420px;
-  max-width: 90vw;
-  max-height: 75vh;
+  min-width: 280px;
   z-index: 10000;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  overflow-y: auto;
-  outline: none;
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.2s ease;
-}
-
-.position-management-card.visible {
-  opacity: 1;
-  visibility: visible;
 }
 
 .position-card-header {
@@ -690,24 +677,7 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
   color: #495057;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 8px;
-}
-
-.position-card-close {
-  background: none;
-  border: none;
-  font-size: 18px;
-  color: #6c757d;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.position-card-close:hover {
-  background-color: #e9ecef;
-  color: #495057;
 }
 
 .position-card-header i {
@@ -716,39 +686,8 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
 
 .position-card-content {
   padding: 16px;
-  max-height: 350px;
+  max-height: 300px;
   overflow-y: auto;
-}
-
-/* Position Management Modal Backdrop */
-.position-management-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0,0,0,0.5);
-  z-index: 9999;
-  display: none;
-  pointer-events: auto;
-}
-
-/* Disable interactions with option chain when modal is open */
-.modal-open .option-chain-container,
-.modal-open #optionChainTable,
-.modal-open .option_button {
-  pointer-events: none !important;
-}
-
-.modal-open .position-management-card,
-.modal-open .position-management-backdrop {
-  pointer-events: auto;
-}
-
-/* Prevent hover effects on option chain while modal is open */
-.modal-open .option_button:hover {
-  background: #fff !important;
-  cursor: default !important;
 }
 
 .position-entry {
@@ -2707,7 +2646,25 @@ document.addEventListener('DOMContentLoaded', function() {
         div.id = `${key}Btn_${rowIndex}`;
         div.textContent = label + ' ';
         
-        // Position management now handled by standalone modal (no embedded cards)
+        // Position management card (initially hidden)
+        const positionCard = document.createElement('div');
+        positionCard.className = 'position-management-card';
+        positionCard.id = `${key}Card_${rowIndex}`;
+        positionCard.style.display = 'none';
+        
+        // Card header
+        const cardHeader = document.createElement('div');
+        cardHeader.className = 'position-card-header';
+        cardHeader.innerHTML = '<i class="fas fa-cog"></i> Position Management';
+        
+        // Card content container
+        const cardContent = document.createElement('div');
+        cardContent.className = 'position-card-content';
+        cardContent.id = `${key}CardContent_${rowIndex}`;
+        
+        positionCard.appendChild(cardHeader);
+        positionCard.appendChild(cardContent);
+        div.appendChild(positionCard);
         
         // The numeric badge that shows how many lots (kept for initial display)
         const badge = document.createElement('span');
@@ -2716,10 +2673,19 @@ document.addEventListener('DOMContentLoaded', function() {
         badge.textContent = '0';
         div.appendChild(badge);
         
-        // Add data attributes for event delegation
-        div.setAttribute('data-row-index', rowIndex);
-        div.setAttribute('data-key', key);
-        div.setAttribute('data-button-type', 'option-button');
+        // Main click handler
+        div.onclick = (e) => {
+            e.stopPropagation();
+            console.log(`🔥 BUTTON CLICKED: row=${rowIndex}, key=${key}, firstClickFlag=${firstClickFlags[rowIndex]?.[key]}`);
+            if (firstClickFlags[rowIndex][key]) {
+                console.log(`🔥 CALLING handleButtonClick for first click`);
+                handleButtonClick(rowIndex, key, 'add');
+                firstClickFlags[rowIndex][key] = false;
+            } else {
+                console.log(`🔥 CALLING togglePositionCard - not first click`);
+                togglePositionCard(rowIndex, key);
+            }
+        };
         
         return div;
     }
@@ -3257,7 +3223,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 button.classList.remove('active');
                 badge.style.display = 'none';
-                // Don't reset firstClickFlags - once a button has been clicked, modal should always open
+                firstClickFlags[rowIndex][key] = true;
             }
             console.log(`[BUTTON UPDATE] Updated ${key} badge for row ${rowIndex}: ${count} (calculated from ${remainingLots} active lots)`);
         }
@@ -3342,401 +3308,23 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Create Modal Elements Dynamically
-    function createModalElements() {
-        console.log(`🔥 Creating modal elements dynamically...`);
-        
-        // Create backdrop
-        let backdrop = document.getElementById('positionModalBackdrop');
-        if (!backdrop) {
-            backdrop = document.createElement('div');
-            backdrop.id = 'positionModalBackdrop';
-            backdrop.className = 'position-management-backdrop';
-            backdrop.style.display = 'none';
-            backdrop.style.position = 'fixed';
-            backdrop.style.top = '0';
-            backdrop.style.left = '0';
-            backdrop.style.width = '100%';
-            backdrop.style.height = '100%';
-            backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            backdrop.style.zIndex = '10000';
-            document.body.appendChild(backdrop);
-            console.log(`🔥 Created backdrop element`);
-        }
-        
-        // Create modal
-        let modal = document.getElementById('positionModal');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = 'positionModal';
-            modal.className = 'position-management-card';
-            modal.role = 'dialog';
-            modal.setAttribute('aria-modal', 'true');
-            modal.tabIndex = -1;
-            modal.style.display = 'none';
-            modal.style.position = 'fixed';
-            modal.style.top = '50%';
-            modal.style.left = '50%';
-            modal.style.transform = 'translate(-50%, -50%)';
-            modal.style.backgroundColor = 'white';
-            modal.style.border = '1px solid #ccc';
-            modal.style.borderRadius = '8px';
-            modal.style.padding = '20px';
-            modal.style.maxWidth = '600px';
-            modal.style.maxHeight = '80vh';
-            modal.style.overflow = 'auto';
-            modal.style.zIndex = '10001';
-            modal.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
-            
-            // Create header
-            const header = document.createElement('div');
-            header.className = 'position-card-header';
-            header.style.display = 'flex';
-            header.style.justifyContent = 'space-between';
-            header.style.alignItems = 'center';
-            header.style.marginBottom = '15px';
-            header.style.borderBottom = '1px solid #eee';
-            header.style.paddingBottom = '10px';
-            
-            const title = document.createElement('h4');
-            title.id = 'positionModalTitle';
-            title.textContent = 'Position Management';
-            title.style.margin = '0';
-            title.style.fontSize = '18px';
-            title.style.fontWeight = 'bold';
-            
-            const closeBtn = document.createElement('button');
-            closeBtn.id = 'positionModalClose';
-            closeBtn.className = 'position-card-close';
-            closeBtn.setAttribute('aria-label', 'Close');
-            closeBtn.textContent = '×';
-            closeBtn.style.border = 'none';
-            closeBtn.style.background = 'none';
-            closeBtn.style.fontSize = '24px';
-            closeBtn.style.cursor = 'pointer';
-            closeBtn.style.padding = '0';
-            closeBtn.style.width = '30px';
-            closeBtn.style.height = '30px';
-            closeBtn.style.display = 'flex';
-            closeBtn.style.alignItems = 'center';
-            closeBtn.style.justifyContent = 'center';
-            
-            header.appendChild(title);
-            header.appendChild(closeBtn);
-            
-            // Create content
-            const content = document.createElement('div');
-            content.id = 'positionModalContent';
-            content.className = 'position-card-content';
-            
-            modal.appendChild(header);
-            modal.appendChild(content);
-            document.body.appendChild(modal);
-            console.log(`🔥 Created modal element with header and content`);
-        }
-        
-        return {
-            modal: document.getElementById('positionModal'),
-            backdrop: document.getElementById('positionModalBackdrop'),
-            content: document.getElementById('positionModalContent'),
-            title: document.getElementById('positionModalTitle')
-        };
-    }
-
-    // New Standalone Modal System - Open Position Modal
-    function openPositionModal(rowIndex, key) {
-        console.log(`🔥 openPositionModal CALLED: row=${rowIndex}, key=${key}`);
-        
-        // Create modal elements if they don't exist
-        const elements = createModalElements();
-        const { modal, backdrop, content, title } = elements;
-        
-        console.log(`🔥 Modal elements: modal=${!!modal}, backdrop=${!!backdrop}, content=${!!content}, title=${!!title}`);
-        
-        if (!modal || !backdrop || !content) {
-            console.error('Failed to create modal elements!');
-            return;
-        }
-            
-        console.log(`🔥 All modal elements ready! Opening modal...`);
-        
-        // Extract position data
-        const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
-        let currentStrike = 0;
-        if (row) {
-            const strikeTd = row.children[19]; // Strike column
-            currentStrike = parseFloat(strikeTd?.textContent || 0);
-        }
-        
-        const optionType = key.includes('ce') ? 'CE' : 'PE';
-        const action = key.includes('Buy') ? 'Buy' : 'Sell';
-        
-        // Set modal title
-        title.textContent = `Position Management - ${currentStrike} ${optionType}`;
-        
-        // Populate modal content
-        fillPositionModalContent(content, rowIndex, key, currentStrike, optionType, action);
-        
-        // Show modal
-        document.body.classList.add('modal-open');
-        document.body.style.overflow = 'hidden'; // Lock scroll
-        backdrop.style.display = 'block';
-        modal.style.display = 'block';
-        
-        // Add animation
-        setTimeout(() => {
-            modal.classList.add('visible');
-        }, 10);
-        
-        // Focus management
-        modal.focus();
-        
-        // Set up event listeners
-        setupModalEventListeners();
-    }
-    
-    // Close Position Modal
-    function closePositionModal() {
-        const modal = document.getElementById('positionModal');
-        const backdrop = document.getElementById('positionModalBackdrop');
-        
-        if (modal && backdrop) {
-            modal.classList.remove('visible');
-            setTimeout(() => {
-                modal.style.display = 'none';
-                backdrop.style.display = 'none';
-                document.body.classList.remove('modal-open');
-                document.body.style.overflow = ''; // Unlock scroll
-            }, 200);
-        }
-    }
-    
-    // Setup Modal Event Listeners
-    function setupModalEventListeners() {
-        const closeBtn = document.getElementById('positionModalClose');
-        const backdrop = document.getElementById('positionModalBackdrop');
-        
-        // Close button
-        closeBtn.onclick = closePositionModal;
-        
-        // Backdrop click
-        backdrop.onclick = closePositionModal;
-        
-        // ESC key
-        const handleKeydown = (e) => {
-            if (e.key === 'Escape') {
-                closePositionModal();
-                document.removeEventListener('keydown', handleKeydown);
-            }
-        };
-        document.addEventListener('keydown', handleKeydown);
-    }
-    
-    // Fill Position Modal Content
-    function fillPositionModalContent(content, rowIndex, key, strike, optionType, action) {
-        // Get LTP from the option chain
-        const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
-        let ltp = 0;
-        if (row) {
-            if (key.includes('ce')) {
-                ltp = parseFloat(row.children[15]?.textContent || 0); // CE LTP
-            } else {
-                ltp = parseFloat(row.children[23]?.textContent || 0); // PE LTP
-            }
-        }
-        
-        // Build modal content HTML
-        content.innerHTML = `
-            <div class="position-entry">
-                <div class="position-header">
-                    <div class="row align-items-center mb-3">
-                        <div class="col-auto">
-                            <span class="strike-info">Strike: <strong>${strike}</strong></span>
-                            <span class="badge bg-primary ms-2">${optionType}</span>
-                        </div>
-                        <div class="col-auto">
-                            <span class="ltp-info">LTP: <strong>₹${ltp.toFixed(2)}</strong></span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="position-actions">
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <strong>16-SEP-25</strong>
-                        </div>
-                    </div>
-                    
-                    <div class="position-summary mb-3">
-                        <div class="row">
-                            <div class="col-4 text-center">
-                                <div class="position-stat">
-                                    <span class="stat-label">Buy</span>
-                                    <span class="stat-value text-success" id="modal-buy-count">0</span>
-                                </div>
-                            </div>
-                            <div class="col-4 text-center">
-                                <div class="position-stat">
-                                    <span class="stat-label">Sell</span>
-                                    <span class="stat-value text-danger" id="modal-sell-count">0</span>
-                                </div>
-                            </div>
-                            <div class="col-4 text-center">
-                                <div class="position-stat">
-                                    <span class="stat-label">Net</span>
-                                    <span class="stat-value" id="modal-net-position">Long 0</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="button-group">
-                        <button class="btn btn-danger btn-sm position-btn" onclick="handleModalPositionAction('${key}', ${rowIndex}, 'sell')">
-                            − ${action === 'Buy' ? 'Buy' : 'Sell'}
-                        </button>
-                        <button class="btn btn-success btn-sm position-btn" onclick="handleModalPositionAction('${key}', ${rowIndex}, 'buy')">
-                            + ${action === 'Buy' ? 'Buy' : 'Sell'}
-                        </button>
-                    </div>
-                </div>
-                
-                <hr>
-                
-                <div class="add-position-section">
-                    <button class="btn btn-outline-primary btn-sm w-100" onclick="addNewPositionFromModal(${strike}, '${optionType}')">
-                        + Add New Position
-                    </button>
-                </div>
-            </div>
-        `;
-        
-        // Update the modal with current position data
-        updateModalPositionData(key, rowIndex);
-    }
-    
-    // Handle Modal Position Actions
-    function handleModalPositionAction(key, rowIndex, direction) {
-        // Use existing smart position action logic
-        handleSmartPositionAction(rowIndex, key, direction);
-        
-        // Update modal display
-        updateModalPositionData(key, rowIndex);
-        
-        // Update the main option chain display
-        updateButtonDisplay();
-    }
-    
-    // Update Modal Position Data
-    function updateModalPositionData(key, rowIndex) {
-        const positions = window.activeLots || [];
-        const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
-        
-        if (!row) return;
-        
-        const strikeTd = row.children[19];
-        const currentStrike = parseFloat(strikeTd?.textContent || 0);
-        const optionType = key.includes('ce') ? 'CE' : 'PE';
-        
-        // Find relevant positions
-        let buyCount = 0;
-        let sellCount = 0;
-        
-        positions.forEach(pos => {
-            if (pos.strike === currentStrike && pos.optionType === optionType) {
-                if (pos.action === 'Buy') buyCount += pos.lots;
-                else sellCount += pos.lots;
-            }
-        });
-        
-        // Update modal display
-        const buyCountEl = document.getElementById('modal-buy-count');
-        const sellCountEl = document.getElementById('modal-sell-count');
-        const netPositionEl = document.getElementById('modal-net-position');
-        
-        if (buyCountEl) buyCountEl.textContent = buyCount;
-        if (sellCountEl) sellCountEl.textContent = sellCount;
-        
-        if (netPositionEl) {
-            const net = buyCount - sellCount;
-            if (net > 0) {
-                netPositionEl.textContent = `Long ${net}`;
-                netPositionEl.className = 'stat-value text-success';
-            } else if (net < 0) {
-                netPositionEl.textContent = `Short ${Math.abs(net)}`;
-                netPositionEl.className = 'stat-value text-danger';
-            } else {
-                netPositionEl.textContent = 'Flat';
-                netPositionEl.className = 'stat-value text-muted';
+    // Toggle position card - using attached code approach
+    function togglePositionCard(rowIndex, key) {
+        closeAllPositionCards();
+        const card = document.getElementById(`${key}Card_${rowIndex}`);
+        if (card) {
+            card.style.display = card.style.display === 'block' ? 'none' : 'block';
+            if (card.style.display === 'block') {
+                updatePositionCard(rowIndex, key);
             }
         }
     }
     
-    // Add New Position From Modal
-    function addNewPositionFromModal(strike, optionType) {
-        // Close modal and open new position interface
-        closePositionModal();
-        alert(`Add new position for ${strike} ${optionType} - This feature can be enhanced further`);
-    }
-    
-    // Close all position cards with backdrop
+    // Close all position cards
     function closeAllPositionCards() {
         document.querySelectorAll('.position-management-card').forEach(card => {
-            card.classList.remove('visible');
-            setTimeout(() => {
-                card.style.display = 'none';
-            }, 200);
+            card.style.display = 'none';
         });
-        hideModalBackdrop();
-    }
-    
-    // Show modal backdrop with focus management
-    function showModalBackdrop() {
-        let backdrop = document.querySelector('.position-management-backdrop');
-        if (!backdrop) {
-            backdrop = document.createElement('div');
-            backdrop.className = 'position-management-backdrop';
-            backdrop.addEventListener('click', closeAllPositionCards);
-            document.body.appendChild(backdrop);
-        }
-        backdrop.style.display = 'block';
-        
-        // Add modal-open class to body for interaction management
-        document.body.classList.add('modal-open');
-        
-        // Focus on the modal card for proper accessibility
-        setTimeout(() => {
-            const openCard = document.querySelector('.position-management-card.visible');
-            if (openCard) {
-                openCard.focus();
-                openCard.tabIndex = -1; // Make it focusable
-                
-                // Add keyboard support (ESC to close)
-                const handleKeydown = (e) => {
-                    if (e.key === 'Escape') {
-                        closeAllPositionCards();
-                        document.removeEventListener('keydown', handleKeydown);
-                    }
-                };
-                document.addEventListener('keydown', handleKeydown);
-            }
-        }, 250);
-    }
-    
-    // Hide modal backdrop with focus management
-    function hideModalBackdrop() {
-        const backdrop = document.querySelector('.position-management-backdrop');
-        if (backdrop) {
-            backdrop.style.display = 'none';
-        }
-        
-        // Remove modal-open class to restore interactions
-        document.body.classList.remove('modal-open');
-        
-        // Return focus to the option chain table
-        const optionChainTable = document.querySelector('#optionChainTable');
-        if (optionChainTable) {
-            optionChainTable.focus();
-        }
     }
     
     // Update position card content
@@ -5263,6 +4851,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Toggle position management card display
+    function togglePositionCard(rowIndex, key) {
+        const card = document.getElementById(`${key}Card_${rowIndex}`);
+        if (!card) return;
+        
+        // Close all other position cards first
+        closeAllPositionCards();
+        
+        // Toggle this card
+        if (card.style.display === 'none' || !card.style.display) {
+            card.style.display = 'block';
+            updatePositionCard(rowIndex, key);
+        } else {
+            card.style.display = 'none';
+        }
+    }
     
     // **ENHANCED: Smart Position Management Card with Intelligent +/- Buttons**
     function updatePositionCard(rowIndex, key) {
@@ -5406,13 +5009,12 @@ document.addEventListener('DOMContentLoaded', function() {
         cardContent.innerHTML = content;
     }
     
-    // Close all position management cards with backdrop
+    // Close all position management cards
     function closeAllPositionCards() {
         const allCards = document.querySelectorAll('.position-management-card');
         allCards.forEach(card => {
             card.style.display = 'none';
         });
-        hideModalBackdrop();
     }
     
     // Format expiry display for position management cards
@@ -5671,9 +5273,9 @@ document.addEventListener('DOMContentLoaded', function() {
     window.createPayoffChartFromOptionChain = createPayoffChartFromOptionChain;
     window.initPayoffChart = initPayoffChart;
     window.restoreButtonStatesFromGlobalPositions = restoreButtonStatesFromGlobalPositions;
-    window.openPositionModal = openPositionModal;
-    window.closePositionModal = closePositionModal;
-    window.fillPositionModalContent = fillPositionModalContent;
+    window.togglePositionCard = togglePositionCard;
+    window.closeAllPositionCards = closeAllPositionCards;
+    window.updatePositionCard = updatePositionCard;
     window.handleExpirySpecificPositionChange = handleExpirySpecificPositionChange;
     window.handleSmartPositionAction = handleSmartPositionAction;
     window.updateCurrentPositionsTable = updateCurrentPositionsTable;
@@ -5683,35 +5285,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.executeAutomaticNetting = executeAutomaticNetting;
     window.counters = counters;
     window.firstClickFlags = firstClickFlags;
-    
-    // Set up event delegation for option buttons (prevents loss of handlers when DOM updates)
-    document.addEventListener('click', function(e) {
-        const target = e.target.closest('[data-button-type="option-button"]');
-        if (!target) return;
-        
-        e.stopPropagation();
-        
-        const rowIndex = parseInt(target.getAttribute('data-row-index'));
-        const key = target.getAttribute('data-key');
-        
-        console.log(`🔥 BUTTON CLICKED (EVENT DELEGATION): row=${rowIndex}, key=${key}, firstClickFlag=${firstClickFlags[rowIndex]?.[key]}`);
-        console.log(`🔥 DEBUG: Current firstClickFlags:`, firstClickFlags);
-        console.log(`🔥 DEBUG: Row ${rowIndex} exists:`, firstClickFlags[rowIndex] ? 'YES' : 'NO');
-        
-        if (!firstClickFlags[rowIndex]) {
-            console.log(`🔥 ERROR: Row ${rowIndex} not initialized in firstClickFlags!`);
-            return;
-        }
-        
-        if (firstClickFlags[rowIndex][key]) {
-            console.log(`🔥 CALLING handleButtonClick for first click`);
-            handleButtonClick(rowIndex, key, 'add');
-            firstClickFlags[rowIndex][key] = false;
-        } else {
-            console.log(`🔥 CALLING openPositionModal - not first click`);
-            openPositionModal(rowIndex, key);
-        }
-    });
     
     // Initialize payoff chart when document is ready
     initPayoffChart();
@@ -6874,29 +6447,5 @@ html, body {
   max-height: 40%;
   overflow: auto;
 }
-
-/* Position Modal Z-Index (Top-Level) */
-#positionModal {
-  z-index: 10001 !important;
-}
-
-#positionModalBackdrop {
-  z-index: 10000 !important;
-}
 </style>
-
-<!-- Position Management Modal - Top-Level (Standalone) -->
-<div id="positionModalBackdrop" class="position-management-backdrop" style="display: none;"></div>
-<div id="positionModal" class="position-management-card" role="dialog" aria-modal="true" tabindex="-1" style="display: none;">
-    <div class="position-card-header">
-        <h4 id="positionModalTitle">Position Management</h4>
-        <button id="positionModalClose" class="position-card-close" aria-label="Close">×</button>
-    </div>
-    <div id="positionModalContent" class="position-card-content">
-        <!-- Content will be populated dynamically -->
-    </div>
-</div>
-
-</body>
-</html>
 
