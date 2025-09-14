@@ -150,7 +150,7 @@ app.add_url_rule('/api/markets/simple', 'api_get_simple_markets', api_get_simple
 
 @app.route("/")
 def live_trade():
-    return render_template("live_trade_simple.html")
+    return render_template("live_trade.html")
 
 @app.route("/option-trade")
 def option_trade():
