@@ -103,6 +103,12 @@ class FuturesService:
                 'root': 'BANKNIFTY',
                 'pattern': 'NSE:BANKNIFTY{expiry_code}FUT',
                 'index_token': 'NSE:BANKNIFTY-INDEX'
+            },
+            # Handle NIFTYBANK naming variant (used by some APIs)
+            'NSE:NIFTYBANK-INDEX': {
+                'root': 'BANKNIFTY',
+                'pattern': 'NSE:BANKNIFTY{expiry_code}FUT',
+                'index_token': 'NSE:NIFTYBANK-INDEX'
             }
         }
         return symbol_mappings.get(underlying_symbol, {})
