@@ -1159,8 +1159,8 @@
     <!-- Left Panel - Symbol Selection & Option Chain -->
     <div class="resizable-panel left-panel">
       <!-- Panel Toggle Button -->
-      <div class="panel-toggle-btn" id="leftPanelToggle" title="Collapse/Expand Symbol Selector">
-        <i class="fas fa-chevron-up"></i>
+      <div class="panel-toggle-btn" id="leftPanelToggle" title="Collapse/Expand Symbol Selector" style="position: absolute; top: 8px; right: 8px; width: 24px; height: 24px; background: rgba(255, 255, 255, 0.95); border: 2px solid #007bff; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 1000; color: #007bff; font-weight: bold;">
+        ^
       </div>
       
       <!-- Symbol Selection & Expiry Dates Card -->
@@ -2072,29 +2072,36 @@ window.addEventListener('DOMContentLoaded', function() {
 <!-- Left Panel Cards Toggle Functionality -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const leftPanel = document.querySelector('.left-panel');
-    const toggleBtn = document.getElementById('leftPanelToggle');
-    
-    if (leftPanel && toggleBtn) {
-        let isCollapsed = false;
+    setTimeout(function() {
+        const leftPanel = document.querySelector('.left-panel');
+        const toggleBtn = document.getElementById('leftPanelToggle');
+        const symbolCard = document.getElementById('symbolSelectorCard');
         
-        toggleBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
+        if (leftPanel && toggleBtn && symbolCard) {
+            let isCollapsed = false;
             
-            isCollapsed = !isCollapsed;
+            toggleBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                isCollapsed = !isCollapsed;
+                
+                if (isCollapsed) {
+                    symbolCard.style.display = 'none';
+                    toggleBtn.innerHTML = 'v';
+                    console.log('✅ Symbol selection and market data cards collapsed');
+                } else {
+                    symbolCard.style.display = 'block';
+                    toggleBtn.innerHTML = '^';
+                    console.log('✅ Symbol selection and market data cards expanded');
+                }
+            });
             
-            if (isCollapsed) {
-                leftPanel.classList.add('cards-collapsed');
-                console.log('✅ Symbol selection and market data cards collapsed');
-            } else {
-                leftPanel.classList.remove('cards-collapsed');
-                console.log('✅ Symbol selection and market data cards expanded');
-            }
-        });
-        
-        console.log('✅ Left panel cards toggle functionality initialized');
-    }
+            console.log('✅ Left panel cards toggle functionality initialized - button should be visible');
+        } else {
+            console.log('❌ Toggle elements not found:', {leftPanel: !!leftPanel, toggleBtn: !!toggleBtn, symbolCard: !!symbolCard});
+        }
+    }, 500);
 });
 </script>
 
@@ -5964,6 +5971,7 @@ html, body {
   display: flex !important; 
   flex-direction: column !important; 
   min-height: 0 !important; 
+  position: relative !important; 
 }
 
 .symbol-selection-card { 
