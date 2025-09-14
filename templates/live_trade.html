@@ -2716,27 +2716,10 @@ document.addEventListener('DOMContentLoaded', function() {
         badge.textContent = '0';
         div.appendChild(badge);
         
-        // Main click handler
-        div.onclick = (e) => {
-            e.stopPropagation();
-            console.log(`🔥 BUTTON CLICKED: row=${rowIndex}, key=${key}, firstClickFlag=${firstClickFlags[rowIndex]?.[key]}`);
-            console.log(`🔥 DEBUG: Current firstClickFlags:`, firstClickFlags);
-            console.log(`🔥 DEBUG: Row ${rowIndex} exists:`, firstClickFlags[rowIndex] ? 'YES' : 'NO');
-            
-            if (!firstClickFlags[rowIndex]) {
-                console.log(`🔥 ERROR: Row ${rowIndex} not initialized in firstClickFlags!`);
-                return;
-            }
-            
-            if (firstClickFlags[rowIndex][key]) {
-                console.log(`🔥 CALLING handleButtonClick for first click`);
-                handleButtonClick(rowIndex, key, 'add');
-                firstClickFlags[rowIndex][key] = false;
-            } else {
-                console.log(`🔥 CALLING openPositionModal - not first click`);
-                openPositionModal(rowIndex, key);
-            }
-        };
+        // Add data attributes for event delegation
+        div.setAttribute('data-row-index', rowIndex);
+        div.setAttribute('data-key', key);
+        div.setAttribute('data-button-type', 'option-button');
         
         return div;
     }
@@ -5598,6 +5581,35 @@ document.addEventListener('DOMContentLoaded', function() {
     window.executeAutomaticNetting = executeAutomaticNetting;
     window.counters = counters;
     window.firstClickFlags = firstClickFlags;
+    
+    // Set up event delegation for option buttons (prevents loss of handlers when DOM updates)
+    document.addEventListener('click', function(e) {
+        const target = e.target.closest('[data-button-type="option-button"]');
+        if (!target) return;
+        
+        e.stopPropagation();
+        
+        const rowIndex = parseInt(target.getAttribute('data-row-index'));
+        const key = target.getAttribute('data-key');
+        
+        console.log(`🔥 BUTTON CLICKED (EVENT DELEGATION): row=${rowIndex}, key=${key}, firstClickFlag=${firstClickFlags[rowIndex]?.[key]}`);
+        console.log(`🔥 DEBUG: Current firstClickFlags:`, firstClickFlags);
+        console.log(`🔥 DEBUG: Row ${rowIndex} exists:`, firstClickFlags[rowIndex] ? 'YES' : 'NO');
+        
+        if (!firstClickFlags[rowIndex]) {
+            console.log(`🔥 ERROR: Row ${rowIndex} not initialized in firstClickFlags!`);
+            return;
+        }
+        
+        if (firstClickFlags[rowIndex][key]) {
+            console.log(`🔥 CALLING handleButtonClick for first click`);
+            handleButtonClick(rowIndex, key, 'add');
+            firstClickFlags[rowIndex][key] = false;
+        } else {
+            console.log(`🔥 CALLING openPositionModal - not first click`);
+            openPositionModal(rowIndex, key);
+        }
+    });
     
     // Initialize payoff chart when document is ready
     initPayoffChart();
