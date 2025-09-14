@@ -656,20 +656,28 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
 /* Position Management Card Styles - Modal Layout */
 .position-management-card {
   position: fixed;
-  top: 20%;
+  top: 10%;
   left: 50%;
   transform: translateX(-50%);
   background: #fff;
   border: 1px solid #dee2e6;
   border-radius: 8px;
-  width: 400px;
+  width: 420px;
   max-width: 90vw;
-  max-height: 70vh;
+  max-height: 75vh;
   z-index: 10000;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.3);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow-y: auto;
   outline: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.position-management-card.visible {
+  opacity: 1;
+  visibility: visible;
 }
 
 .position-card-header {
@@ -726,12 +734,21 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
 }
 
 /* Disable interactions with option chain when modal is open */
-.modal-open .option-chain-container {
-  pointer-events: none;
+.modal-open .option-chain-container,
+.modal-open #optionChainTable,
+.modal-open .option_button {
+  pointer-events: none !important;
 }
 
-.modal-open .position-management-card {
+.modal-open .position-management-card,
+.modal-open .position-management-backdrop {
   pointer-events: auto;
+}
+
+/* Prevent hover effects on option chain while modal is open */
+.modal-open .option_button:hover {
+  background: #fff !important;
+  cursor: default !important;
 }
 
 .position-entry {
@@ -2695,6 +2712,11 @@ document.addEventListener('DOMContentLoaded', function() {
         positionCard.className = 'position-management-card';
         positionCard.id = `${key}Card_${rowIndex}`;
         positionCard.style.display = 'none';
+        // Ensure proper initial positioning to avoid jumping
+        positionCard.style.position = 'fixed';
+        positionCard.style.top = '10%';
+        positionCard.style.left = '50%';
+        positionCard.style.transform = 'translateX(-50%)';
         
         // Card header with close button
         const cardHeader = document.createElement('div');
@@ -3364,12 +3386,24 @@ document.addEventListener('DOMContentLoaded', function() {
         closeAllPositionCards();
         const card = document.getElementById(`${key}Card_${rowIndex}`);
         if (card) {
-            card.style.display = card.style.display === 'block' ? 'none' : 'block';
-            if (card.style.display === 'block') {
+            const isVisible = card.classList.contains('visible');
+            if (!isVisible) {
+                // Show the card
+                card.style.display = 'block';
                 showModalBackdrop();
                 updatePositionCard(rowIndex, key);
+                
+                // Use a small delay to ensure proper positioning before showing
+                setTimeout(() => {
+                    card.classList.add('visible');
+                }, 10);
             } else {
-                hideModalBackdrop();
+                // Hide the card
+                card.classList.remove('visible');
+                setTimeout(() => {
+                    card.style.display = 'none';
+                    hideModalBackdrop();
+                }, 200);
             }
         }
     }
@@ -3377,7 +3411,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Close all position cards with backdrop
     function closeAllPositionCards() {
         document.querySelectorAll('.position-management-card').forEach(card => {
-            card.style.display = 'none';
+            card.classList.remove('visible');
+            setTimeout(() => {
+                card.style.display = 'none';
+            }, 200);
         });
         hideModalBackdrop();
     }
@@ -3398,7 +3435,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Focus on the modal card for proper accessibility
         setTimeout(() => {
-            const openCard = document.querySelector('.position-management-card[style*="block"]');
+            const openCard = document.querySelector('.position-management-card.visible');
             if (openCard) {
                 openCard.focus();
                 openCard.tabIndex = -1; // Make it focusable
@@ -3412,7 +3449,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 document.addEventListener('keydown', handleKeydown);
             }
-        }, 100);
+        }, 250);
     }
     
     // Hide modal backdrop with focus management
@@ -4956,21 +4993,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Toggle position management card display
-    function togglePositionCard(rowIndex, key) {
-        const card = document.getElementById(`${key}Card_${rowIndex}`);
-        if (!card) return;
-        
-        // Close all other position cards first
-        closeAllPositionCards();
-        
-        // Toggle this card
-        if (card.style.display === 'none' || !card.style.display) {
-            card.style.display = 'block';
-            updatePositionCard(rowIndex, key);
-        } else {
-            card.style.display = 'none';
-        }
-    }
     
     // **ENHANCED: Smart Position Management Card with Intelligent +/- Buttons**
     function updatePositionCard(rowIndex, key) {
