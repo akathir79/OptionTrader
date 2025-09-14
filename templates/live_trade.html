@@ -1159,7 +1159,11 @@
     <!-- Left Panel - Symbol Selection & Option Chain -->
     <div class="resizable-panel left-panel">
       <!-- Symbol Selection & Expiry Dates Card -->
-      <div class="card shadow-sm mb-2 symbol-selection-card">
+      <div class="card shadow-sm mb-2 symbol-selection-card" id="symbolSelectorCard">
+        <!-- Collapse/Expand Toggle Button -->
+        <div class="card-toggle-btn" id="symbolCardToggle" title="Collapse/Expand Symbol Selector">
+          <i class="fas fa-chevron-up"></i>
+        </div>
         <div class="card-body">
           <!-- Symbol Selection Row -->
           <div class="row g-2 align-items-center mb-3">
@@ -2063,6 +2067,35 @@ window.addEventListener('DOMContentLoaded', function() {
 
 <!-- VIX Analysis -->
 <script src="{{ url_for('static', filename='js/vix_analysis.js') }}"></script>
+
+<!-- Symbol Card Toggle Functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const symbolCard = document.getElementById('symbolSelectorCard');
+    const toggleBtn = document.getElementById('symbolCardToggle');
+    
+    if (symbolCard && toggleBtn) {
+        let isCollapsed = false;
+        
+        toggleBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            isCollapsed = !isCollapsed;
+            
+            if (isCollapsed) {
+                symbolCard.classList.add('collapsed');
+                console.log('✅ Symbol selector card collapsed');
+            } else {
+                symbolCard.classList.remove('collapsed');
+                console.log('✅ Symbol selector card expanded');
+            }
+        });
+        
+        console.log('✅ Symbol card toggle functionality initialized');
+    }
+});
+</script>
 
 <!-- Broker settings -->
 <script src="{{ url_for('static', filename='js/broker_settings.js') }}"></script>
@@ -5866,6 +5899,53 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   margin: 1px 0 !important; /* Minimal separator spacing */
   border-width: 0.5px !important;
   height: 1px !important;
+}
+
+/* Toggle Button Styles */
+.card-toggle-btn {
+  position: absolute;
+  top: 2px;
+  right: 5px;
+  width: 18px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+  font-size: 10px;
+  color: #333;
+}
+
+.symbol-selection-card:hover .card-toggle-btn {
+  opacity: 1;
+}
+
+.card-toggle-btn:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: #007bff;
+  color: #007bff;
+}
+
+/* Collapsed state */
+.symbol-selection-card.collapsed {
+  height: 20px !important;
+  max-height: 20px !important;
+  min-height: 20px !important;
+}
+
+.symbol-selection-card.collapsed .card-body {
+  height: 16px !important;
+  overflow: hidden !important;
+}
+
+.symbol-selection-card.collapsed .card-toggle-btn i {
+  transform: rotate(180deg);
 }
 
 /* Market data text - ultra compact */
