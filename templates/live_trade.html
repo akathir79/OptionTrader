@@ -1451,7 +1451,7 @@
             </div>
           </div>
           <!-- Single Option Chain Table -->
-          <div id="optionChainContainer" style="height: calc(100vh - 180px); min-height: 750px; overflow-y: auto;">
+          <div id="optionChainContainer">
 
             <div class="table-container">
               <table class="table table-sm mb-0" id="optionChainTable">
@@ -5864,6 +5864,46 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
 .left-panel .carousel-page strong {
   font-size: 9px !important; /* Tiny values */
   line-height: 1 !important;
+}
+
+/* Full viewport height layout for maximum option chain space */
+html, body { 
+  height: 100% !important; 
+}
+
+.resizable-container { 
+  height: 100vh !important; 
+  display: flex !important; 
+}
+
+.left-panel { 
+  display: flex !important; 
+  flex-direction: column !important; 
+  min-height: 0 !important; 
+}
+
+.symbol-selection-card { 
+  flex: 0 0 auto !important; 
+  margin-bottom: 0.5rem !important; 
+}
+
+#optionChainContainer { 
+  flex: 1 1 auto !important; 
+  min-height: 0 !important; 
+  overflow: auto !important; 
+  height: auto !important; 
+  max-height: none !important; 
+}
+
+#optionChainContainer .table-container { 
+  height: 100% !important; 
+  overflow: auto !important; 
+}
+
+#optionChainTable thead { 
+  position: sticky !important; 
+  top: 0 !important; 
+  z-index: 10 !important; 
 }
 
 /* Option Chain Header Buttons - White for better visibility */
