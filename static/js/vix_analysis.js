@@ -151,9 +151,12 @@ function showVixAnalysisModal(data, loading = false) {
     });
     modal.show();
     
-    // Initialize charts if data is loaded
+    // Initialize charts and data table if data is loaded
     if (data && !loading) {
-        setTimeout(() => initializeVixCharts(data), 100);
+        setTimeout(() => {
+            initializeVixCharts(data);
+            populateVixDataTable(data);
+        }, 100);
     }
 }
 
@@ -198,7 +201,15 @@ function createVixAnalysisModalHTML(data, loading) {
                         <h5 class="modal-title">
                             <i class="fas fa-chart-line me-2"></i>India VIX Comprehensive Analysis
                         </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        <div class="d-flex align-items-center">
+                            <button type="button" class="btn btn-sm btn-outline-light me-2" onclick="minimizeVixModal()" title="Minimize">
+                                <i class="fas fa-window-minimize"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-light me-2" onclick="maximizeVixModal()" title="Maximize">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="closeVixModal()"></button>
+                        </div>
                     </div>
                     <div class="modal-body">
                         <!-- Current VIX Status -->
@@ -267,6 +278,11 @@ function createVixAnalysisModalHTML(data, loading) {
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="insights-tab" data-bs-toggle="tab" data-bs-target="#insights" type="button" role="tab">
                                     <i class="fas fa-lightbulb me-1"></i>Trading Insights
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="data-table-tab" data-bs-toggle="tab" data-bs-target="#data-table" type="button" role="tab">
+                                    <i class="fas fa-table me-1"></i>Data Points
                                 </button>
                             </li>
                         </ul>
@@ -421,6 +437,36 @@ function createVixAnalysisModalHTML(data, loading) {
                                                 <p><strong>Short-term:</strong> <span class="text-primary">${formatTimingSignal(insights.timing_signals?.short_term)}</span></p>
                                                 <p><strong>Mean Reversion:</strong> <span class="text-info">${formatTimingSignal(insights.timing_signals?.mean_reversion)}</span></p>
                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                            
+                            <!-- Data Points Table -->
+                            <div class="tab-pane fade" id="data-table" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-hover" id="vixDataTable">
+                                                <thead class="table-dark">
+                                                    <tr>
+                                                        <th>Date</th>
+                                                        <th>VIX</th>
+                                                        <th>Change</th>
+                                                        <th>Change %</th>
+                                                        <th>Nifty</th>
+                                                        <th>Call Premium</th>
+                                                        <th>Put Premium</th>
+                                                        <th>Volume</th>
+                                                        <th>Market Sentiment</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="vixDataTableBody">
+                                                    <!-- Data will be populated here -->
+                                                </tbody>
+                                            </table>
                                         </div>
                                     </div>
                                 </div>
@@ -734,4 +780,169 @@ function formatMarketRegime(regime) {
 
 function formatTimingSignal(signal) {
     return (signal || 'NEUTRAL').replace('_', ' ');
+}
+
+/**
+ * Modal control functions
+ */
+function minimizeVixModal() {
+    const modal = document.getElementById('vixAnalysisModal');
+    if (modal) {
+        modal.style.transform = 'scale(0.1)';
+        modal.style.transformOrigin = 'bottom right';
+        modal.style.transition = 'transform 0.3s ease';
+        setTimeout(() => {
+            modal.style.display = 'none';
+            // Create minimized indicator
+            createMinimizedIndicator();
+        }, 300);
+    }
+}
+
+function maximizeVixModal() {
+    const modal = document.getElementById('vixAnalysisModal');
+    if (modal) {
+        modal.style.transform = 'scale(1)';
+        modal.style.transformOrigin = 'center';
+        modal.style.transition = 'transform 0.3s ease';
+        modal.classList.add('modal-fullscreen');
+    }
+}
+
+function closeVixModal() {
+    // Ensure app remains selectable after modal close
+    document.body.style.overflow = 'auto';
+    document.body.classList.remove('modal-open');
+    
+    // Remove any backdrop elements
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach(backdrop => backdrop.remove());
+    
+    console.log('✅ VIX modal closed - app should be selectable');
+}
+
+function createMinimizedIndicator() {
+    // Remove existing indicator
+    const existing = document.getElementById('vixMinimizedIndicator');
+    if (existing) existing.remove();
+    
+    // Create new minimized indicator
+    const indicator = document.createElement('div');
+    indicator.id = 'vixMinimizedIndicator';
+    indicator.className = 'position-fixed bg-primary text-white p-2 rounded shadow-lg';
+    indicator.style.cssText = `
+        bottom: 20px;
+        right: 20px;
+        z-index: 1060;
+        cursor: pointer;
+        min-width: 200px;
+    `;
+    indicator.innerHTML = `
+        <div class="d-flex align-items-center justify-content-between">
+            <span><i class="fas fa-chart-line me-2"></i>VIX Analysis</span>
+            <button class="btn btn-sm btn-outline-light" onclick="restoreVixModal()">
+                <i class="fas fa-window-restore"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(indicator);
+}
+
+function restoreVixModal() {
+    const modal = document.getElementById('vixAnalysisModal');
+    const indicator = document.getElementById('vixMinimizedIndicator');
+    
+    if (modal) {
+        modal.style.display = 'block';
+        modal.style.transform = 'scale(1)';
+        modal.classList.remove('modal-fullscreen');
+    }
+    
+    if (indicator) {
+        indicator.remove();
+    }
+}
+
+/**
+ * Populate VIX data table with historical data
+ */
+function populateVixDataTable(data) {
+    const tableBody = document.getElementById('vixDataTableBody');
+    if (!tableBody || !data.historical) return;
+    
+    const historical = data.historical;
+    tableBody.innerHTML = '';
+    
+    for (let i = 0; i < historical.dates.length; i++) {
+        const date = historical.dates[i];
+        const vix = historical.vix_values[i];
+        const nifty = historical.nifty_values[i];
+        const callPremium = historical.call_premiums[i];
+        const putPremium = historical.put_premiums[i];
+        const volume = historical.volume_data[i];
+        
+        // Calculate change from previous day
+        const prevVix = i > 0 ? historical.vix_values[i-1] : vix;
+        const change = vix - prevVix;
+        const changePercent = prevVix > 0 ? (change / prevVix) * 100 : 0;
+        
+        // Determine sentiment based on VIX level
+        let sentiment = 'NEUTRAL';
+        let sentimentClass = 'text-info';
+        
+        if (vix >= 25) {
+            sentiment = 'EXTREME FEAR';
+            sentimentClass = 'text-danger fw-bold';
+        } else if (vix >= 20) {
+            sentiment = 'FEAR';
+            sentimentClass = 'text-warning';
+        } else if (vix >= 15) {
+            sentiment = 'NEUTRAL';
+            sentimentClass = 'text-info';
+        } else if (vix >= 12) {
+            sentiment = 'GREED';
+            sentimentClass = 'text-success';
+        } else {
+            sentiment = 'EXTREME GREED';
+            sentimentClass = 'text-primary fw-bold';
+        }
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${formatDate(date)}</td>
+            <td class="fw-bold ${getVixColorClass(vix)}">${vix.toFixed(2)}</td>
+            <td class="${change >= 0 ? 'text-danger' : 'text-success'}">
+                ${change >= 0 ? '+' : ''}${change.toFixed(2)}
+            </td>
+            <td class="${changePercent >= 0 ? 'text-danger' : 'text-success'}">
+                ${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%
+            </td>
+            <td>${nifty.toFixed(2)}</td>
+            <td class="text-success">${callPremium.toFixed(2)}</td>
+            <td class="text-danger">${putPremium.toFixed(2)}</td>
+            <td>${formatVolume(volume)}</td>
+            <td class="${sentimentClass}">${sentiment}</td>
+        `;
+        
+        tableBody.appendChild(row);
+    }
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: '2-digit'
+    });
+}
+
+function formatVolume(volume) {
+    if (volume >= 1000000) {
+        return (volume / 1000000).toFixed(1) + 'M';
+    } else if (volume >= 1000) {
+        return (volume / 1000).toFixed(1) + 'K';
+    }
+    return volume.toString();
 }
