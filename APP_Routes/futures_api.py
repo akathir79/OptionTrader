@@ -51,6 +51,45 @@ def get_current_futures_data():
             'error': 'Internal server error'
         }), 500
 
+@futures_bp.route('/analysis')
+def get_futures_spot_analysis():
+    """Get comprehensive futures vs spot analysis with historical data and monthly contracts"""
+    try:
+        symbol = request.args.get('symbol', '').strip()
+        if not symbol:
+            return jsonify({
+                'success': False,
+                'error': 'Symbol parameter is required'
+            }), 400
+        
+        # Normalize symbol format
+        if symbol.upper() in ['NIFTY', 'NIFTY50']:
+            symbol = 'NSE:NIFTY50-INDEX'
+        elif symbol.upper() == 'BANKNIFTY':
+            symbol = 'NSE:BANKNIFTY-INDEX'
+        elif symbol.upper() == 'FINNIFTY':
+            symbol = 'NSE:FINNIFTY-INDEX'
+        
+        futures_service = FuturesService()
+        
+        # Get comprehensive analysis
+        analysis_data = futures_service.get_comprehensive_futures_analysis(symbol)
+        
+        if not analysis_data or not analysis_data.get('success'):
+            return jsonify({
+                'success': False,
+                'error': analysis_data.get('error', 'Failed to retrieve comprehensive analysis')
+            }), 500
+        
+        return jsonify(analysis_data)
+        
+    except Exception as e:
+        logger.error(f"Error in get_futures_spot_analysis: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Internal server error'
+        }), 500
+
 
 @futures_bp.route('/analysis')
 def get_futures_analysis():
