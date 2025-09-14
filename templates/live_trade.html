@@ -255,6 +255,16 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
   margin-bottom: 0.25rem !important;
 }
 
+/* Fix symbol selection card internal spacing */
+.symbol-selection-card .card-body {
+  padding-bottom: 0.25rem !important;
+}
+
+/* Ensure tight card stacking */
+.left-panel .card + .card {
+  margin-top: 0.125rem !important;
+}
+
 /* Clean B/S Button Styles - Match original design */
 .option_button {
   display: inline-flex;
@@ -1220,7 +1230,7 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
       <div class="card shadow-sm symbol-selection-card" id="symbolControlsCard" style="margin-bottom: 0rem !important;">
         <div class="card-body" id="symbolControlsSection">
           <!-- Symbol Selection Row -->
-          <div class="row g-2 align-items-center mb-3">
+          <div class="row g-2 align-items-center mb-1">
             <!-- Index Selection -->
             <div class="col-md-4 d-flex align-items-center">
               <label class="form-label small fw-semibold me-2 mb-0" style="min-width: 70px;">Index:</label>
@@ -1444,7 +1454,7 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
       </div>
 
       <!-- Enhanced Option Chain Card (Single Table) -->
-      <div class="card shadow-sm" style="margin-top: 0.25rem !important;">
+      <div class="card shadow-sm" style="margin-top: -0.25rem !important;">
         <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
           <div class="d-flex align-items-center gap-3">
             <!-- ATM Display Only - No checkbox -->
