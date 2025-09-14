@@ -74,10 +74,10 @@ class VixService:
     def get_real_time_vix(self) -> Optional[Dict[str, Any]]:
         """Get real-time India VIX data from Fyers API - Always uses NIFTY 50 as baseline for analysis"""
         try:
+            # Get client with automatic token refresh
             client = self.fyers_service.get_client()
             if not client:
-                logger.warning("Fyers client not available for VIX data - using fallback")
-                # Return fallback VIX data when client unavailable but still provide analysis against NIFTY 50
+                logger.error("Fyers client not available for VIX data even after refresh attempt")
                 return self._get_fallback_vix_data()
             
             # Fyers India VIX symbol - independent of current selected symbol
@@ -91,9 +91,12 @@ class VixService:
                 vix_data = response['d'][0]  # Get first element from list
                 vix_values = vix_data.get('v', {})  # Get values dict
                 
+                current_vix = vix_values.get('lp', 0)
+                logger.info(f"Successfully fetched live VIX data: {current_vix}")
+                
                 vix_result = {
                     'symbol': vix_symbol,
-                    'ltp': vix_values.get('lp', 0),  # Last traded price
+                    'ltp': current_vix,  # Last traded price
                     'change': vix_values.get('ch', 0),  # Change
                     'change_percent': vix_values.get('chp', 0),  # Change %
                     'open': vix_values.get('op', 0),
@@ -102,12 +105,13 @@ class VixService:
                     'volume': vix_values.get('volume', 0),
                     'timestamp': datetime.now().isoformat(),
                     'baseline_symbol': 'NSE:NIFTY50-INDEX',  # Always use NIFTY 50 as baseline
-                    'analysis_note': 'VIX analysis always compares against NIFTY 50 regardless of selected symbol'
+                    'analysis_note': 'Live VIX data analyzed against NIFTY 50 baseline regardless of selected symbol',
+                    'is_fallback': False
                 }
                 
                 return vix_result
             else:
-                logger.error(f"Failed to get VIX data: {response}")
+                logger.error(f"Failed to get VIX data from API: {response}")
                 return self._get_fallback_vix_data()
                 
         except Exception as e:

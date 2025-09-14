@@ -213,7 +213,7 @@ class FyersService:
             return False, f"Authentication failed: {str(e)}", {}
     
     def get_client(self) -> Optional[fyersModel.FyersModel]:
-        """Get authenticated Fyers client"""
+        """Get authenticated Fyers client with automatic token refresh"""
         if self.client:
             return self.client
         
@@ -222,10 +222,16 @@ class FyersService:
             logger.error("No valid access token found")
             return None
         
-        # Check if token is expired (Fyers tokens expire daily)
+        # Check if token is expired and attempt refresh
         if self.is_token_expired():
-            logger.warning("Access token expired")
-            return None
+            logger.warning("Access token expired - attempting refresh")
+            if self.refresh_access_token():
+                logger.info("Successfully refreshed access token")
+                # Update settings after refresh
+                settings = self.get_settings()
+            else:
+                logger.error("Failed to refresh access token")
+                return None
         
         try:
             self.client = fyersModel.FyersModel(
@@ -238,6 +244,64 @@ class FyersService:
         except Exception as e:
             logger.error(f"Failed to create Fyers client: {str(e)}")
             return None
+    
+    def refresh_access_token(self) -> bool:
+        """Refresh access token using refresh token"""
+        try:
+            settings = self.get_settings()
+            if not settings or not settings.refresh_token:
+                logger.error("No refresh token available")
+                return False
+            
+            if settings.is_refresh_token_expired():
+                logger.error("Refresh token has expired - re-authentication required")
+                return False
+            
+            # Use Fyers API to refresh access token
+            app_session = fyersModel.SessionModel(
+                client_id=settings.clientid,
+                redirect_uri=settings.redirect_url,
+                response_type="code", 
+                state="refresh",
+                secret_key=settings.appkey,
+                grant_type="refresh_token"
+            )
+            
+            # Prepare refresh token request
+            refresh_data = {
+                "grant_type": "refresh_token",
+                "refresh_token": settings.refresh_token
+            }
+            
+            # Call Fyers refresh endpoint
+            response = app_session.generate_token(refresh_data)
+            
+            if response and response.get('s') == 'ok':
+                # Update access token in database
+                new_access_token = response.get('access_token')
+                settings.access_token = new_access_token
+                settings.access_token_created_at = datetime.utcnow()
+                
+                # Update refresh token if provided
+                if response.get('refresh_token'):
+                    settings.refresh_token = response.get('refresh_token')
+                    settings.refresh_token_created_at = datetime.utcnow()
+                
+                db.session.commit()
+                
+                # Clear cached client to force recreation with new token
+                self.client = None
+                self._settings = None  # Clear cached settings
+                
+                logger.info("Access token refreshed successfully")
+                return True
+            else:
+                logger.error(f"Token refresh failed: {response}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error refreshing access token: {str(e)}")
+            return False
     
     def is_token_expired(self) -> bool:
         """Check if access token is expired"""
