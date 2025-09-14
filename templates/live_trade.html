@@ -653,22 +653,23 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
   transition: 0.3s;
 }
 
-/* Position Management Card Styles - Fixed Layout */
+/* Position Management Card Styles - Modal Layout */
 .position-management-card {
   position: fixed;
-  top: 50%;
+  top: 20%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
   background: #fff;
   border: 1px solid #dee2e6;
   border-radius: 8px;
-  width: 350px;
+  width: 400px;
   max-width: 90vw;
-  max-height: 500px;
+  max-height: 70vh;
   z-index: 10000;
   box-shadow: 0 8px 24px rgba(0,0,0,0.25);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow-y: auto;
+  outline: none;
 }
 
 .position-card-header {
@@ -681,7 +682,24 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
   color: #495057;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
+}
+
+.position-card-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #6c757d;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.position-card-close:hover {
+  background-color: #e9ecef;
+  color: #495057;
 }
 
 .position-card-header i {
@@ -701,9 +719,19 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0,0,0,0.3);
+  background: rgba(0,0,0,0.5);
   z-index: 9999;
   display: none;
+  pointer-events: auto;
+}
+
+/* Disable interactions with option chain when modal is open */
+.modal-open .option-chain-container {
+  pointer-events: none;
+}
+
+.modal-open .position-management-card {
+  pointer-events: auto;
 }
 
 .position-entry {
@@ -2668,10 +2696,17 @@ document.addEventListener('DOMContentLoaded', function() {
         positionCard.id = `${key}Card_${rowIndex}`;
         positionCard.style.display = 'none';
         
-        // Card header
+        // Card header with close button
         const cardHeader = document.createElement('div');
         cardHeader.className = 'position-card-header';
-        cardHeader.innerHTML = '<i class="fas fa-cog"></i> Position Management';
+        cardHeader.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-cog"></i> Position Management
+            </div>
+            <button class="position-card-close" onclick="closeAllPositionCards()" title="Close">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
         
         // Card content container
         const cardContent = document.createElement('div');
@@ -3347,7 +3382,7 @@ document.addEventListener('DOMContentLoaded', function() {
         hideModalBackdrop();
     }
     
-    // Show modal backdrop
+    // Show modal backdrop with focus management
     function showModalBackdrop() {
         let backdrop = document.querySelector('.position-management-backdrop');
         if (!backdrop) {
@@ -3357,13 +3392,43 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.appendChild(backdrop);
         }
         backdrop.style.display = 'block';
+        
+        // Add modal-open class to body for interaction management
+        document.body.classList.add('modal-open');
+        
+        // Focus on the modal card for proper accessibility
+        setTimeout(() => {
+            const openCard = document.querySelector('.position-management-card[style*="block"]');
+            if (openCard) {
+                openCard.focus();
+                openCard.tabIndex = -1; // Make it focusable
+                
+                // Add keyboard support (ESC to close)
+                const handleKeydown = (e) => {
+                    if (e.key === 'Escape') {
+                        closeAllPositionCards();
+                        document.removeEventListener('keydown', handleKeydown);
+                    }
+                };
+                document.addEventListener('keydown', handleKeydown);
+            }
+        }, 100);
     }
     
-    // Hide modal backdrop
+    // Hide modal backdrop with focus management
     function hideModalBackdrop() {
         const backdrop = document.querySelector('.position-management-backdrop');
         if (backdrop) {
             backdrop.style.display = 'none';
+        }
+        
+        // Remove modal-open class to restore interactions
+        document.body.classList.remove('modal-open');
+        
+        // Return focus to the option chain table
+        const optionChainTable = document.querySelector('#optionChainTable');
+        if (optionChainTable) {
+            optionChainTable.focus();
         }
     }
     
