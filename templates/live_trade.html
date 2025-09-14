@@ -1451,7 +1451,7 @@
             </div>
           </div>
           <!-- Single Option Chain Table -->
-          <div id="optionChainContainer" style="max-height: calc(100vh - 200px); min-height: 700px; overflow-y: auto;">
+          <div id="optionChainContainer" style="height: calc(100vh - 180px); min-height: 750px; overflow-y: auto;">
 
             <div class="table-container">
               <table class="table table-sm mb-0" id="optionChainTable">
@@ -5768,25 +5768,30 @@ tr.itm-put-row td.buy_sell_cell {     /* PE B/S */
   overflow: auto !important;
 }
 
-/* Symbol Selection Card - Half height for maximum option chain space */
-div.card.shadow-sm.mb-2.symbol-selection-card {
+/* Symbol Selection Card - Forced height reduction with high specificity */
+.left-panel .symbol-selection-card {
   background: #e8eaf6 !important;
   background-color: #e8eaf6 !important;
-  max-height: 90px !important; /* Half of 180px */
+  max-height: 90px !important; /* Forced small height */
   overflow: hidden !important;
-  margin-bottom: 0.5rem !important; /* Reduce card spacing */
+  margin-bottom: 0.5rem !important;
 }
 
-div.card.shadow-sm.mb-2.symbol-selection-card .card-body {
+.left-panel .symbol-selection-card .card-body {
   background: #e8eaf6 !important;
   background-color: #e8eaf6 !important;
-  padding: 0.5rem !important; /* Ultra-compact padding */
+  padding: 6px 8px !important; /* Ultra-compact padding */
 }
 
-/* Market Data Carousel - Half height for maximum option chain space */
-.carousel-container {
-  height: 18px !important; /* Half of 35px */
+/* Market Data Carousel - Forced height reduction */
+.left-panel .carousel-container {
+  height: 18px !important; /* Forced small height */
   overflow: hidden !important;
+}
+
+.left-panel #marketDataCarousel, .left-panel .carousel-page {
+  height: 18px !important;
+  align-items: center !important;
 }
 
 .carousel-page {
