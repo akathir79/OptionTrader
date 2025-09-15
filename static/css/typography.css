@@ -79,13 +79,16 @@ td[data-numeric="true"],
 th[data-numeric="true"] {
   font-family: var(--ff-mono);
   font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: #1a1a1a;
 }
 
 /* Strike Prices */
 .strike-price {
   font-family: var(--ff-mono);
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: 700;
+  color: #1a1a1a;
 }
 
 /* Option Chain Data */
@@ -163,7 +166,8 @@ select option {
 .price-display {
   font-family: var(--ff-mono);
   font-variant-numeric: tabular-nums;
-  font-weight: 600;
+  font-weight: 700;
+  color: #1a1a1a;
 }
 
 /* Market Data */
@@ -233,6 +237,56 @@ select option {
   .help-text {
     color: #495057;
   }
+}
+
+/* ===== ACTIVE TRADES TABLE - BOLD NUMBERS ===== */
+#activeTradesTableBody td,
+#activeTradesTableBody th,
+.active-trades-table td,
+.active-trades-table th {
+  font-weight: 700 !important;
+  color: #1a1a1a !important;
+}
+
+/* Strike, Lots, Quantity, LTP, P&L - Extra Bold */
+#activeTradesTableBody .qty-cell,
+#activeTradesTableBody .strike-cell,
+#activeTradesTableBody .lots-cell,
+#activeTradesTableBody .ltp-price-cell,
+#activeTradesTableBody .pnl-cell,
+.lots-count,
+.live-pnl {
+  font-family: var(--ff-mono) !important;
+  font-weight: 800 !important;
+  font-variant-numeric: tabular-nums !important;
+  color: #000 !important;
+  text-shadow: 0.5px 0.5px 0px rgba(0,0,0,0.1);
+}
+
+/* Entry Price and LTP Display */
+.entry-price,
+.current-ltp {
+  font-family: var(--ff-mono) !important;
+  font-weight: 700 !important;
+  font-variant-numeric: tabular-nums !important;
+  color: #1a1a1a !important;
+}
+
+/* Option Chain Table - Bold Numbers */
+#optionChainTable td,
+.option-chain-table td {
+  font-family: var(--ff-mono) !important;
+  font-weight: 700 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Option Chain Critical Numbers - Extra Bold */
+.ltp-cell,
+.volume-cell,
+.oi-cell,
+.strike-cell {
+  font-weight: 800 !important;
+  color: #000 !important;
 }
 
 /* ===== PRINT STYLES ===== */
