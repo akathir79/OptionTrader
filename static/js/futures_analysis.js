@@ -988,22 +988,174 @@ function createTradingSignalsTab(data) {
 }
 
 /**
- * Create data tab
+ * Create data tab with organized tables
  */
 function createDataTab(data) {
     try {
-        const jsonData = data ? JSON.stringify(data, null, 2) : 'No data available';
+        if (!data) {
+            return '<div class="alert alert-warning">No analysis data available</div>';
+        }
+
+        const currentData = safeGet(data, 'current_market_data', {});
+        const monthlyContracts = safeArray(safeGet(data, 'monthly_contracts', []));
+        const arbitrageOpportunities = safeArray(safeGet(data, 'arbitrage_opportunities.opportunities', []));
+        const fairValueAnalysis = safeGet(data, 'fair_value_analysis', {});
+        const rbiData = safeGet(data, 'rbi_data', {});
+        const tradingSignals = safeArray(safeGet(data, 'trading_signals', []));
+
         return `
         <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h6 class="mb-0">Raw Analysis Data</h6>
+            <!-- Current Market Data -->
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Current Market Data</h6>
                     </div>
                     <div class="card-body">
-                        <pre class="bg-light p-3" style="max-height: 400px; overflow-y: auto;">
-${jsonData}
-                        </pre>
+                        <table class="table table-sm">
+                            <tr><td><strong>Spot Price</strong></td><td>₹${safeToFixed(currentData.spot_price)}</td></tr>
+                            <tr><td><strong>Futures Price</strong></td><td>₹${safeToFixed(currentData.futures_price)}</td></tr>
+                            <tr><td><strong>Basis</strong></td><td>${safeToFixed(safeGet(currentData, 'analysis.basis'))} pts</td></tr>
+                            <tr><td><strong>Basis %</strong></td><td>${safeToFixed(safeGet(currentData, 'analysis.basis_pct'), 4)}%</td></tr>
+                            <tr><td><strong>Days to Expiry</strong></td><td>${safeGet(currentData, 'analysis.days_to_expiry', '--')}</td></tr>
+                            <tr><td><strong>Fair Value</strong></td><td>₹${safeToFixed(safeGet(currentData, 'analysis.fair_value'))}</td></tr>
+                            <tr><td><strong>Regime</strong></td><td><span class="badge bg-info">${safeGet(currentData, 'analysis.regime', 'Unknown')}</span></td></tr>
+                            <tr><td><strong>Confidence Score</strong></td><td>${safeGet(currentData, 'analysis.confidence_score', '--')}/100</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RBI & Fair Value Data -->
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header bg-success text-white">
+                        <h6 class="mb-0"><i class="fas fa-university me-2"></i>RBI & Fair Value Data</h6>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-sm">
+                            <tr><td><strong>RBI Repo Rate</strong></td><td>${safeToFixed(rbiData.current_repo_rate, 2)}%</td></tr>
+                            <tr><td><strong>Last Updated</strong></td><td>${rbiData.last_updated || '--'}</td></tr>
+                            <tr><td><strong>Theoretical Fair Value</strong></td><td>₹${safeToFixed(fairValueAnalysis.theoretical_fair_value)}</td></tr>
+                            <tr><td><strong>Fair Value Gap</strong></td><td>${safeToFixed(fairValueAnalysis.fair_value_gap)} pts</td></tr>
+                            <tr><td><strong>Gap %</strong></td><td>${safeToFixed(fairValueAnalysis.gap_percentage, 4)}%</td></tr>
+                            <tr><td><strong>Arbitrage Profitable</strong></td><td>
+                                <span class="badge ${fairValueAnalysis.arbitrage_profitable ? 'bg-success' : 'bg-danger'}">
+                                    ${fairValueAnalysis.arbitrage_profitable ? 'Yes' : 'No'}
+                                </span>
+                            </td></tr>
+                            <tr><td><strong>Net Carry Rate</strong></td><td>${safeToFixed(safeGet(fairValueAnalysis, 'carry_components.net_carry_rate'), 2)}%</td></tr>
+                            <tr><td><strong>Dividend Yield</strong></td><td>${safeToFixed(safeGet(fairValueAnalysis, 'carry_components.dividend_yield'), 2)}%</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Contracts -->
+            <div class="col-12 mb-3">
+                <div class="card">
+                    <div class="card-header bg-warning text-dark">
+                        <h6 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Monthly Contracts (${monthlyContracts.length})</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-sm">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Contract</th>
+                                        <th>Expiry</th>
+                                        <th>Futures Price</th>
+                                        <th>Basis</th>
+                                        <th>Basis %</th>
+                                        <th>Days to Expiry</th>
+                                        <th>Fair Value</th>
+                                        <th>FV Gap</th>
+                                        <th>Regime</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${monthlyContracts.map(contract => `
+                                        <tr ${contract.is_near_month ? 'class="table-primary"' : ''}>
+                                            <td><strong>${contract.contract_symbol || '--'}</strong></td>
+                                            <td>${contract.expiry_date || '--'}</td>
+                                            <td>₹${safeToFixed(contract.futures_price)}</td>
+                                            <td>${safeToFixed(contract.basis)} pts</td>
+                                            <td>${safeToFixed(contract.basis_percentage, 3)}%</td>
+                                            <td>${contract.days_to_expiry || '--'}</td>
+                                            <td>₹${safeToFixed(contract.fair_value)}</td>
+                                            <td>${safeToFixed(contract.fair_value_gap)} pts</td>
+                                            <td><span class="badge bg-secondary">${contract.regime || 'Unknown'}</span></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Arbitrage Opportunities -->
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header bg-danger text-white">
+                        <h6 class="mb-0"><i class="fas fa-chart-area me-2"></i>Arbitrage Opportunities (${arbitrageOpportunities.length})</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Type</th>
+                                        <th>Confidence</th>
+                                        <th>Expected Return</th>
+                                        <th>Complexity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${arbitrageOpportunities.map(opp => `
+                                        <tr>
+                                            <td><span class="badge bg-info">${opp.type || '--'}</span></td>
+                                            <td>${opp.confidence || '--'}%</td>
+                                            <td>${safeToFixed(opp.expected_return, 4)}%</td>
+                                            <td><span class="badge ${opp.execution_complexity === 'LOW' ? 'bg-success' : opp.execution_complexity === 'MEDIUM' ? 'bg-warning' : 'bg-danger'}">${opp.execution_complexity || '--'}</span></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trading Signals -->
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="fas fa-signal me-2"></i>Trading Signals (${tradingSignals.length})</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>Signal Type</th>
+                                        <th>Action</th>
+                                        <th>Confidence</th>
+                                        <th>Risk Level</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tradingSignals.map(signal => `
+                                        <tr>
+                                            <td><span class="badge bg-primary">${signal.signal_type || '--'}</span></td>
+                                            <td><strong>${signal.action || '--'}</strong></td>
+                                            <td>${signal.confidence || '--'}%</td>
+                                            <td><span class="badge ${signal.risk_level === 'VERY_LOW' || signal.risk_level === 'LOW' ? 'bg-success' : signal.risk_level === 'MEDIUM' ? 'bg-warning' : 'bg-danger'}">${signal.risk_level || '--'}</span></td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1014,7 +1166,7 @@ ${jsonData}
         return `
             <div class="alert alert-danger">
                 <h5><i class="fas fa-exclamation-triangle me-2"></i>Error Loading Data</h5>
-                <p>Failed to load raw data: ${error.message}</p>
+                <p>Failed to load analysis data: ${error.message}</p>
                 <small>Please refresh the page or try again later.</small>
             </div>
         `;
