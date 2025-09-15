@@ -59,6 +59,16 @@ function initTradingControls() {
         });
     }
     
+    // Handle basket button clicks
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.basket-execute-btn')) {
+            handleBasketExecute(e.target.closest('.basket-execute-btn'));
+        }
+        if (e.target.closest('.basket-exit-btn')) {
+            handleBasketExit(e.target.closest('.basket-exit-btn'));
+        }
+    });
+    
     console.log('✅ Trading controls event handlers initialized');
 }
 
@@ -226,11 +236,104 @@ function handleExitPosition(button) {
     }, 2000);
 }
 
+function handleBasketExecute(button) {
+    console.log('🚀 Basket Execute clicked - executing all positions');
+    
+    // Find all active positions
+    const activeRows = document.querySelectorAll('#activeTradesTableBody tr[data-position-key]');
+    const totalPositions = activeRows.length;
+    
+    if (totalPositions === 0) {
+        console.log('⚠️ No active positions to execute');
+        return;
+    }
+    
+    // Visual feedback
+    button.style.backgroundColor = '#198754';
+    button.style.color = 'white';
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Executing...';
+    button.disabled = true;
+    
+    console.log(`📊 Executing ${totalPositions} positions:`);
+    
+    // Get trading parameters for all positions
+    const basketOrders = [];
+    activeRows.forEach((row, index) => {
+        const positionKey = row.dataset.positionKey;
+        const tradingParams = getTradingParams(positionKey);
+        basketOrders.push({
+            positionKey,
+            ...tradingParams
+        });
+        console.log(`  ${index + 1}. ${positionKey}:`, tradingParams);
+    });
+    
+    // TODO: Integrate with actual basket execution API
+    setTimeout(() => {
+        button.style.backgroundColor = '';
+        button.style.color = '';
+        button.innerHTML = '<i class="fas fa-play me-1"></i>Basket Execute';
+        button.disabled = false;
+        console.log(`✅ Basket execution completed for ${totalPositions} positions`);
+    }, 3000);
+}
+
+function handleBasketExit(button) {
+    console.log('🚪 Basket Exit clicked - exiting all positions');
+    
+    // Find all active positions
+    const activeRows = document.querySelectorAll('#activeTradesTableBody tr[data-position-key]');
+    const totalPositions = activeRows.length;
+    
+    if (totalPositions === 0) {
+        console.log('⚠️ No active positions to exit');
+        return;
+    }
+    
+    // Confirmation dialog
+    const confirmed = confirm(`Are you sure you want to exit all ${totalPositions} active positions?`);
+    if (!confirmed) {
+        console.log('❌ Basket exit cancelled by user');
+        return;
+    }
+    
+    // Visual feedback
+    button.style.backgroundColor = '#dc3545';
+    button.style.color = 'white';
+    button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Exiting...';
+    button.disabled = true;
+    
+    console.log(`📊 Exiting ${totalPositions} positions:`);
+    
+    // Get trading parameters for all positions
+    const basketExitOrders = [];
+    activeRows.forEach((row, index) => {
+        const positionKey = row.dataset.positionKey;
+        const tradingParams = getTradingParams(positionKey);
+        basketExitOrders.push({
+            positionKey,
+            ...tradingParams
+        });
+        console.log(`  ${index + 1}. ${positionKey}:`, tradingParams);
+    });
+    
+    // TODO: Integrate with actual basket exit API
+    setTimeout(() => {
+        button.style.backgroundColor = '';
+        button.style.color = '';
+        button.innerHTML = '<i class="fas fa-times me-1"></i>Basket Exit';
+        button.disabled = false;
+        console.log(`✅ Basket exit completed for ${totalPositions} positions`);
+    }, 3000);
+}
+
 // Export functions for global access
 window.getTradingParams = getTradingParams;
 window.enhanceOrderWithTradingParams = enhanceOrderWithTradingParams;
 window.handleStopLossChange = handleStopLossChange;
 window.handleExecutePosition = handleExecutePosition;
 window.handleExitPosition = handleExitPosition;
+window.handleBasketExecute = handleBasketExecute;
+window.handleBasketExit = handleBasketExit;
 
 console.log('✅ Trading Controls module loaded successfully');
