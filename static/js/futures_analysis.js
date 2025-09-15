@@ -4,12 +4,19 @@
  * monthly contracts comparison, and arbitrage opportunities
  */
 
-console.log('🚀 FUTURES ANALYSIS SCRIPT LOADING...');
+(function() {
+    'use strict';
+    
+    console.log('🚀 FUTURES ANALYSIS SCRIPT LOADING...');
+    console.log('🔍 Script execution started successfully');
 
-let futuresAnalysisCache = {};
-let chartInstances = {};
+    // Create namespace to avoid global conflicts
+    window.FuturesAnalysis = window.FuturesAnalysis || {};
+    const FA = window.FuturesAnalysis;
+    FA.cache = FA.cache || {};
+    FA.chartInstances = FA.chartInstances || {};
 
-console.log('✅ Futures analysis variables initialized');
+    console.log('✅ Futures analysis variables initialized');
 
 /**
  * Safe data access and formatting helper functions
@@ -227,6 +234,7 @@ function closeFuturesModal() {
 }
 
 // Initialize when DOM is ready (like VIX analysis)
+console.log('🔄 Adding DOMContentLoaded listener...');
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔮 Futures Analysis system initialized');
     
@@ -338,7 +346,7 @@ async function fetchFuturesAnalysis(symbol) {
         console.log('✅ Futures analysis data received:', data);
         
         // Cache the data
-        futuresAnalysisCache[symbol] = data;
+        FA.cache[symbol] = data;
         
         // Update modal with real data
         showFuturesAnalysisModal(data, false);
@@ -1303,8 +1311,10 @@ function getCurrentSelectedSymbol() {
     return 'NSE:NIFTY50-INDEX'; // Default
 }
 
-// Export functions for global access
-window.showFuturesAnalysisModal = showFuturesAnalysisModal;
-window.minimizeFuturesModal = minimizeFuturesModal;
-window.maximizeFuturesModal = maximizeFuturesModal;
-window.closeFuturesModal = closeFuturesModal;
+    // Export functions for global access
+    window.showFuturesAnalysisModal = showFuturesAnalysisModal;
+    window.minimizeFuturesModal = minimizeFuturesModal;
+    window.maximizeFuturesModal = maximizeFuturesModal;
+    window.closeFuturesModal = closeFuturesModal;
+
+})(); // End IIFE
