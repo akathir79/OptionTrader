@@ -3525,8 +3525,8 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`🔥 Processing ${Object.keys(window.globalPositions || {}).length} global positions...`);
         console.log(`🔥 GlobalPositions content:`, window.globalPositions);
         Object.entries(window.globalPositions || {}).forEach(([positionKey, position]) => {
-            console.log(`🔥 Checking position ${positionKey}:`, position, `lots > 0? ${position.lots > 0}`);
-            if (position.lots > 0) {
+            console.log(`🔥 Checking position ${positionKey}:`, position, `lots !== 0? ${position.lots !== 0}`);
+            if (position.lots !== 0) {
                 console.log(`🔥 Processing global position ${positionKey}:`, position);
                 try {
                     const currentLTP = getCurrentLTP(position.strike, position.optionType, position.expiry);
