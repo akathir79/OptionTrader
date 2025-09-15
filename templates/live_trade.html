@@ -1867,11 +1867,11 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
                   <th style="padding: 4px 2px; border-right: 1px solid #dee2e6; width: 65px; text-align: center; background: #e3f2fd;">
                     <div style="font-size: 10px; font-weight: 600; color: #1565c0;">Order Type</div>
                   </th>
-                  <th style="padding: 4px 2px; border-right: 1px solid #dee2e6; width: 75px; text-align: center; background: #f3e5f5;">
+                  <th style="padding: 4px 2px; border-right: 1px solid #dee2e6; width: 95px; text-align: center; background: #f3e5f5;">
                     <div style="font-size: 10px; font-weight: 600; color: #7b1fa2;">Stop Loss</div>
                     <div style="margin-top: 2px;">
                       <input type="number" id="defaultStopLossPercent" placeholder="%" 
-                             style="width: 35px; font-size: 9px; padding: 1px 3px; border: 1px solid #ddd; border-radius: 3px;" 
+                             style="width: 50px; font-size: 10px; padding: 2px 4px; border: 1px solid #ddd; border-radius: 3px;" 
                              min="0" max="50" step="0.1" value="0" title="Default SL % for new trades">
                     </div>
                   </th>
@@ -3646,13 +3646,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     </select>
                 </td>
                 <td style="padding: 4px 2px; text-align: center;">
-                    <div style="display: flex; flex-direction: column; gap: 1px;">
+                    <div style="display: flex; flex-direction: column; gap: 2px;">
                         <input type="number" class="form-control form-control-sm stop-loss-input" 
-                               style="width: 50px; font-size: 9px; padding: 1px 3px;" 
+                               style="width: 70px; font-size: 10px; padding: 3px 5px;" 
                                placeholder="%" min="0" max="50" step="0.1" value="0"
                                data-position-key="${positionKey}" data-entry-price="${entry.entryPrice || 0}"
                                data-action="${entry.actionLabel}" title="Stop Loss %">
-                        <small style="font-size: 8px; color: #666;" class="sl-price-display">₹0.00</small>
+                        <small style="font-size: 9px; color: #666; font-weight: 500;" class="sl-price-display">₹0.00</small>
                     </div>
                 </td>
                 <td style="padding: 4px 2px; text-align: center;">
