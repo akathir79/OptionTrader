@@ -12,14 +12,56 @@ let chartInstances = {};
 console.log('✅ Futures analysis variables initialized');
 
 /**
+ * Safe data access and formatting helper functions
+ */
+function safeToFixed(value, decimals = 2) {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+        return '--';
+    }
+    return value.toFixed(decimals);
+}
+
+function safeGet(obj, path, defaultValue = null) {
+    try {
+        const keys = path.split('.');
+        let current = obj;
+        for (const key of keys) {
+            if (current == null || typeof current !== 'object') {
+                return defaultValue;
+            }
+            current = current[key];
+        }
+        return current != null ? current : defaultValue;
+    } catch (error) {
+        console.warn('safeGet error:', error);
+        return defaultValue;
+    }
+}
+
+function safeArray(value, defaultValue = []) {
+    return Array.isArray(value) ? value : defaultValue;
+}
+
+function safeNumber(value, defaultValue = 0) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : defaultValue;
+}
+
+/**
  * Open futures analysis modal - called from futures price click
  */
 function openFuturesAnalysis() {
     try {
         console.log('🔮 Opening futures analysis modal...');
         
-        // Get current symbol if not provided
-        const symbol = getCurrentSelectedSymbol() || 'NIFTY';
+        // Get current symbol if not provided  
+        let symbol;
+        if (typeof getCurrentSelectedSymbol === 'function') {
+            symbol = getCurrentSelectedSymbol() || 'NIFTY';
+        } else {
+            console.warn('getCurrentSelectedSymbol not available, using default NIFTY');
+            symbol = 'NIFTY';
+        }
         
         if (!symbol) {
             console.error('No symbol available for futures analysis');
@@ -36,6 +78,151 @@ function openFuturesAnalysis() {
         
     } catch (error) {
         console.error('Error showing futures analysis modal:', error);
+        showErrorInFuturesModal(error.message);
+    }
+}
+
+/**
+ * Show error in futures modal
+ */
+function showErrorInFuturesModal(errorMessage) {
+    try {
+        console.error('Showing futures analysis error:', errorMessage);
+        
+        // Remove existing modal if any
+        const existingModal = document.getElementById('futuresAnalysisModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Create error modal HTML
+        const errorModalHTML = createFuturesErrorModalHTML(errorMessage);
+        
+        // Add modal to DOM
+        document.body.insertAdjacentHTML('beforeend', errorModalHTML);
+        
+        // Show modal using Bootstrap
+        const modal = new bootstrap.Modal(document.getElementById('futuresAnalysisModal'));
+        modal.show();
+        
+    } catch (error) {
+        console.error('Error showing futures analysis error modal:', error);
+        alert('Futures Analysis Error: ' + errorMessage);
+    }
+}
+
+/**
+ * Create error modal HTML
+ */
+function createFuturesErrorModalHTML(errorMessage) {
+    return `
+        <div class="modal fade" id="futuresAnalysisModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Futures Analysis Error
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center py-5">
+                        <div class="mb-4">
+                            <i class="fas fa-exclamation-triangle text-danger" style="font-size: 4rem;"></i>
+                        </div>
+                        <h4 class="text-danger mb-3">Analysis Failed</h4>
+                        <p class="text-muted mb-4">${errorMessage || 'No analysis data available'}</p>
+                        <button type="button" class="btn btn-primary" onclick="location.reload()">
+                            Refresh Page
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Initialize charts after modal is shown with data
+ */
+function initializeFuturesCharts(data) {
+    try {
+        console.log('🎯 Initializing futures charts with data:', data);
+        
+        // Note: Chart initialization will be implemented in future iterations
+        // For now, just log that we have data
+        if (data && data.monthly_contracts) {
+            console.log('📊 Monthly contracts data available:', data.monthly_contracts.length, 'contracts');
+        }
+        
+        if (data && data.arbitrage_opportunities) {
+            console.log('💰 Arbitrage opportunities available:', data.arbitrage_opportunities);
+        }
+        
+        // TODO: Implement actual chart rendering using Chart.js or similar
+        
+    } catch (error) {
+        console.error('Error initializing futures charts:', error);
+    }
+}
+
+/**
+ * Modal control functions (like VIX modal)
+ */
+function minimizeFuturesModal() {
+    const modal = document.getElementById('futuresAnalysisModal');
+    if (modal) {
+        modal.style.transform = 'scale(0.1)';
+        modal.style.transformOrigin = 'bottom left';
+        modal.style.transition = 'transform 0.3s ease';
+        modal.style.zIndex = '1040';
+        setTimeout(() => {
+            modal.style.opacity = '0.8';
+        }, 300);
+    }
+}
+
+function maximizeFuturesModal() {
+    const modal = document.getElementById('futuresAnalysisModal');
+    if (modal) {
+        // First ensure modal is visible and not minimized
+        modal.style.transform = 'scale(1)';
+        modal.style.opacity = '1';
+        modal.style.transition = 'transform 0.3s ease';
+        
+        // Then make it fullscreen
+        const modalDialog = modal.querySelector('.modal-dialog');
+        if (modalDialog) {
+            modalDialog.style.maxWidth = '95vw';
+            modalDialog.style.width = '95vw';
+            modalDialog.style.height = '95vh';
+            modalDialog.style.margin = '2.5vh auto';
+        }
+    }
+}
+
+function closeFuturesModal() {
+    const modal = document.getElementById('futuresAnalysisModal');
+    
+    // Remove fullscreen mode before closing
+    const modalDialog = modal?.querySelector('.modal-dialog');
+    if (modalDialog) {
+        modalDialog.style.maxWidth = '';
+        modalDialog.style.width = '';
+        modalDialog.style.height = '';
+        modalDialog.style.margin = '';
+    }
+    
+    // Reset transform and opacity
+    if (modal) {
+        modal.style.transform = '';
+        modal.style.opacity = '';
+        modal.style.transition = '';
+    }
+    
+    // Use Bootstrap's hide method
+    const bootstrapModal = bootstrap.Modal.getInstance(modal);
+    if (bootstrapModal) {
+        bootstrapModal.hide();
     }
 }
 
@@ -43,9 +230,24 @@ function openFuturesAnalysis() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔮 Futures Analysis system initialized');
     
-    // Make openFuturesAnalysis globally available
+    // Make functions globally available
     window.openFuturesAnalysis = openFuturesAnalysis;
-    console.log('✅ openFuturesAnalysis function made globally available');
+    window.minimizeFuturesModal = minimizeFuturesModal;
+    window.maximizeFuturesModal = maximizeFuturesModal;
+    window.closeFuturesModal = closeFuturesModal;
+    console.log('✅ All futures analysis functions made globally available');
+    
+    // Debug: Add click listener with more logging
+    const futuresElement = document.getElementById('futuresPrice');
+    if (futuresElement) {
+        console.log('✅ Found futures price element, testing click handler');
+        futuresElement.addEventListener('click', function(event) {
+            console.log('🔥 CLICK DETECTED on futures price!', event);
+            openFuturesAnalysis();
+        });
+    } else {
+        console.warn('⚠️ Futures price element not found');
+    }
 });
 
 /**
@@ -54,6 +256,17 @@ document.addEventListener('DOMContentLoaded', function() {
 function showFuturesAnalysisModal(data = null, loading = false) {
     try {
         console.log('🔮 showFuturesAnalysisModal called', { data: !!data, loading });
+        
+        // Enhanced data validation and error handling
+        if (!loading && data && !data.success) {
+            console.error('API returned error:', data.error);
+            return showErrorInFuturesModal(data.error || 'API returned unsuccessful response');
+        }
+        
+        if (!loading && (!data || typeof data !== 'object')) {
+            console.error('Invalid data structure received:', data);
+            return showErrorInFuturesModal('Invalid data structure received from API');
+        }
         
         // Create modal HTML
         const modalHTML = createFuturesAnalysisModalHTML(data, loading);
@@ -79,7 +292,16 @@ function showFuturesAnalysisModal(data = null, loading = false) {
         }
         
     } catch (error) {
-        console.error('Error showing futures analysis modal:', error);
+        console.error('Critical error in showFuturesAnalysisModal:', error);
+        // Fallback to error modal instead of silent failure
+        try {
+            showErrorInFuturesModal(
+                `Modal rendering failed: ${error.message}. This may be due to unexpected data structure or client-side processing errors.`
+            );
+        } catch (fallbackError) {
+            console.error('Failed to show error modal:', fallbackError);
+            alert('Futures Analysis Error: Modal failed to load. Please refresh the page.');
+        }
     }
 }
 
@@ -277,15 +499,17 @@ function createFuturesAnalysisModalHTML(data, loading) {
  * Create overview tab content
  */
 function createOverviewTab(data) {
-    const currentData = data.current_market_data;
-    const rbiData = data.rbi_data || {};
-    const summary = data.summary || {};
-    const fairValue = data.fair_value_analysis || {};
-    
-    const spotPrice = currentData.spot_price || 0;
-    const futuresPrice = currentData.futures_price || 0;
-    const basis = futuresPrice - spotPrice;
-    const basisPct = (basis / spotPrice * 100).toFixed(2);
+    try {
+        // Safe data extraction with null checks
+        const currentData = safeGet(data, 'current_market_data', {});
+        const rbiData = safeGet(data, 'rbi_data', {});
+        const summary = safeGet(data, 'summary', {});
+        const fairValue = safeGet(data, 'fair_value_analysis', {});
+        
+        const spotPrice = safeNumber(safeGet(currentData, 'spot_price'), 0);
+        const futuresPrice = safeNumber(safeGet(currentData, 'futures_price'), 0);
+        const basis = futuresPrice - spotPrice;
+        const basisPct = spotPrice !== 0 ? safeToFixed((basis / spotPrice * 100), 2) : '--';
     
     return `
         <div class="row">
@@ -298,18 +522,18 @@ function createOverviewTab(data) {
                     <div class="card-body">
                         <div class="row text-center">
                             <div class="col-6">
-                                <h5 class="text-primary">${spotPrice.toFixed(2)}</h5>
+                                <h5 class="text-primary">${safeToFixed(spotPrice, 2)}</h5>
                                 <small class="text-muted">Spot Price</small>
                             </div>
                             <div class="col-6">
-                                <h5 class="text-success">${futuresPrice.toFixed(2)}</h5>
+                                <h5 class="text-success">${safeToFixed(futuresPrice, 2)}</h5>
                                 <small class="text-muted">Futures Price</small>
                             </div>
                         </div>
                         <hr>
                         <div class="text-center">
                             <h4 class="${basis >= 0 ? 'text-success' : 'text-danger'}">
-                                ${basis >= 0 ? '+' : ''}${basis.toFixed(2)} (${basisPct}%)
+                                ${basis >= 0 ? '+' : ''}${safeToFixed(basis, 2)} (${basisPct}%)
                             </h4>
                             <small class="text-muted">Basis (Futures - Spot)</small>
                         </div>
@@ -331,14 +555,14 @@ function createOverviewTab(data) {
                     <div class="card-body">
                         <div class="row">
                             <div class="col-6">
-                                <h5 class="text-warning">${rbiData.current_repo_rate?.toFixed(2) || '5.50'}%</h5>
+                                <h5 class="text-warning">${safeToFixed(safeGet(rbiData, 'current_repo_rate', 5.50), 2)}%</h5>
                                 <small class="text-muted">RBI Repo Rate</small>
                                 <div class="mt-1">
                                     <span class="badge bg-light text-dark">${rbiData.rate_source || 'Live'}</span>
                                 </div>
                             </div>
                             <div class="col-6">
-                                <h5 class="text-info">${fairValue.theoretical_fair_value?.toFixed(2) || '--'}</h5>
+                                <h5 class="text-info">${safeToFixed(safeGet(fairValue, 'theoretical_fair_value'))}</h5>
                                 <small class="text-muted">Fair Value</small>
                                 <div class="mt-1">
                                     <span class="badge ${fairValue.arbitrage_profitable ? 'bg-success' : 'bg-secondary'}">
@@ -349,7 +573,7 @@ function createOverviewTab(data) {
                         </div>
                         <hr>
                         <div class="text-center">
-                            <small class="text-muted">Gap: ${fairValue.fair_value_gap?.toFixed(2) || '--'} points</small>
+                            <small class="text-muted">Gap: ${safeToFixed(safeGet(fairValue, 'fair_value_gap'))} points</small>
                         </div>
                     </div>
                 </div>
@@ -374,11 +598,11 @@ function createOverviewTab(data) {
                                 <small class="text-muted">Risk Level</small>
                             </div>
                             <div class="col-3 text-center">
-                                <h5 class="text-success">${summary.arbitrage_score?.toFixed(0) || '0'}%</h5>
+                                <h5 class="text-success">${safeToFixed(safeGet(summary, 'arbitrage_score'), 0)}%</h5>
                                 <small class="text-muted">Arbitrage Score</small>
                             </div>
                             <div class="col-3 text-center">
-                                <h5 class="text-info">${data.trading_signals?.length || 0}</h5>
+                                <h5 class="text-info">${safeArray(safeGet(data, 'trading_signals')).length}</h5>
                                 <small class="text-muted">Active Signals</small>
                             </div>
                         </div>
@@ -393,23 +617,35 @@ function createOverviewTab(data) {
                         <h6 class="mb-0"><i class="fas fa-thumbs-up me-2"></i>Recommendation</h6>
                     </div>
                     <div class="card-body text-center">
-                        <h4 class="text-success">${summary.trading_recommendation || 'HOLD'}</h4>
+                        <h4 class="text-success">${safeGet(summary, 'trading_recommendation', 'HOLD')}</h4>
                         <div class="mt-2">
-                            <small class="text-muted">Based on ${data.trading_signals?.length || 0} signals</small>
+                            <small class="text-muted">Based on ${safeArray(safeGet(data, 'trading_signals')).length} signals</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     `;
+    } catch (error) {
+        console.error('Error creating overview tab:', error);
+        return `
+            <div class="alert alert-danger">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Error Loading Overview</h5>
+                <p>Failed to load overview data: ${error.message}</p>
+                <small>Please refresh the page or try again later.</small>
+            </div>
+        `;
+    }
 }
 
 /**
  * Create basis analysis tab
  */
 function createBasisAnalysisTab(data) {
-    const historical = data.historical_analysis || {};
-    const fairValue = data.fair_value_analysis || {};
+    try {
+        // Safe data extraction with null checks
+        const historical = safeGet(data, 'historical_analysis', {});
+        const fairValue = safeGet(data, 'fair_value_analysis', {});
     
     return `
         <div class="row">
@@ -426,23 +662,23 @@ function createBasisAnalysisTab(data) {
                             <table class="table table-sm">
                                 <tr>
                                     <td>Mean Basis:</td>
-                                    <td class="text-end">${historical.basis_statistics?.mean_basis?.toFixed(2) || '--'}</td>
+                                    <td class="text-end">${safeToFixed(safeGet(historical, 'basis_statistics.mean_basis'))}</td>
                                 </tr>
                                 <tr>
                                     <td>Std Deviation:</td>
-                                    <td class="text-end">${historical.basis_statistics?.std_deviation?.toFixed(2) || '--'}</td>
+                                    <td class="text-end">${safeToFixed(safeGet(historical, 'basis_statistics.std_deviation'))}</td>
                                 </tr>
                                 <tr>
                                     <td>Current Percentile:</td>
-                                    <td class="text-end">${historical.basis_statistics?.current_percentile?.toFixed(1) || '--'}%</td>
+                                    <td class="text-end">${safeToFixed(safeGet(historical, 'basis_statistics.current_percentile'), 1)}%</td>
                                 </tr>
                                 <tr>
                                     <td>Contango Days:</td>
-                                    <td class="text-end">${historical.basis_statistics?.contango_days || '--'}</td>
+                                    <td class="text-end">${safeGet(historical, 'basis_statistics.contango_days', '--')}</td>
                                 </tr>
                                 <tr>
                                     <td>Backwardation Days:</td>
-                                    <td class="text-end">${historical.basis_statistics?.backwardation_days || '--'}</td>
+                                    <td class="text-end">${safeGet(historical, 'basis_statistics.backwardation_days', '--')}</td>
                                 </tr>
                             </table>
                         </div>
@@ -458,19 +694,19 @@ function createBasisAnalysisTab(data) {
                             <table class="table table-sm">
                                 <tr>
                                     <td>Repo Rate:</td>
-                                    <td class="text-end">${fairValue.carry_components?.repo_rate?.toFixed(2) || '--'}%</td>
+                                    <td class="text-end">${safeToFixed(safeGet(fairValue, 'carry_components.repo_rate'))}%</td>
                                 </tr>
                                 <tr>
                                     <td>Dividend Yield:</td>
-                                    <td class="text-end">${fairValue.carry_components?.dividend_yield?.toFixed(2) || '--'}%</td>
+                                    <td class="text-end">${safeToFixed(safeGet(fairValue, 'carry_components.dividend_yield'))}%</td>
                                 </tr>
                                 <tr>
                                     <td>Net Carry:</td>
-                                    <td class="text-end">${fairValue.carry_components?.net_carry_rate?.toFixed(2) || '--'}%</td>
+                                    <td class="text-end">${safeToFixed(safeGet(fairValue, 'carry_components.net_carry_rate'))}%</td>
                                 </tr>
                                 <tr>
                                     <td>Days to Expiry:</td>
-                                    <td class="text-end">${fairValue.carry_components?.days_remaining || '--'}</td>
+                                    <td class="text-end">${safeGet(fairValue, 'carry_components.days_remaining', '--')}</td>
                                 </tr>
                             </table>
                         </div>
@@ -479,13 +715,25 @@ function createBasisAnalysisTab(data) {
             </div>
         </div>
     `;
+    } catch (error) {
+        console.error('Error creating basis analysis tab:', error);
+        return `
+            <div class="alert alert-danger">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Error Loading Basis Analysis</h5>
+                <p>Failed to load basis analysis data: ${error.message}</p>
+                <small>Please refresh the page or try again later.</small>
+            </div>
+        `;
+    }
 }
 
 /**
  * Create monthly contracts tab
  */
 function createMonthlyContractsTab(data) {
-    const monthlyContracts = data.monthly_contracts || [];
+    try {
+        // Safe data extraction with null checks
+        const monthlyContracts = safeArray(safeGet(data, 'monthly_contracts'));
     
     let contractsHTML = '';
     if (monthlyContracts.length > 0) {
@@ -506,34 +754,49 @@ function createMonthlyContractsTab(data) {
                         </tr>
                     </thead>
                     <tbody>
-                        ${monthlyContracts.map(contract => `
-                            <tr class="${contract.is_near_month ? 'table-warning' : ''}">
+                        ${monthlyContracts.map(contract => {
+                            // Safe access to contract properties with null checks
+                            const contractSymbol = safeGet(contract, 'contract_symbol', 'N/A');
+                            const symbolDisplay = contractSymbol.includes(':') ? contractSymbol.split(':')[1] : contractSymbol;
+                            const expiryDate = safeGet(contract, 'expiry_date');
+                            const expiryDisplay = expiryDate ? new Date(expiryDate).toLocaleDateString() : '--';
+                            const daysToExpiry = safeGet(contract, 'days_to_expiry', '--');
+                            const futuresPrice = safeNumber(safeGet(contract, 'futures_price'));
+                            const basis = safeNumber(safeGet(contract, 'basis'));
+                            const basisPct = safeNumber(safeGet(contract, 'basis_percentage'));
+                            const fairValue = safeNumber(safeGet(contract, 'fair_value'));
+                            const annualizedCarry = safeNumber(safeGet(contract, 'annualized_carry'));
+                            const regime = safeGet(contract, 'regime', 'NORMAL');
+                            const isNearMonth = safeGet(contract, 'is_near_month', false);
+                            
+                            return `
+                            <tr class="${isNearMonth ? 'table-warning' : ''}">
                                 <td>
-                                    <span class="badge ${contract.is_near_month ? 'bg-primary' : 'bg-secondary'}">
-                                        ${contract.contract_symbol.split(':')[1] || contract.contract_symbol}
+                                    <span class="badge ${isNearMonth ? 'bg-primary' : 'bg-secondary'}">
+                                        ${symbolDisplay}
                                     </span>
                                 </td>
-                                <td>${new Date(contract.expiry_date).toLocaleDateString()}</td>
-                                <td>${contract.days_to_expiry}</td>
-                                <td>${contract.futures_price.toFixed(2)}</td>
-                                <td class="${contract.basis >= 0 ? 'text-success' : 'text-danger'}">
-                                    ${contract.basis >= 0 ? '+' : ''}${contract.basis.toFixed(2)}
+                                <td>${expiryDisplay}</td>
+                                <td>${daysToExpiry}</td>
+                                <td>${safeToFixed(futuresPrice, 2)}</td>
+                                <td class="${basis >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${basis >= 0 ? '+' : ''}${safeToFixed(basis, 2)}
                                 </td>
-                                <td class="${contract.basis_percentage >= 0 ? 'text-success' : 'text-danger'}">
-                                    ${contract.basis_percentage >= 0 ? '+' : ''}${contract.basis_percentage.toFixed(2)}%
+                                <td class="${basisPct >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${basisPct >= 0 ? '+' : ''}${safeToFixed(basisPct, 2)}%
                                 </td>
-                                <td>${contract.fair_value.toFixed(2)}</td>
-                                <td>${contract.annualized_carry.toFixed(2)}%</td>
+                                <td>${safeToFixed(fairValue, 2)}</td>
+                                <td>${safeToFixed(annualizedCarry, 2)}%</td>
                                 <td>
                                     <span class="badge ${
-                                        contract.regime === 'CONTANGO' ? 'bg-success' : 
-                                        contract.regime === 'BACKWARDATION' ? 'bg-danger' : 'bg-secondary'
+                                        regime === 'CONTANGO' ? 'bg-success' : 
+                                        regime === 'BACKWARDATION' ? 'bg-danger' : 'bg-secondary'
                                     }">
-                                        ${contract.regime}
+                                        ${regime}
                                     </span>
                                 </td>
-                            </tr>
-                        `).join('')}
+                            </tr>`;
+                        }).join('')}
                     </tbody>
                 </table>
             </div>
@@ -562,14 +825,26 @@ function createMonthlyContractsTab(data) {
             </div>
         </div>
     `;
+    } catch (error) {
+        console.error('Error creating monthly contracts tab:', error);
+        return `
+            <div class="alert alert-danger">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Error Loading Monthly Contracts</h5>
+                <p>Failed to load monthly contracts data: ${error.message}</p>
+                <small>Please refresh the page or try again later.</small>
+            </div>
+        `;
+    }
 }
 
 /**
  * Create arbitrage opportunities tab
  */
 function createArbitrageTab(data) {
-    const arbitrage = data.arbitrage_opportunities || {};
-    const opportunities = arbitrage.opportunities || [];
+    try {
+        // Safe data extraction with null checks
+        const arbitrage = safeGet(data, 'arbitrage_opportunities', {});
+        const opportunities = safeArray(safeGet(arbitrage, 'opportunities'));
     
     let opportunitiesHTML = '';
     if (opportunities.length > 0) {
@@ -583,19 +858,19 @@ function createArbitrageTab(data) {
                     <div class="row">
                         <div class="col-md-3">
                             <strong>Expected Return:</strong><br>
-                            <span class="text-success">${opp.expected_return?.toFixed(2) || '--'}%</span>
+                            <span class="text-success">${safeToFixed(safeGet(opp, 'expected_return'))}%</span>
                         </div>
                         <div class="col-md-3">
                             <strong>Confidence:</strong><br>
-                            <span class="text-primary">${opp.confidence || '--'}%</span>
+                            <span class="text-primary">${safeGet(opp, 'confidence', '--')}%</span>
                         </div>
                         <div class="col-md-3">
                             <strong>Complexity:</strong><br>
-                            <span class="text-info">${opp.execution_complexity || '--'}</span>
+                            <span class="text-info">${safeGet(opp, 'execution_complexity', '--')}</span>
                         </div>
                         <div class="col-md-3">
                             <strong>Capital Required:</strong><br>
-                            <span class="text-warning">₹${(opp.capital_required || 0).toLocaleString()}</span>
+                            <span class="text-warning">₹${safeNumber(safeGet(opp, 'capital_required')).toLocaleString()}</span>
                         </div>
                     </div>
                 </div>
@@ -617,15 +892,15 @@ function createArbitrageTab(data) {
                         <h6 class="mb-0">Overall Assessment</h6>
                     </div>
                     <div class="card-body text-center">
-                        <h3 class="text-success">${arbitrage.overall_assessment || 'LOW'}</h3>
-                        <p class="mb-2">Opportunities Found: ${arbitrage.opportunities_found || 0}</p>
-                        <p class="mb-2">Avg Confidence: ${arbitrage.confidence?.toFixed(0) || 0}%</p>
+                        <h3 class="text-success">${safeGet(arbitrage, 'overall_assessment', 'LOW')}</h3>
+                        <p class="mb-2">Opportunities Found: ${safeGet(arbitrage, 'opportunities_found', 0)}</p>
+                        <p class="mb-2">Avg Confidence: ${safeToFixed(safeGet(arbitrage, 'confidence'), 0)}%</p>
                         <div class="mt-3">
                             <span class="badge ${
-                                arbitrage.recommended_action === 'EXECUTE' ? 'bg-success' :
-                                arbitrage.recommended_action === 'MONITOR' ? 'bg-warning' : 'bg-secondary'
+                                safeGet(arbitrage, 'recommended_action') === 'EXECUTE' ? 'bg-success' :
+                                safeGet(arbitrage, 'recommended_action') === 'MONITOR' ? 'bg-warning' : 'bg-secondary'
                             } p-2">
-                                ${arbitrage.recommended_action || 'WAIT'}
+                                ${safeGet(arbitrage, 'recommended_action', 'WAIT')}
                             </span>
                         </div>
                     </div>
@@ -633,13 +908,24 @@ function createArbitrageTab(data) {
             </div>
         </div>
     `;
+    } catch (error) {
+        console.error('Error creating arbitrage tab:', error);
+        return `
+            <div class="alert alert-danger">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Error Loading Arbitrage Analysis</h5>
+                <p>Failed to load arbitrage data: ${error.message}</p>
+                <small>Please refresh the page or try again later.</small>
+            </div>
+        `;
+    }
 }
 
 /**
  * Create trading signals tab
  */
 function createTradingSignalsTab(data) {
-    const signals = data.trading_signals || [];
+    try {
+        const signals = safeArray(safeGet(data, 'trading_signals'));
     
     let signalsHTML = '';
     if (signals.length > 0) {
@@ -651,21 +937,21 @@ function createTradingSignalsTab(data) {
                 } text-white">
                     <div class="d-flex justify-content-between align-items-center">
                         <h6 class="mb-0">${signal.signal_type}</h6>
-                        <span class="badge bg-light text-dark">${signal.confidence}% Confidence</span>
+                        <span class="badge bg-light text-dark">${safeGet(signal, 'confidence', '--')}% Confidence</span>
                     </div>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6">
-                            <p><strong>Action:</strong> <span class="text-primary">${signal.action}</span></p>
-                            <p><strong>Risk Level:</strong> <span class="text-info">${signal.risk_level || '--'}</span></p>
+                            <p><strong>Action:</strong> <span class="text-primary">${safeGet(signal, 'action', 'N/A')}</span></p>
+                            <p><strong>Risk Level:</strong> <span class="text-info">${safeGet(signal, 'risk_level', '--')}</span></p>
                         </div>
                         <div class="col-md-6">
-                            <p><strong>Time Horizon:</strong> ${signal.time_horizon || '--'}</p>
-                            <p><strong>Expected Return:</strong> ${signal.expected_return?.toFixed(2) || '--'}%</p>
+                            <p><strong>Time Horizon:</strong> ${safeGet(signal, 'time_horizon', '--')}</p>
+                            <p><strong>Expected Return:</strong> ${safeToFixed(safeGet(signal, 'expected_return'))}%</p>
                         </div>
                     </div>
-                    <p class="text-muted">${signal.description}</p>
+                    <p class="text-muted">${safeGet(signal, 'description', 'No description available')}</p>
                 </div>
             </div>
         `).join('');
@@ -681,13 +967,25 @@ function createTradingSignalsTab(data) {
             </div>
         </div>
     `;
+    } catch (error) {
+        console.error('Error creating trading signals tab:', error);
+        return `
+            <div class="alert alert-danger">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Error Loading Trading Signals</h5>
+                <p>Failed to load trading signals data: ${error.message}</p>
+                <small>Please refresh the page or try again later.</small>
+            </div>
+        `;
+    }
 }
 
 /**
  * Create data tab
  */
 function createDataTab(data) {
-    return `
+    try {
+        const jsonData = data ? JSON.stringify(data, null, 2) : 'No data available';
+        return `
         <div class="row">
             <div class="col-12">
                 <div class="card">
@@ -696,13 +994,23 @@ function createDataTab(data) {
                     </div>
                     <div class="card-body">
                         <pre class="bg-light p-3" style="max-height: 400px; overflow-y: auto;">
-${JSON.stringify(data, null, 2)}
+${jsonData}
                         </pre>
                     </div>
                 </div>
             </div>
         </div>
     `;
+    } catch (error) {
+        console.error('Error creating data tab:', error);
+        return `
+            <div class="alert alert-danger">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Error Loading Data</h5>
+                <p>Failed to load raw data: ${error.message}</p>
+                <small>Please refresh the page or try again later.</small>
+            </div>
+        `;
+    }
 }
 
 /**
