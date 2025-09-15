@@ -1864,7 +1864,7 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 60px; text-align: center;">Entry</th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 50px; text-align: center;">LTP</th>
                   <!-- New Trading Columns -->
-                  <th style="padding: 4px 2px; border-right: 1px solid #dee2e6; width: 65px; text-align: center; background: #e3f2fd;">
+                  <th style="padding: 4px 2px; border-right: 1px solid #dee2e6; width: 80px; text-align: center; background: #e3f2fd;">
                     <div style="font-size: 10px; font-weight: 600; color: #1565c0;">Order Type</div>
                   </th>
                   <th style="padding: 4px 2px; border-right: 1px solid #dee2e6; width: 95px; text-align: center; background: #f3e5f5;">
@@ -1875,7 +1875,7 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
                              min="0" max="50" step="0.1" value="0" title="Default SL % for new trades">
                     </div>
                   </th>
-                  <th style="padding: 4px 2px; border-right: 1px solid #dee2e6; width: 55px; text-align: center; background: #e8f5e8;">
+                  <th style="padding: 4px 2px; border-right: 1px solid #dee2e6; width: 70px; text-align: center; background: #e8f5e8;">
                     <div style="font-size: 10px; font-weight: 600; color: #2e7d32;">Trailing SL</div>
                   </th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 50px; text-align: center;">Delta</th>
@@ -3637,7 +3637,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td style="padding: 8px 6px; text-align: center;">${displayPrice}</td>
                 <!-- New Trading Columns -->
                 <td style="padding: 4px 2px; text-align: center;">
-                    <select class="form-select form-select-sm order-type-select" style="width: 60px; font-size: 9px;" 
+                    <select class="form-select form-select-sm order-type-select" style="width: 75px; font-size: 10px; padding: 2px 4px;" 
                             data-position-key="${positionKey}">
                         <option value="1">Market</option>
                         <option value="2">Limit</option>
@@ -3656,10 +3656,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </td>
                 <td style="padding: 4px 2px; text-align: center;">
-                    <div class="form-check" style="margin: 0;">
+                    <div class="form-check" style="margin: 0; display: flex; justify-content: center;">
                         <input type="checkbox" class="form-check-input trailing-sl-checkbox" 
-                               style="transform: scale(0.8);" data-position-key="${positionKey}"
-                               title="Enable Trailing Stop Loss">
+                               style="transform: scale(1.1); border: 2px solid #2e7d32; border-radius: 3px; width: 16px; height: 16px;" 
+                               data-position-key="${positionKey}" title="Enable Trailing Stop Loss">
                     </div>
                 </td>
                 <td style="padding: 8px 6px; text-align: center;">₹0.00</td>
