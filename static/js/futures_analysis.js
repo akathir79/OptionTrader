@@ -1376,25 +1376,38 @@ function maximizeFuturesModal() {
 function closeFuturesModal() {
     const modal = document.getElementById('futuresAnalysisModal');
     if (modal) {
-        const modalDialog = modal.querySelector('.modal-dialog');
-        if (modalDialog) {
-            modalDialog.classList.remove('modal-fullscreen');
+        // Get Bootstrap modal instance and properly hide it
+        const modalInstance = bootstrap.Modal.getInstance(modal);
+        if (modalInstance) {
+            modalInstance.hide();
+        } else {
+            // Create instance and hide if one doesn't exist
+            const newModalInstance = new bootstrap.Modal(modal);
+            newModalInstance.hide();
         }
+        
+        // Clean up modal styles after a short delay
+        setTimeout(() => {
+            const modalDialog = modal.querySelector('.modal-dialog');
+            if (modalDialog) {
+                modalDialog.classList.remove('modal-fullscreen');
+                modalDialog.style.maxWidth = '';
+                modalDialog.style.width = '';
+                modalDialog.style.height = '';
+                modalDialog.style.margin = '';
+            }
+            
+            // Clean up charts if they exist
+            if (typeof FA !== 'undefined' && FA.chartInstances) {
+                Object.values(FA.chartInstances).forEach(chart => {
+                    if (chart && chart.destroy) {
+                        chart.destroy();
+                    }
+                });
+                FA.chartInstances = {};
+            }
+        }, 100);
     }
-    
-    // Clean up charts
-    Object.values(chartInstances).forEach(chart => {
-        if (chart && chart.destroy) {
-            chart.destroy();
-        }
-    });
-    chartInstances = {};
-    
-    document.body.style.overflow = 'auto';
-    document.body.classList.remove('modal-open');
-    
-    const backdrops = document.querySelectorAll('.modal-backdrop');
-    backdrops.forEach(backdrop => backdrop.remove());
 }
 
 function createMinimizedFuturesIndicator() {
