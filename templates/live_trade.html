@@ -2637,8 +2637,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Global position tracking system
+    // Global position tracking system - SINGLE SOURCE OF TRUTH
+    console.log('🔧 Initializing global position tracking system...');
     window.globalPositions = window.globalPositions || {};
+    window.activeLots = window.activeLots || [];
+    window.closedTrades = window.closedTrades || [];
+    console.log('🔧 Global position arrays initialized:', {
+        globalPositions: Object.keys(window.globalPositions).length,
+        activeLots: window.activeLots.length,
+        closedTrades: window.closedTrades.length
+    });
     
     // Function to get current LTP for a specific strike and option type
     function getCurrentLTP(strike, optionType, expiry) {
@@ -2733,8 +2741,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Position Card +/- buttons MUST update BOTH arrays: globalPositions AND activeLots
     // See replit.md "CRITICAL SYNCHRONIZATION LOGIC" section for preservation rules
     //====================================================================
-    function handleExpirySpecificPositionChange(rowIndex, key, action, targetExpiry) {
-        console.log(`[EXPIRY POSITION CHANGE] START - Action: ${action}, rowIndex: ${rowIndex}, key: ${key}, targetExpiry: ${targetExpiry}`);
+    // ATTACH TO WINDOW FOR DEBUGGING
+    window.handleExpirySpecificPositionChange = function handleExpirySpecificPositionChange(rowIndex, key, action, targetExpiry) {
+        console.log(`🔥 [EXPIRY POSITION CHANGE] START - Action: ${action}, rowIndex: ${rowIndex}, key: ${key}, targetExpiry: ${targetExpiry}`);
+        console.log(`🔥 Current window.globalPositions:`, window.globalPositions);
         
         // Get current strike information
         const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
@@ -2771,9 +2781,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`[POSITION CREATION] Entry price captured: ₹${entryPrice} for ${positionKey}`);
             }
             const beforeLots = window.globalPositions[positionKey].lots;
-            window.globalPositions[positionKey].lots++;
+            // Increment for Buy, Decrement for Sell to create negative lots for sell positions
+            if (key.includes('Buy')) {
+                window.globalPositions[positionKey].lots++;
+            } else {
+                window.globalPositions[positionKey].lots--;
+            }
             const afterLots = window.globalPositions[positionKey].lots;
-            console.log(`[EXPIRY POSITION CHANGE] ADD: ${beforeLots} -> ${afterLots}`);
+            console.log(`🔥 [EXPIRY POSITION CHANGE] ADD ${key}: ${beforeLots} -> ${afterLots}`);
             
             // Update current expiry counter if this matches current expiry
             const currentExpiry = window.tradingState?.currentExpiry || window.webSocketHandler?.currentExpiry;
@@ -2864,10 +2879,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update the position management card content
         updatePositionCard(rowIndex, key);
         
-        // Update current positions table and separate tables
+        // Update current positions table and separate tables  
+        console.log(`🔥 Calling updateActiveTradesTable after position change...`);
         updateCurrentPositionsTable();
         updateActiveTradesTable(); // **FIX: Explicitly update active trades table**
         updateClosedTradesTable(); // **FIX: Explicitly update closed trades table**
+        console.log(`🔥 Table updates completed.`);
         
         // Force update of button displays for all buttons to ensure proper synchronization
         console.log(`[SYNC UPDATE] After changes - Global positions count: ${Object.keys(window.globalPositions || {}).length}`);
@@ -3499,9 +3516,12 @@ document.addEventListener('DOMContentLoaded', function() {
         updateClosedTradesTable();
     }
 
-    // Update Active Trades Table only
-    function updateActiveTradesTable() {
+    // Update Active Trades Table only - ATTACH TO WINDOW FOR DEBUGGING
+    window.updateActiveTradesTable = function updateActiveTradesTable() {
         console.log(`🔥 updateActiveTradesTable() called`);
+        console.log(`🔥 Current window.globalPositions:`, window.globalPositions);
+        console.log(`🔥 GlobalPositions keys:`, Object.keys(window.globalPositions || {}));
+        console.log(`🔥 GlobalPositions count:`, Object.keys(window.globalPositions || {}).length);
         console.log(`🔥 Active lots LENGTH:`, (window.activeLots || []).length);
         console.log(`🔥 Closed trades LENGTH:`, (window.closedTrades || []).length);
         console.log(`🔥 Active lots CONTENT:`, window.activeLots);
