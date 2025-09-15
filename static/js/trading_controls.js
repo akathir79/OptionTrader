@@ -47,6 +47,16 @@ function initTradingControls() {
                 handleTrailingStopLossChange(e.target);
             }
         });
+        
+        // Handle execute and exit button clicks
+        activeTradesTable.addEventListener('click', function(e) {
+            if (e.target.closest('.execute-btn')) {
+                handleExecutePosition(e.target.closest('.execute-btn'));
+            }
+            if (e.target.closest('.exit-btn')) {
+                handleExitPosition(e.target.closest('.exit-btn'));
+            }
+        });
     }
     
     console.log('✅ Trading controls event handlers initialized');
@@ -172,9 +182,55 @@ function enhanceOrderWithTradingParams(orderData, positionKey) {
     return enhancedOrder;
 }
 
+function handleExecutePosition(button) {
+    const positionKey = button.dataset.positionKey;
+    console.log(`🚀 Execute position clicked for: ${positionKey}`);
+    
+    // Get trading parameters for this position
+    const tradingParams = getTradingParams(positionKey);
+    console.log('📊 Trading params for execution:', tradingParams);
+    
+    // Visual feedback
+    button.style.backgroundColor = '#198754';
+    button.style.color = 'white';
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    
+    // TODO: Integrate with actual order execution API
+    setTimeout(() => {
+        button.style.backgroundColor = '';
+        button.style.color = '';
+        button.innerHTML = '<i class="fas fa-play"></i>';
+        console.log('✅ Position execution completed');
+    }, 2000);
+}
+
+function handleExitPosition(button) {
+    const positionKey = button.dataset.positionKey;
+    console.log(`🚪 Exit position clicked for: ${positionKey}`);
+    
+    // Get trading parameters for this position
+    const tradingParams = getTradingParams(positionKey);
+    console.log('📊 Trading params for exit:', tradingParams);
+    
+    // Visual feedback
+    button.style.backgroundColor = '#dc3545';
+    button.style.color = 'white';
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    
+    // TODO: Integrate with actual exit order API
+    setTimeout(() => {
+        button.style.backgroundColor = '';
+        button.style.color = '';
+        button.innerHTML = '<i class="fas fa-times"></i>';
+        console.log('✅ Position exit completed');
+    }, 2000);
+}
+
 // Export functions for global access
 window.getTradingParams = getTradingParams;
 window.enhanceOrderWithTradingParams = enhanceOrderWithTradingParams;
 window.handleStopLossChange = handleStopLossChange;
+window.handleExecutePosition = handleExecutePosition;
+window.handleExitPosition = handleExitPosition;
 
 console.log('✅ Trading Controls module loaded successfully');

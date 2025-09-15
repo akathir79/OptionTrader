@@ -3596,12 +3596,38 @@ document.addEventListener('DOMContentLoaded', function() {
             const pnlColor = pnl >= 0 ? 'text-success' : 'text-danger';
             const pnlSign = pnl >= 0 ? '+' : '';
             
-            // Action badge styling for active positions
+            // Action badge styling for active positions with action buttons
             let actionBadge;
             if (entry.actionLabel.includes('Buy')) {
-                actionBadge = `<span class="badge bg-success text-white">${entry.actionLabel.toUpperCase()}</span>`;
+                actionBadge = `
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                        <span class="badge bg-success text-white">${entry.actionLabel.toUpperCase()}</span>
+                        <div style="display: flex; gap: 3px;">
+                            <button class="btn btn-outline-success btn-sm execute-btn" style="padding: 2px 6px; font-size: 10px;" 
+                                    data-position-key="${positionKey}" title="Execute Position">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm exit-btn" style="padding: 2px 6px; font-size: 10px;" 
+                                    data-position-key="${positionKey}" title="Exit Position">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>`;
             } else {
-                actionBadge = `<span class="badge bg-danger text-white">${entry.actionLabel.toUpperCase()}</span>`;
+                actionBadge = `
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                        <span class="badge bg-danger text-white">${entry.actionLabel.toUpperCase()}</span>
+                        <div style="display: flex; gap: 3px;">
+                            <button class="btn btn-outline-success btn-sm execute-btn" style="padding: 2px 6px; font-size: 10px;" 
+                                    data-position-key="${positionKey}" title="Execute Position">
+                                <i class="fas fa-play"></i>
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm exit-btn" style="padding: 2px 6px; font-size: 10px;" 
+                                    data-position-key="${positionKey}" title="Exit Position">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>`;
             }
             
             // Format timestamps for active positions
