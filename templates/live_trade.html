@@ -1857,8 +1857,6 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 40px; text-align: center;">Action</th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 45px; text-align: center;">Lots</th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 45px; text-align: center;">Qty</th>
-                  <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 140px; text-align: center;">Symbol</th>
-                  <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 80px; text-align: center;">Trade Date/Time</th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 70px; text-align: center;">Strike</th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 80px; text-align: center;">Expiry</th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 60px; text-align: center;">Entry</th>
@@ -1882,7 +1880,9 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 50px; text-align: center;">P&L</th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 70px; text-align: center;">Lots Exit</th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 50px; text-align: center;">Lock In</th>
-                  <th style="padding: 8px 6px; width: 40px; text-align: center;">Actions</th>
+                  <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 40px; text-align: center;">Actions</th>
+                  <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 140px; text-align: center;">Symbol</th>
+                  <th style="padding: 8px 6px; width: 80px; text-align: center;">Trade Date/Time</th>
                 </tr>
               </thead>
               
@@ -3629,8 +3629,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </td>
                 <td style="padding: 8px 6px; text-align: center;" class="qty-cell" data-position-key="${positionKey}">${entry.lots * 75}</td>
-                <td style="padding: 8px 6px; font-size: 11px;">${symbol}</td>
-                <td style="padding: 8px 6px; font-size: 11px;">${timeDisplay}</td>
                 <td style="padding: 8px 6px; text-align: center;">${entry.strike}</td>
                 <td style="padding: 8px 6px; font-size: 11px;">${formatExpiryDisplay(entry.expiry)}</td>
                 <td style="padding: 8px 6px; text-align: center;">${entry.entryPrice ? `₹${entry.entryPrice.toFixed(2)}` : '-'}</td>
@@ -3682,6 +3680,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
+                <td style="padding: 8px 6px; font-size: 11px;">${symbol}</td>
+                <td style="padding: 8px 6px; font-size: 11px;">${timeDisplay}</td>
             `;
             
             tableBody.appendChild(row);
