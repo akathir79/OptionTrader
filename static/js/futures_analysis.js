@@ -4,18 +4,22 @@
  * monthly contracts comparison, and arbitrage opportunities
  */
 
+console.log('🚀 FUTURES ANALYSIS SCRIPT LOADING...');
+
 let futuresAnalysisCache = {};
 let chartInstances = {};
 
+console.log('✅ Futures analysis variables initialized');
+
 /**
- * Show futures analysis modal triggered by clicking futures label
+ * Open futures analysis modal - called from futures price click
  */
-function showFuturesAnalysisModal(symbol = null) {
+function openFuturesAnalysis() {
     try {
+        console.log('🔮 Opening futures analysis modal...');
+        
         // Get current symbol if not provided
-        if (!symbol) {
-            symbol = getCurrentSelectedSymbol();
-        }
+        const symbol = getCurrentSelectedSymbol() || 'NIFTY';
         
         if (!symbol) {
             console.error('No symbol available for futures analysis');
@@ -29,6 +33,50 @@ function showFuturesAnalysisModal(symbol = null) {
         
         // Fetch comprehensive futures analysis
         fetchFuturesAnalysis(symbol);
+        
+    } catch (error) {
+        console.error('Error showing futures analysis modal:', error);
+    }
+}
+
+// Initialize when DOM is ready (like VIX analysis)
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔮 Futures Analysis system initialized');
+    
+    // Make openFuturesAnalysis globally available
+    window.openFuturesAnalysis = openFuturesAnalysis;
+    console.log('✅ openFuturesAnalysis function made globally available');
+});
+
+/**
+ * Show futures analysis modal triggered by clicking futures label
+ */
+function showFuturesAnalysisModal(data = null, loading = false) {
+    try {
+        console.log('🔮 showFuturesAnalysisModal called', { data: !!data, loading });
+        
+        // Create modal HTML
+        const modalHTML = createFuturesAnalysisModalHTML(data, loading);
+        
+        // Remove existing modal if any
+        const existingModal = document.getElementById('futuresAnalysisModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
+        // Add modal to DOM
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Show modal using Bootstrap
+        const modal = new bootstrap.Modal(document.getElementById('futuresAnalysisModal'));
+        modal.show();
+        
+        // Initialize charts and tabs after modal is shown
+        if (data && !loading) {
+            setTimeout(() => {
+                initializeFuturesCharts(data);
+            }, 100);
+        }
         
     } catch (error) {
         console.error('Error showing futures analysis modal:', error);
