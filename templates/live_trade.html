@@ -3501,7 +3501,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Update Active Trades Table only
     function updateActiveTradesTable() {
-        console.log(`🔥 updateCurrentPositionsTable() called`);
+        console.log(`🔥 updateActiveTradesTable() called`);
         console.log(`🔥 Active lots LENGTH:`, (window.activeLots || []).length);
         console.log(`🔥 Closed trades LENGTH:`, (window.closedTrades || []).length);
         console.log(`🔥 Active lots CONTENT:`, window.activeLots);
@@ -5369,12 +5369,22 @@ document.addEventListener('DOMContentLoaded', function() {
     window.handleExpirySpecificPositionChange = handleExpirySpecificPositionChange;
     window.handleSmartPositionAction = handleSmartPositionAction;
     window.updateCurrentPositionsTable = updateCurrentPositionsTable;
+    window.updateActiveTradesTable = updateActiveTradesTable;
     window.updatePositionTableLivePrices = updatePositionTableLivePrices;
     window.removePosition = removePosition;
     window.calculateBreakevens = calculateBreakevens;
     window.executeAutomaticNetting = executeAutomaticNetting;
     window.counters = counters;
     window.firstClickFlags = firstClickFlags;
+    
+    // **DEBUG FUNCTION** - Manually test active trades table
+    window.debugActiveTradesTable = function() {
+        console.log('🔍 DEBUG: Manual active trades table test');
+        console.log('🔍 window.globalPositions:', window.globalPositions);
+        console.log('🔍 window.activeLots:', window.activeLots);
+        console.log('🔍 Calling updateActiveTradesTable...');
+        updateActiveTradesTable();
+    };
     
     // Initialize payoff chart when document is ready
     initPayoffChart();
