@@ -3636,11 +3636,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span class="badge bg-success text-white">${entry.actionLabel.toUpperCase()}</span>
                         <div style="display: flex; gap: 3px;">
                             <button class="btn btn-outline-success btn-sm execute-btn" style="padding: 2px 6px; font-size: 10px;" 
-                                    data-position-key="${positionKey}" title="Execute Position">
+                                    data-position-key="${entry.positionKey}" title="Execute Position">
                                 <i class="fas fa-play"></i>
                             </button>
                             <button class="btn btn-outline-danger btn-sm exit-btn" style="padding: 2px 6px; font-size: 10px;" 
-                                    data-position-key="${positionKey}" title="Exit Position">
+                                    data-position-key="${entry.positionKey}" title="Exit Position">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
@@ -3651,11 +3651,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         <span class="badge bg-danger text-white">${entry.actionLabel.toUpperCase()}</span>
                         <div style="display: flex; gap: 3px;">
                             <button class="btn btn-outline-success btn-sm execute-btn" style="padding: 2px 6px; font-size: 10px;" 
-                                    data-position-key="${positionKey}" title="Execute Position">
+                                    data-position-key="${entry.positionKey}" title="Execute Position">
                                 <i class="fas fa-play"></i>
                             </button>
                             <button class="btn btn-outline-danger btn-sm exit-btn" style="padding: 2px 6px; font-size: 10px;" 
-                                    data-position-key="${positionKey}" title="Exit Position">
+                                    data-position-key="${entry.positionKey}" title="Exit Position">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
@@ -3686,7 +3686,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                 </td>
-                <td style="padding: 8px 6px; text-align: center;" class="qty-cell" data-position-key="${positionKey}">${entry.lots * 75}</td>
+                <td style="padding: 8px 6px; text-align: center;" class="qty-cell" data-position-key="${entry.positionKey}">${entry.lots * 75}</td>
                 <td style="padding: 8px 6px; text-align: center;">${entry.strike}</td>
                 <td style="padding: 8px 6px; font-size: 11px;">${formatExpiryDisplay(entry.expiry)}</td>
                 <td style="padding: 8px 6px; text-align: center;">${entry.entryPrice ? `₹${entry.entryPrice.toFixed(2)}` : '-'}</td>
@@ -3694,7 +3694,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <!-- New Trading Columns -->
                 <td style="padding: 4px 2px; text-align: center;">
                     <select class="form-select form-select-sm order-type-select" style="width: 75px; font-size: 10px; padding: 2px 4px;" 
-                            data-position-key="${positionKey}">
+                            data-position-key="${entry.positionKey}">
                         <option value="1">Market</option>
                         <option value="2">Limit</option>
                         <option value="3">SL-M</option>
@@ -3706,7 +3706,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <input type="number" class="form-control form-control-sm stop-loss-input" 
                                style="width: 70px; font-size: 10px; padding: 3px 5px;" 
                                placeholder="%" min="0" max="50" step="0.1" value="0"
-                               data-position-key="${positionKey}" data-entry-price="${entry.entryPrice || 0}"
+                               data-position-key="${entry.positionKey}" data-entry-price="${entry.entryPrice || 0}"
                                data-action="${entry.actionLabel}" title="Stop Loss %">
                         <small style="font-size: 9px; color: #666; font-weight: 500;" class="sl-price-display">₹0.00</small>
                     </div>
@@ -3715,7 +3715,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="form-check" style="margin: 0; display: flex; justify-content: center;">
                         <input type="checkbox" class="form-check-input trailing-sl-checkbox" 
                                style="transform: scale(1.1); border: 2px solid #2e7d32; border-radius: 3px; width: 16px; height: 16px;" 
-                               data-position-key="${positionKey}" title="Enable Trailing Stop Loss">
+                               data-position-key="${entry.positionKey}" title="Enable Trailing Stop Loss">
                     </div>
                 </td>
                 <td style="padding: 8px 6px; text-align: center;">₹0.00</td>
@@ -3879,7 +3879,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const currentLTP = getCurrentLTP(strike, optionType, expiry);
             
             // Update LTP cell
-            const ltpCell = document.querySelector(`.ltp-price-cell[data-position-key="${positionKey}"]`);
+            const ltpCell = document.querySelector(`.ltp-price-cell[data-position-key="${entry.positionKey}"]`);
             if (ltpCell && currentLTP > 0) {
                 ltpCell.textContent = `₹${currentLTP.toFixed(2)}`;
                 
@@ -3903,7 +3903,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Update P&L cell
-            const pnlCell = document.querySelector(`.pnl-cell[data-position-key="${positionKey}"]`);
+            const pnlCell = document.querySelector(`.pnl-cell[data-position-key="${entry.positionKey}"]`);
             if (pnlCell) {
                 const pnlColor = pnl >= 0 ? 'text-success' : 'text-danger';
                 const pnlSign = pnl >= 0 ? '+' : '';
@@ -4177,8 +4177,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Immediately update the current row's displays for instant feedback
-        const lotsValueElement = document.querySelector(`[data-position-key="${positionKey}"] .lots-value`);
-        const qtyElement = document.querySelector(`.qty-cell[data-position-key="${positionKey}"]`);
+        const lotsValueElement = document.querySelector(`[data-position-key="${entry.positionKey}"] .lots-value`);
+        const qtyElement = document.querySelector(`.qty-cell[data-position-key="${entry.positionKey}"]`);
         
         if (lotsValueElement && window.globalPositions[positionKey]) {
             lotsValueElement.textContent = window.globalPositions[positionKey].lots;

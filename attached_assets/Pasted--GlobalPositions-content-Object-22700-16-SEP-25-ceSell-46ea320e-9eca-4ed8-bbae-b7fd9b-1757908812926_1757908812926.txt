@@ -1,0 +1,28 @@
+🔥 GlobalPositions content: 
+Object { "22700-16-SEP-25-ceSell": {…} }
+46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev:3672:17
+🔥 Checking position 22700-16-SEP-25-ceSell: 
+Object { strike: 22700, expiry: "16-SEP-25", optionType: "CE", action: "Sell", lots: 1, rowIndex: 2, key: "ceSell", entryPrice: 2190.45 }
+ lots !== 0? true 46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev:3674:21
+🔥 Processing global position 22700-16-SEP-25-ceSell: 
+Object { strike: 22700, expiry: "16-SEP-25", optionType: "CE", action: "Sell", lots: 1, rowIndex: 2, key: "ceSell", entryPrice: 2190.45 }
+46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev:3676:25
+🔥 Got currentLTP: 2190.45 for CE 22700 46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev:3679:29
+🔥 Successfully added global position 22700-16-SEP-25-ceSell to activeEntries 46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev:3695:29
+🔥 Total activeEntries: 1 46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev:3702:17
+🔥 Final activeEntries length: 1 46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev:3704:17
+🔥 Building 1 active table rows... 46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev:3719:17
+Uncaught ReferenceError: can't access lexical declaration 'positionKey' before initialization
+    updateActiveTradesTable https://46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev/:3780
+    updateActiveTradesTable https://46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev/:3729
+    handleButtonClick https://46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev/:3280
+    onclick https://46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev/:2853
+    createOptionButton https://46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev/:2848
+    createOptionChainRow https://46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev/static/js/websocket_handler.js?v=2.0&t=1751872760:687
+    setTimeout handler*createOptionChainRow https://46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev/static/js/websocket_handler.js?v=2.0&t=1751872760:681
+    updateOptionChainTable https://46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev/static/js/websocket_handler.js?v=2.0&t=1751872760:475
+    updateOptionChainTable https://46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev/static/js/websocket_handler.js?v=2.0&t=1751872760:474
+    updateOptionChainTable https://46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev/static/js/column_visibility.js:399
+    startOptionChainUpdates https://46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev/static/js/websocket_handler.js?v=2.0&t=1751872760:451
+46ea320e-9eca-4ed8-bbae-b7fd9b170201-00-3bv7u9po4sun3.worf.replit.dev:3780:58
+📊 Updating .ce-volume: 0 → 0
