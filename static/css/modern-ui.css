@@ -637,6 +637,37 @@ button.btn-modern-icon-xs {
   font-weight: 500 !important;
 }
 
+/* Horizontal scrollbar on hover for expiry carousel */
+.flex-grow-1.position-relative.overflow-hidden:has(#expiryViewerCarousel) {
+  overflow-x: hidden !important;
+  transition: all 0.3s ease !important;
+}
+
+.flex-grow-1.position-relative.overflow-hidden:has(#expiryViewerCarousel):hover {
+  overflow-x: auto !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #8b0000 #f1f1f1 !important;
+}
+
+/* Custom scrollbar styling for webkit browsers */
+.flex-grow-1.position-relative.overflow-hidden:has(#expiryViewerCarousel):hover::-webkit-scrollbar {
+  height: 8px !important;
+}
+
+.flex-grow-1.position-relative.overflow-hidden:has(#expiryViewerCarousel):hover::-webkit-scrollbar-track {
+  background: #f1f1f1 !important;
+  border-radius: 4px !important;
+}
+
+.flex-grow-1.position-relative.overflow-hidden:has(#expiryViewerCarousel):hover::-webkit-scrollbar-thumb {
+  background: #8b0000 !important;
+  border-radius: 4px !important;
+}
+
+.flex-grow-1.position-relative.overflow-hidden:has(#expiryViewerCarousel):hover::-webkit-scrollbar-thumb:hover {
+  background: #660000 !important;
+}
+
 /* Fallback for cards without specific targeting - Very Light Gray */
 .card {
   background: linear-gradient(135deg, #fdfdfd 0%, #fafafa 100%) !important;
