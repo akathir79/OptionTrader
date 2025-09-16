@@ -483,7 +483,7 @@ class WebSocketHandler {
         let minDifference = Infinity;
         
         rows.forEach(row => {
-            const strikeCell = row.querySelector('td:nth-child(20)'); // Strike column
+            const strikeCell = row.querySelector('td:nth-child(22)'); // Strike column
             if (strikeCell) {
                 const strike = parseFloat(strikeCell.textContent);
                 if (!isNaN(strike)) {
@@ -504,7 +504,7 @@ class WebSocketHandler {
         
         const rows = this.optionChainTable.querySelectorAll('tbody tr');
         rows.forEach(row => {
-            const strikeCell = row.querySelector('td:nth-child(20)'); // Strike column
+            const strikeCell = row.querySelector('td:nth-child(22)'); // Strike column
             if (strikeCell) {
                 const strike = parseFloat(strikeCell.textContent);
                 if (!isNaN(strike)) {
