@@ -589,11 +589,11 @@ button.btn-modern-icon-xs {
   background: linear-gradient(135deg, #fcfaff 0%, #f7f3ff 100%) !important;
 }
 
-/* Expiry Selection Area - White Background */
+/* Expiry Selection Area - Light Yellow Background */
 .d-flex:has(#expiryViewerCarousel),
 #expiryViewerCarousel,
 .d-flex:has([id*="expiry"]) {
-  background: white !important;
+  background: linear-gradient(135deg, #fffde7 0%, #fff9c4 100%) !important;
   padding: 8px !important;
   border-radius: 6px !important;
   border: none !important;
@@ -611,10 +611,12 @@ button.btn-modern-icon-xs {
   flex-shrink: 0 !important;
 }
 
-/* Adjust expiry area to give more room for dates */
+/* Adjust expiry area to fit perfectly with card above */
 .d-flex:has(#expiryViewerCarousel) {
-  margin-left: -10px !important;
-  margin-right: -10px !important;
+  margin-left: 0px !important;
+  margin-right: 0px !important;
+  margin-top: 0px !important;
+  margin-bottom: 0px !important;
   padding-left: 10px !important;
   padding-right: 10px !important;
 }
