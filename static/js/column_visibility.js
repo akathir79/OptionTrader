@@ -7,8 +7,8 @@ class ColumnVisibilityController {
     constructor() {
         this.columnNames = [
             'CE B/S', 'Veta', 'Volga', 'Charm', 'Vanna', 'Vega', 'Theta', 'Gamma', 'Chng', 'Bid Qty',
-            'Bid', 'Ask', 'Ask Qty', 'Chng in OI', 'OI', 'Vol', 'Chart', 'LTP', 'Δ', 'Strike',
-            'Δ', 'LTP', 'Chart', 'Vol', 'OI', 'Chng in OI', 'Ask Qty', 'Ask', 'Bid', 'Bid Qty',
+            'Bid', 'Ask', 'Ask Qty', 'Chng in OI', 'OI', 'Prev OI', '% Chng OI', 'Vol', 'Chart', 'LTP', 'Δ', 'Strike',
+            'Δ', 'LTP', 'Chart', 'Vol', 'OI', 'Prev OI', '% Chng OI', 'Chng in OI', 'Ask Qty', 'Ask', 'Bid', 'Bid Qty',
             'Chng', 'Gamma', 'Theta', 'Vega', 'Vanna', 'Charm', 'Volga', 'Veta', 'PE B/S'
         ];
         this.columnStates = this.getDefaultColumnStates();
@@ -84,30 +84,34 @@ class ColumnVisibilityController {
             'Ask Qty',          // 12
             'Chng in OI',       // 13
             'OI',               // 14
-            'Vol',              // 15
-            'Chart',            // 16
-            'LTP',              // 17
-            'Δ (CE)',           // 18
-            'Strike',           // 19
-            'Δ (PE)',           // 20
-            'LTP',              // 21
-            'Chart',            // 22
-            'Vol',              // 23
-            'OI',               // 24
-            'Chng in OI',       // 25
-            'Ask Qty',          // 26
-            'Ask',              // 27
-            'Bid',              // 28
-            'Bid Qty',          // 29
-            'Chng',             // 30
-            'Gamma',            // 31
-            'Theta',            // 32
-            'Vega',             // 33
-            'Vanna',            // 34
-            'Charm',            // 35
-            'Volga',            // 36
-            'Veta',             // 37
-            'PE B/S'            // 38
+            'Prev OI',          // 15
+            '% Chng OI',        // 16
+            'Vol',              // 17
+            'Chart',            // 18
+            'LTP',              // 19
+            'Δ (CE)',           // 20
+            'Strike',           // 21
+            'Δ (PE)',           // 22
+            'LTP',              // 23
+            'Chart',            // 24
+            'Vol',              // 25
+            'OI',               // 26
+            'Prev OI',          // 27
+            '% Chng OI',        // 28
+            'Chng in OI',       // 29
+            'Ask Qty',          // 30
+            'Ask',              // 31
+            'Bid',              // 32
+            'Bid Qty',          // 33
+            'Chng',             // 34
+            'Gamma',            // 35
+            'Theta',            // 36
+            'Vega',             // 37
+            'Vanna',            // 38
+            'Charm',            // 39
+            'Volga',            // 40
+            'Veta',             // 41
+            'PE B/S'            // 42
         ];
         
         // Add header with control buttons
