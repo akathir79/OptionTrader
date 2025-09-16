@@ -77,8 +77,17 @@ class WebSocketHandler {
                 this.volumeOIUpdateInterval = null;
             }
             
+            // Clear futures update interval to prevent using stale symbol
+            if (this.futuresUpdateInterval) {
+                clearInterval(this.futuresUpdateInterval);
+                this.futuresUpdateInterval = null;
+            }
+            
             // Start spot price updates
             this.startSpotPriceUpdates();
+            
+            // Start futures price updates
+            this.startFuturesPriceUpdates();
             
             // Start option chain updates if expiry is provided
             if (expiry) {
@@ -106,6 +115,51 @@ class WebSocketHandler {
         
         // Initial update
         this.updateSpotPrice();
+    }
+    
+    startFuturesPriceUpdates() {
+        // Update futures price every 2 seconds via websocket streaming
+        if (this.futuresUpdateInterval) {
+            clearInterval(this.futuresUpdateInterval);
+        }
+        
+        this.futuresUpdateInterval = setInterval(() => {
+            this.updateFuturesPrice();
+        }, 2000);
+        
+        // Initial update
+        this.updateFuturesPrice();
+    }
+    
+    async updateFuturesPrice() {
+        if (!this.currentSymbol) return;
+        
+        try {
+            // Fetch futures data from the API endpoint
+            const response = await fetch(`/api/futures/current?symbol=${encodeURIComponent(this.currentSymbol)}`);
+            const data = await response.json();
+            
+            if (data.success && data.analysis) {
+                // Store futures data globally for access
+                window.currentFuturesData = {
+                    symbol: this.currentSymbol,
+                    futures_price: data.analysis.futures_price,
+                    change: data.analysis.futures_price - data.analysis.spot_price,
+                    change_percent: ((data.analysis.futures_price - data.analysis.spot_price) / data.analysis.spot_price) * 100,
+                    basis: data.analysis.basis,
+                    basis_pct: data.analysis.basis_pct,
+                    timestamp: new Date().toISOString()
+                };
+                
+                this.updateFuturesPriceDisplay(data.analysis.futures_price, window.currentFuturesData.change, window.currentFuturesData.change_percent);
+                
+                console.log(`📊 Futures data updated:`, data.analysis.futures_price);
+            } else {
+                console.error('Futures price update failed:', data.error);
+            }
+        } catch (error) {
+            console.error('Error updating futures price:', error);
+        }
     }
     
     async updateSpotPrice() {
@@ -373,6 +427,54 @@ class WebSocketHandler {
         // Update payoff chart spot price line if chart exists
         console.log(`[SPOT UPDATE] About to call updatePayoffChartSpotPrice with spot: ${this.currentSpotPrice}`);
         this.updatePayoffChartSpotPrice();
+    }
+
+    updateFuturesPriceDisplay(futuresPrice, change, changePercent) {
+        // Update futures price using professional market data styling
+        const futuresPriceElement = document.getElementById('futuresPrice');
+        if (futuresPriceElement) {
+            // Add professional styling attributes
+            futuresPriceElement.setAttribute('data-market-data', 'futures-price');
+            futuresPriceElement.classList.add('price-display');
+            
+            // Use the professional market data UI system for price updates
+            if (window.marketDataUI) {
+                window.marketDataUI.applyPriceUpdate(futuresPriceElement, futuresPrice, null, {
+                    decimals: 2,
+                    addCommas: true
+                });
+            } else {
+                // Fallback to old method
+                futuresPriceElement.textContent = this.formatPrice(futuresPrice);
+                futuresPriceElement.classList.remove('text-muted');
+                futuresPriceElement.classList.add('text-info');
+            }
+        }
+
+        // Update futures change display with green/red colors
+        const futuresChangeElement = document.getElementById('futuresChange');
+        if (futuresChangeElement && change !== undefined && changePercent !== undefined) {
+            // Format change and percentage
+            const changeText = `${change >= 0 ? '+' : ''}${change.toFixed(1)} (${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%)`;
+            
+            // Apply professional styling for movement direction
+            if (window.marketDataUI) {
+                futuresChangeElement.textContent = changeText;
+                futuresChangeElement.classList.remove('md-up', 'md-down', 'text-success', 'text-danger');
+                
+                if (change > 0) {
+                    futuresChangeElement.classList.add('md-up');
+                } else if (change < 0) {
+                    futuresChangeElement.classList.add('md-down');
+                }
+            } else {
+                // Fallback styling
+                const changeClass = change > 0 ? 'text-success' : change < 0 ? 'text-danger' : 'text-muted';
+                futuresChangeElement.innerHTML = `<span class="${changeClass}">${changeText}</span>`;
+            }
+        }
+
+        console.log(`📊 Futures display updated: ${futuresPrice} | Change: ${change?.toFixed(2)} (${changePercent?.toFixed(2)}%)`);
     }
 
     getCurrentSpotPrice() {
