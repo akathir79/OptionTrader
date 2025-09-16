@@ -9,8 +9,7 @@ import psycopg2
 from psycopg2 import sql
 from sqlalchemy import create_engine, text
 
-# Import paper trading blueprint
-from paper_trading_api import paper_trading_bp
+# Paper trading blueprint will be imported after db initialization
 
 class Base(DeclarativeBase):
     pass
@@ -139,6 +138,10 @@ app.register_blueprint(vix_bp)
 from APP_Routes.futures_api import futures_bp
 app.register_blueprint(futures_bp)
 
+# Import and register Paper Trading blueprint (after db initialization)
+from paper_trading_api import paper_trading_bp
+app.register_blueprint(paper_trading_bp)
+
 # Import market times functions
 from APP_Routes.market_times import (
     api_list_market_times, api_create_market_time, api_update_market_time,
@@ -180,8 +183,7 @@ def get_access_token():
     else:
         return jsonify({"error": "Token not found"}), 404
 
-# Register paper trading blueprint
-app.register_blueprint(paper_trading_bp)
+# Paper trading blueprint already registered above
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

@@ -76,6 +76,70 @@
         .navbar-custom .navbar-toggler:focus {
             box-shadow: none;
         }
+        
+        /* Paper Trading Toggle in Navbar */
+        .navbar-paper-toggle {
+            margin-left: 1rem;
+            margin-right: 1rem;
+        }
+        
+        .navbar-paper-toggle .form-check {
+            display: flex;
+            align-items: center;
+            margin: 0;
+        }
+        
+        .navbar-paper-toggle .form-check-input {
+            margin-top: 0;
+            margin-right: 0.5rem;
+            width: 3rem;
+            height: 1.5rem;
+            background-color: #6c757d;
+            border: 2px solid #6c757d;
+            border-radius: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-paper-toggle .form-check-input:checked {
+            background-color: #ffc107;
+            border-color: #ffc107;
+        }
+        
+        .navbar-paper-toggle .form-check-input:focus {
+            box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+        }
+        
+        .navbar-paper-toggle .form-check-label {
+            color: #ffffff;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        
+        .navbar-paper-toggle .form-check-input:checked + .form-check-label {
+            color: #ffc107;
+        }
+        
+        .navbar-paper-toggle .trading-mode-text {
+            margin-left: 0.5rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-paper-toggle .trading-mode-real {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+        
+        .navbar-paper-toggle .trading-mode-paper {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
     </style>
 </head>
 <body>
@@ -83,6 +147,18 @@
     <nav class="navbar navbar-expand-lg navbar-custom">
         <div class="container-fluid">
             <a class="navbar-brand" href="/">Trading Platform</a>
+            
+            <!-- Paper Trading Toggle -->
+            <div class="navbar-paper-toggle d-none d-lg-flex">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="navbarPaperTradingToggle">
+                    <label class="form-check-label" for="navbarPaperTradingToggle">
+                        Paper Trading
+                        <span class="trading-mode-text trading-mode-real" id="tradingModeText">Real Money</span>
+                    </label>
+                </div>
+            </div>
+            
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>

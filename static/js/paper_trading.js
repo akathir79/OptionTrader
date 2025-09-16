@@ -192,7 +192,13 @@ class PaperTradingSystem {
     }
 
     setupEventListeners() {
-        // Paper trading toggle
+        // Navbar paper trading toggle (main toggle)
+        const navbarToggle = document.getElementById('navbarPaperTradingToggle');
+        if (navbarToggle) {
+            navbarToggle.addEventListener('change', () => this.togglePaperMode(navbarToggle.checked));
+        }
+
+        // Paper trading toggle (existing one in trading controls)
         const toggle = document.getElementById('paperTradingToggle');
         if (toggle) {
             toggle.addEventListener('change', () => this.togglePaperMode(toggle.checked));
@@ -250,6 +256,25 @@ class PaperTradingSystem {
     updateUIMode() {
         const body = document.body;
         const virtualCard = document.querySelector('.virtual-balance-card');
+
+        // Sync both toggles
+        const navbarToggle = document.getElementById('navbarPaperTradingToggle');
+        const regularToggle = document.getElementById('paperTradingToggle');
+        
+        if (navbarToggle) navbarToggle.checked = this.isEnabled;
+        if (regularToggle) regularToggle.checked = this.isEnabled;
+
+        // Update navbar trading mode text
+        const tradingModeText = document.getElementById('tradingModeText');
+        if (tradingModeText) {
+            if (this.isEnabled) {
+                tradingModeText.textContent = 'Paper Mode';
+                tradingModeText.className = 'trading-mode-text trading-mode-paper';
+            } else {
+                tradingModeText.textContent = 'Real Money';
+                tradingModeText.className = 'trading-mode-text trading-mode-real';
+            }
+        }
 
         if (this.isEnabled) {
             body.classList.add('paper-trading-mode');
