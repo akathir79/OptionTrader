@@ -276,17 +276,72 @@ class WebSocketHandler {
             });
             
             if (matchingRow) {
-                // Update only VOL/OI/Change in OI columns (not LTP)
+                // Calculate previous OI from Fyers API fields: prev_oi = current_oi - change_in_oi
+                const prevCeOI = this.calculatePrevOI(strike.ce_oi, strike.ce_oich);
+                const prevPeOI = this.calculatePrevOI(strike.pe_oi, strike.pe_oich);
+                
+                // Calculate percentage change in OI from Fyers API data
+                const ceOIChangePercent = this.calculateOIPercentageFromAPI(strike.ce_oich, prevCeOI);
+                const peOIChangePercent = this.calculateOIPercentageFromAPI(strike.pe_oich, prevPeOI);
+                
+                // Update existing VOL/OI/Change in OI columns
                 this.updateCellValue(matchingRow, '.ce-volume', strike.ce_volume);
                 this.updateCellValue(matchingRow, '.ce-oi', strike.ce_oi);
                 this.updateCellValueWithColor(matchingRow, '.ce-oi-change', strike.ce_oich);
                 this.updateCellValue(matchingRow, '.pe-volume', strike.pe_volume);
                 this.updateCellValue(matchingRow, '.pe-oi', strike.pe_oi);
                 this.updateCellValueWithColor(matchingRow, '.pe-oi-change', strike.pe_oich);
+                
+                // Update new Prev OI and % Change OI columns with proper formatting
+                this.updateCellValue(matchingRow, '.ce-prev-oi', prevCeOI);
+                this.updateOIPercentageCell(matchingRow, '.ce-oichp', ceOIChangePercent);
+                this.updateCellValue(matchingRow, '.pe-prev-oi', prevPeOI);
+                this.updateOIPercentageCell(matchingRow, '.pe-oichp', peOIChangePercent);
             }
         });
     }
     
+    calculatePrevOI(currentOI, changeInOI) {
+        // Previous OI = Current OI - Change in OI (from Fyers API)
+        const prevOI = (currentOI || 0) - (changeInOI || 0);
+        return Math.max(prevOI, 0); // Ensure non-negative
+    }
+
+    calculateOIPercentageFromAPI(changeInOI, prevOI) {
+        // Calculate percentage change: (change / previous) * 100
+        if (!prevOI || prevOI === 0 || changeInOI === null || changeInOI === undefined) {
+            return 0;
+        }
+        
+        const percentage = (changeInOI / prevOI) * 100;
+        return Math.round(percentage * 100) / 100; // Round to 2 decimal places
+    }
+
+    updateOIPercentageCell(row, selector, percentage) {
+        const cell = row.querySelector(selector);
+        if (cell) {
+            // Format percentage with % sign
+            const displayValue = percentage === 0 ? '0%' : `${percentage}%`;
+            cell.textContent = displayValue;
+            
+            // Apply color: positive = green, negative = red, zero = neutral
+            cell.classList.remove('text-success', 'text-danger', 'text-muted');
+            if (percentage > 0) {
+                cell.classList.add('text-success');
+            } else if (percentage < 0) {
+                cell.classList.add('text-danger');
+            } else {
+                cell.classList.add('text-muted'); // Neutral for 0%
+            }
+            
+            // Add update animation
+            cell.classList.add('cell-updated');
+            setTimeout(() => {
+                cell.classList.remove('cell-updated');
+            }, 1000);
+        }
+    }
+
     updateCellValueWithColor(row, selector, value) {
         const cell = row.querySelector(selector);
         if (cell) {
