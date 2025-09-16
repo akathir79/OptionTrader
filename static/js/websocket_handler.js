@@ -387,7 +387,8 @@ class WebSocketHandler {
         const futuresPriceElement = document.getElementById('futuresPrice');
         if (futuresPriceElement) {
             futuresPriceElement.textContent = this.formatPrice(futuresPrice);
-            futuresPriceElement.classList.remove('text-muted');
+            // Remove all possible color classes that might cause blue/cyan colors
+            futuresPriceElement.classList.remove('text-muted', 'text-info', 'text-primary', 'text-secondary', 'text-warning', 'text-danger', 'text-success');
             futuresPriceElement.classList.add('text-dark');
         }
 
