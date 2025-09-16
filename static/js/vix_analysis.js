@@ -160,7 +160,7 @@ function updateFuturesDisplay(futuresData) {
     const basis = futuresPrice - spotPrice;
     const basisPercent = (basis / spotPrice) * 100;
     
-    // Update futures price
+    // Update futures price - let websocket_handler.js control the color
     futuresPriceEl.textContent = futuresPrice.toLocaleString('en-IN');
     
     // Update basis indicator
@@ -178,35 +178,16 @@ function updateFuturesDisplay(futuresData) {
         }
     }
     
-    // Color futures price based on regime
-    updateFuturesColor(futuresPriceEl, futuresData.analysis?.regime || 'NORMAL');
+    // Don't color futures price - let websocket_handler.js maintain consistent dark color
 }
 
 /**
- * Set futures color based on basis regime
+ * Set futures color based on basis regime (DISABLED for consistent UI)
+ * Now using consistent dark color for all market data values
  */
 function updateFuturesColor(element, regime) {
-    element.className = element.className.replace(/text-\w+/g, '');
-    
-    switch (regime) {
-        case 'STRONG_CONTANGO':
-            element.classList.add('text-primary'); // Strong contango - blue
-            break;
-        case 'MILD_CONTANGO':
-            element.classList.add('text-info'); // Mild contango - light blue
-            break;
-        case 'NORMAL':
-            element.classList.add('text-secondary'); // Normal - gray
-            break;
-        case 'MILD_BACKWARDATION':
-            element.classList.add('text-warning'); // Mild backwardation - orange
-            break;
-        case 'STRONG_BACKWARDATION':
-            element.classList.add('text-danger'); // Strong backwardation - red
-            break;
-        default:
-            element.classList.add('text-secondary');
-    }
+    // Disabled - maintaining consistent dark color for all market data
+    // The websocket_handler.js will apply text-dark class consistently
 }
 
 /**
@@ -218,7 +199,7 @@ function setFuturesError() {
     
     if (futuresPriceEl) {
         futuresPriceEl.textContent = '--';
-        futuresPriceEl.className = 'text-secondary';
+        // Don't set color class - let websocket_handler.js control the color
     }
     
     if (futuresChangeEl) {
