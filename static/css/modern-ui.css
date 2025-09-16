@@ -630,6 +630,13 @@ button.btn-modern-icon-xs {
   padding-bottom: 0.25rem !important;
 }
 
+/* Crisp maroon color for expiry duration labels */
+.expiry_button small.text-muted,
+#expiryViewerCarousel .expiry_button small {
+  color: #8b0000 !important; /* Crisp maroon color */
+  font-weight: 500 !important;
+}
+
 /* Fallback for cards without specific targeting - Very Light Gray */
 .card {
   background: linear-gradient(135deg, #fdfdfd 0%, #fafafa 100%) !important;
