@@ -388,8 +388,11 @@ class WebSocketHandler {
         if (futuresPriceElement) {
             futuresPriceElement.textContent = this.formatPrice(futuresPrice);
             // Remove all possible color classes that might cause blue/cyan colors
-            futuresPriceElement.classList.remove('text-muted', 'text-info', 'text-primary', 'text-secondary', 'text-warning', 'text-danger', 'text-success');
+            futuresPriceElement.classList.remove('text-muted', 'text-info', 'text-primary', 'text-secondary', 'text-warning', 'text-danger', 'text-success', 'md-up', 'md-down', 'futures-price');
             futuresPriceElement.classList.add('text-dark');
+            // Force dark color with inline style to override any CSS
+            futuresPriceElement.style.color = '#212529';
+            futuresPriceElement.style.setProperty('color', '#212529', 'important');
         }
 
         // Update futures change display with green/red colors (Row 3)
