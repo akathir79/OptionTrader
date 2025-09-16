@@ -9,6 +9,9 @@ import psycopg2
 from psycopg2 import sql
 from sqlalchemy import create_engine, text
 
+# Import paper trading blueprint
+from paper_trading_api import paper_trading_bp
+
 class Base(DeclarativeBase):
     pass
 
@@ -176,6 +179,9 @@ def get_access_token():
         return jsonify({"access_token": broker_setting.access_token})
     else:
         return jsonify({"error": "Token not found"}), 404
+
+# Register paper trading blueprint
+app.register_blueprint(paper_trading_bp)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
