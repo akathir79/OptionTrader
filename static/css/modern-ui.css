@@ -621,6 +621,15 @@ button.btn-modern-icon-xs {
   padding-right: 10px !important;
 }
 
+/* Reduce spacing between symbol selection and market data cards */
+.symbol-selection-card {
+  margin-bottom: 0.25rem !important;
+}
+
+.symbol-selection-card .card-body {
+  padding-bottom: 0.25rem !important;
+}
+
 /* Fallback for cards without specific targeting - Very Light Gray */
 .card {
   background: linear-gradient(135deg, #fdfdfd 0%, #fafafa 100%) !important;
