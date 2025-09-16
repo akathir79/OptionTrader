@@ -47,7 +47,7 @@ async function updateVixData() {
 }
 
 /**
- * Update VIX display in the carousel
+ * Update VIX display in the carousel using three-row format
  */
 function updateVixDisplay(vixData) {
     const vixValueEl = document.getElementById('vixValue');
@@ -59,26 +59,27 @@ function updateVixDisplay(vixData) {
     const change = parseFloat(vixData.change);
     const changePercent = parseFloat(vixData.change_percent);
     
-    // Update VIX value
+    // Update VIX value (Row 2) - consistent with new three-row design
     vixValueEl.textContent = currentVix.toFixed(2);
+    vixValueEl.classList.remove('text-muted');
+    vixValueEl.classList.add('text-dark');
     
-    // Update change indicator
+    // Update change indicator (Row 3) - consistent with new three-row design
     if (vixChangeEl) {
         const changeText = `${change >= 0 ? '+' : ''}${change.toFixed(2)} (${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%)`;
         vixChangeEl.textContent = changeText;
         
-        // Color based on change
+        // Apply consistent color scheme with other market data
+        vixChangeEl.classList.remove('text-success', 'text-danger', 'text-muted');
+        
         if (change > 0) {
-            vixChangeEl.className = 'ms-1 text-danger';
+            vixChangeEl.classList.add('text-danger'); // VIX up is typically bad (red)
         } else if (change < 0) {
-            vixChangeEl.className = 'ms-1 text-success';
+            vixChangeEl.classList.add('text-success'); // VIX down is typically good (green)
         } else {
-            vixChangeEl.className = 'ms-1 text-muted';
+            vixChangeEl.classList.add('text-muted');
         }
     }
-    
-    // Color VIX value based on level
-    updateVixColor(vixValueEl, currentVix);
 }
 
 /**
