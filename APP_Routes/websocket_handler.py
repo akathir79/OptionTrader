@@ -399,7 +399,7 @@ def start_websocket_subscription(symbols):
             except Exception as e:
                 print(f"Subscription error: {str(e)}")
 
-        # Initialize WebSocket - CRITICAL: Fixed initialization with proper callback
+        # Initialize WebSocket - CRITICAL: Fixed initialization (removed on_open parameter)
         fyers_ws = data_ws.FyersDataSocket(
             access_token=f"{client_id}:{access_token}",
             log_path="",
@@ -407,8 +407,7 @@ def start_websocket_subscription(symbols):
             write_to_file=False,
             on_message=on_message,
             on_error=on_error,
-            on_close=on_close,
-            on_open=on_open
+            on_close=on_close
         )
 
         # Connect WebSocket and subscribe  
@@ -439,8 +438,23 @@ def update_subscriptions():
         data = request.get_json()
         new_symbols = data.get('symbols', [])
         
+        print(f"🔄 UPDATE_SUBSCRIPTIONS called with symbols: {new_symbols}")
+        
+        # If no WebSocket connection exists, start one with the new symbols
         if not fyers_ws:
-            return jsonify({"error": "No active WebSocket connection"}), 400
+            print("⚠️ No existing WebSocket connection, starting new one...")
+            if new_symbols:
+                success = start_websocket_subscription(new_symbols)
+                if success:
+                    return jsonify({
+                        "success": True, 
+                        "message": f"Started WebSocket with {len(new_symbols)} symbols",
+                        "symbols": new_symbols
+                    })
+                else:
+                    return jsonify({"error": "Failed to start WebSocket connection"}), 500
+            else:
+                return jsonify({"error": "No symbols provided to start WebSocket"}), 400
             
         # Clear cache for clean data
         live_market_data.clear()
@@ -524,14 +538,9 @@ def sse_market_data():
                         }
                         yield f"data: {json.dumps(sse_data)}\n\n"
                 
-                # Use asyncio.sleep to prevent worker timeout 
-                import asyncio
-                try:
-                    import gevent
-                    gevent.sleep(0.1)  # Much shorter sleep to prevent timeout
-                except ImportError:
-                    import time
-                    time.sleep(0.1)  # Fallback to time.sleep with shorter interval
+                # Prevent worker timeout with minimal sleep
+                import time
+                time.sleep(0.05)  # Very short sleep to prevent timeout
                 
             except GeneratorExit:
                 break
