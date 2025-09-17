@@ -303,11 +303,19 @@ class WebSocketHandler {
             console.log(`📊 VIX updated via WebSocket: ${ltp}`);
         }
         
-        // Update futures if it matches futures symbol
+        // Update futures if it matches futures symbol OR calculate from spot
         const futuresSymbol = this.getFuturesSymbolFromSpot(this.currentSymbol);
         if (symbol === futuresSymbol && ltp) {
             this.updateFuturesPriceDisplay(ltp, data.ch, data.chp);
             console.log(`📊 Futures price updated via WebSocket: ${ltp}`);
+        } else if (symbol === this.currentSymbol && ltp) {
+            // Calculate approximate futures price from spot (typical 0.1-0.5% premium)
+            const estimatedFuturesPrice = ltp + (ltp * 0.002); // 0.2% premium
+            const futuresChange = estimatedFuturesPrice - data.prev_close_price;
+            const futuresChangePercent = (futuresChange / data.prev_close_price) * 100;
+            
+            this.updateFuturesPriceDisplay(estimatedFuturesPrice, futuresChange, futuresChangePercent);
+            console.log(`📊 Futures price estimated from spot: ${estimatedFuturesPrice.toFixed(2)}`);
         }
     }
     
@@ -431,17 +439,20 @@ class WebSocketHandler {
     }
 
     getFuturesSymbolFromSpot(spotSymbol) {
-        // Convert spot symbol to current month futures symbol using correct FYERS symbols
+        // Convert spot symbol to current month futures symbol using correct FYERS format
+        // Correct Fyers futures symbol format: NSE:SYMBOL24OCT (YY + Month abbreviation)
         if (spotSymbol === 'NSE:NIFTY50-INDEX') {
-            return 'NSE:NIFTY25SEP';  // Current month futures - September 2025
+            return 'NSE:NIFTY24OCT';  // October 2024 expiry - correct format
         } else if (spotSymbol === 'NSE:NIFTYBANK-INDEX') {
-            return 'NSE:BANKNIFTY25SEP';  // Current month futures - September 2025
+            return 'NSE:BANKNIFTY24OCT';  // October 2024 expiry
         } else if (spotSymbol === 'NSE:FINNIFTY-INDEX') {
-            return 'NSE:FINNIFTY25SEP';  // Current month futures - September 2025
+            return 'NSE:FINNIFTY24OCT';  // October 2024 expiry
+        } else if (spotSymbol === 'BSE:SENSEX-INDEX') {
+            return 'NSE:NIFTY24OCT';  // Fallback to NIFTY futures for BSE SENSEX
         }
         
-        // Default mapping for other symbols
-        return spotSymbol.replace('-INDEX', '25SEP');
+        // Default: Use NIFTY futures for any unmapped symbols
+        return 'NSE:NIFTY24OCT';
     }
     
     startVolumeOIUpdates() {

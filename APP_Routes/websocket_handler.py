@@ -507,70 +507,13 @@ def stop_websocket():
 
 @websocket_bp.route('/sse/market_data')
 def sse_market_data():
-    """Server-Sent Events endpoint for streaming live market data to clients"""
-    from flask import Response
-    import json
-    import time
-    import datetime
-    
-    def generate():
-        global live_market_data
-        last_sent = {}
-        
-        # Send connection confirmation
-        yield "data: {\"type\": \"connected\"}\n\n"
-        
-        try:
-            iteration = 0
-            while True:
-                iteration += 1
-                
-                # Send available market data
-                if live_market_data:
-                    for symbol, data in live_market_data.items():
-                        # Only send if data has changed
-                        current_ltp = data.get('ltp', 0)
-                        if last_sent.get(symbol) != current_ltp:
-                            last_sent[symbol] = current_ltp
-                            
-                            # Create SSE message
-                            message = {
-                                "symbol": symbol,
-                                "ltp": current_ltp,
-                                "open_price": data.get("open_price", 0),
-                                "change": data.get("change", 0),
-                                "prev_close_price": data.get("prev_close_price", 0),
-                                "timestamp": datetime.datetime.now().isoformat()
-                            }
-                            
-                            yield f"data: {json.dumps(message)}\n\n"
-                            print(f"📤 SSE: {symbol} = ₹{current_ltp}")
-                
-                # Send heartbeat every 100 iterations
-                if iteration % 100 == 0:
-                    heartbeat = {
-                        "type": "heartbeat",
-                        "count": len(live_market_data),
-                        "timestamp": datetime.datetime.now().isoformat()
-                    }
-                    yield f"data: {json.dumps(heartbeat)}\n\n"
-                
-                # Short sleep to prevent timeout but allow responsiveness
-                time.sleep(0.1)
-                
-        except GeneratorExit:
-            print("📤 SSE connection closed")
-        except Exception as e:
-            print(f"📤 SSE error: {e}")
-            yield f"data: {{\"type\": \"error\", \"message\": \"{str(e)}\"}}\n\n"
-    
-    return Response(generate(), 
-                   mimetype='text/event-stream',
-                   headers={
-                       'Cache-Control': 'no-cache',
-                       'Connection': 'keep-alive',
-                       'Access-Control-Allow-Origin': '*'
-                   })
+    """DISABLED - SSE endpoint causing worker timeouts. Use /live_market_data polling instead."""
+    from flask import jsonify
+    return jsonify({
+        "error": "SSE endpoint disabled due to worker timeouts", 
+        "use_instead": "/live_market_data",
+        "polling_recommended": "Use AJAX polling every 1-2 seconds"
+    }), 503
 
 @websocket_bp.route('/websocket_status', methods=['GET'])
 def websocket_status():
