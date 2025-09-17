@@ -87,6 +87,16 @@ document.addEventListener("DOMContentLoaded", () => {
   console.log(`🔍 DEBUG: indexSelect element found: ${!!indexSelect}`, indexSelect);
   console.log(`🔍 DEBUG: indexSelect ID: ${indexSelect?.id}`, `Value: ${indexSelect?.value}`);
   
+  // Reset indexSelect to default "NIFTY" and trigger change
+  if (indexSelect && indexSelect.value !== "NIFTY") {
+    console.log("Reset indexSelect to default: NIFTY 50");
+    indexSelect.value = "NIFTY";
+    // Trigger change event to update WebSocket subscriptions
+    setTimeout(() => {
+      indexSelect.dispatchEvent(new Event('change'));
+    }, 1000); // Delay to ensure WebSocket handler is loaded
+  }
+  
   indexSelect?.addEventListener("change", () => {
     console.log(`🔍 INDEX CHANGE DETECTED: ${indexSelect.value}`);
     
@@ -112,7 +122,10 @@ document.addEventListener("DOMContentLoaded", () => {
         'NIFTY 50': 'NSE:NIFTY50-INDEX', 
         'BANKNIFTY': 'NSE:NIFTYBANK-INDEX',
         'BANK NIFTY': 'NSE:NIFTYBANK-INDEX',
-        'FINNIFTY': 'NSE:FINNIFTY-INDEX'
+        'FINNIFTY': 'NSE:FINNIFTY-INDEX',
+        'MIDCPNIFTY': 'NSE:MIDCPNIFTY-INDEX',
+        'SENSEX': 'BSE:SENSEX-INDEX',
+        'BANKEX': 'BSE:BANKEX-INDEX'
       };
       const fyersSymbol = indexMapping[indexSelect.value] || `NSE:${indexSelect.value}-INDEX`;
       console.log(`📊 Index changed to ${indexSelect.value}, handling symbol change for ${fyersSymbol}`);

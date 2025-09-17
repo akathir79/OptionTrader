@@ -292,7 +292,7 @@ class WebSocketHandler {
         console.log(`🔍 DEBUG: currentSymbol=${this.currentSymbol}, checking symbol=${symbol}`);
         
         // Update spot price if it matches current symbol OR is a major index
-        if ((symbol === this.currentSymbol || symbol === 'NSE:NIFTY50-INDEX' || symbol === 'NSE:NIFTYBANK-INDEX') && ltp) {
+        if ((symbol === this.currentSymbol || symbol === 'NSE:NIFTY50-INDEX' || symbol === 'NSE:NIFTYBANK-INDEX' || symbol === 'NSE:MIDCPNIFTY-INDEX') && ltp) {
             this.updateSpotPriceDisplay(ltp, data.open_price);
             this.updateMarketDataCarousel(symbol, data);
             console.log(`💼 Spot price updated via WebSocket: ${ltp}`);
