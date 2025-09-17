@@ -1090,6 +1090,15 @@ class WebSocketHandler {
                 // Update option chain table with live data
                 this.updateTableWithLiveData(result.data);
                 
+                // Process VIX data from WebSocket
+                if (result.data['NSE:INDIAVIX-INDEX']) {
+                    const vixData = result.data['NSE:INDIAVIX-INDEX'];
+                    const vixChange = vixData.change || 0;
+                    const vixChangePct = vixData.prev_close_price > 0 ? (vixChange / vixData.prev_close_price) * 100 : 0;
+                    this.updateVixDisplay(vixData.ltp, vixChange, vixChangePct);
+                    console.log(`📊 VIX updated: ${vixData.ltp} (${vixChange >= 0 ? '+' : ''}${vixChange.toFixed(2)})`);
+                }
+                
                 // Update Current Positions table with live LTP and P&L
                 if (typeof window.updatePositionTableLivePrices === 'function') {
                     window.updatePositionTableLivePrices();
@@ -1099,11 +1108,19 @@ class WebSocketHandler {
                 if (this.currentSymbol && result.data[this.currentSymbol]) {
                     const spotData = result.data[this.currentSymbol];
                     const newSpotPrice = spotData.ltp;
+                    const dayOpen = spotData.open_price;
+                    
                     if (newSpotPrice !== this.currentSpotPrice) {
-                        this.updateSpotPriceDisplay(newSpotPrice);
+                        this.updateSpotPriceDisplay(newSpotPrice, dayOpen);
                         this.updateATMDisplay(newSpotPrice);
                         this.updatePayoffChartSpotPrice();
                         console.log(`🚀 WebSocket spot price update: ${newSpotPrice}`);
+                    }
+                    
+                    // Update day open display if we have the data
+                    if (dayOpen && dayOpen > 0) {
+                        this.updateDayOpenDisplay(dayOpen, newSpotPrice);
+                        console.log(`📅 Day open updated: ${dayOpen} (Gap: ${(newSpotPrice - dayOpen).toFixed(1)})`);
                     }
                 }
                 
