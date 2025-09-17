@@ -399,25 +399,33 @@ def start_websocket_subscription(symbols):
             except Exception as e:
                 print(f"Subscription error: {str(e)}")
 
-        # Initialize WebSocket
+        # Initialize WebSocket - CRITICAL: Fixed initialization with proper callback
         fyers_ws = data_ws.FyersDataSocket(
             access_token=f"{client_id}:{access_token}",
+            log_path="",
+            litemode=False,
+            write_to_file=False,
             on_message=on_message,
             on_error=on_error,
-            on_close=on_close
+            on_close=on_close,
+            on_open=on_open
         )
 
-        # Connect WebSocket and subscribe
+        # Connect WebSocket and subscribe  
+        print("🚀 Connecting to Fyers WebSocket...")
         fyers_ws.connect()
         
         # Subscribe to symbols after connection
         try:
+            print(f"📡 Subscribing to {len(symbols)} symbols: {symbols}")
             fyers_ws.subscribe(symbols=symbols)
             fyers_ws.keep_running()
-            print(f"WebSocket connected and subscribed to {len(symbols)} symbols")
+            print(f"✅ WebSocket connected and subscribed to {len(symbols)} symbols")
             current_subscriptions = symbols
+            return True
         except Exception as e:
-            print(f"Subscription error: {str(e)}")
+            print(f"❌ Subscription error: {str(e)}")
+            return False
         
     except Exception as e:
         print(f"WebSocket start error: {str(e)}")
@@ -516,7 +524,14 @@ def sse_market_data():
                         }
                         yield f"data: {json.dumps(sse_data)}\n\n"
                 
-                time.sleep(0.5)  # Send updates every 500ms
+                # Use asyncio.sleep to prevent worker timeout 
+                import asyncio
+                try:
+                    import gevent
+                    gevent.sleep(0.1)  # Much shorter sleep to prevent timeout
+                except ImportError:
+                    import time
+                    time.sleep(0.1)  # Fallback to time.sleep with shorter interval
                 
             except GeneratorExit:
                 break
