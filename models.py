@@ -475,58 +475,6 @@ class PaperPortfolio(db.Model):
         }
 
 
-class OptionStrategy(db.Model):
-    """
-    Option trading strategies from books and educational sources
-    """
-    __tablename__ = "option_strategies"
-    
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    category = db.Column(db.String(100))
-    description = db.Column(db.Text)
-    market_condition = db.Column(db.String(200))
-    risk_profile = db.Column(db.String(200))
-    max_profit = db.Column(db.Text)
-    max_loss = db.Column(db.Text)
-    breakeven_points = db.Column(db.Text)
-    construction = db.Column(db.Text)
-    adjustments = db.Column(db.Text)
-    source_book = db.Column(db.String(300))
-    author = db.Column(db.String(200))
-    page_reference = db.Column(db.String(50))
-    examples = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Performance index
-    __table_args__ = (
-        Index('ix_option_strategies_name_category', 'name', 'category'),
-    )
-
-    def __repr__(self) -> str:
-        return f"<OptionStrategy {self.name} ({self.category})>"
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'category': self.category,
-            'description': self.description,
-            'market_condition': self.market_condition,
-            'risk_profile': self.risk_profile,
-            'max_profit': self.max_profit,
-            'max_loss': self.max_loss,
-            'breakeven_points': self.breakeven_points,
-            'construction': self.construction,
-            'adjustments': self.adjustments,
-            'source_book': self.source_book,
-            'author': self.author,
-            'page_reference': self.page_reference,
-            'examples': self.examples,
-            'created_at': self.created_at.isoformat() if self.created_at else None
-        }
-
-
 class PaperTrade(db.Model):
     """
     Individual paper trades - virtual buy/sell transactions

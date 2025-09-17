@@ -108,7 +108,7 @@ with app.app_context():
             print("Please check your PostgreSQL connection settings.")
 
 # Import models after db is initialized
-from models import BrokerSettings, OptionStrategy
+from models import BrokerSettings
 
 # Import and register blueprints
 from APP_Routes.symbol_selector import symbol_selector_bp
@@ -165,19 +165,6 @@ def live_trade():
 @app.route("/option-trade")
 def option_trade():
     return render_template("option_trade.html")
-
-@app.route("/strategies")
-def strategies():
-    """Display all memorized option trading strategies from the books"""
-    try:
-        # Query all strategies using ORM
-        strategies = OptionStrategy.query.order_by(OptionStrategy.name).all()
-        strategies_data = [strategy.to_dict() for strategy in strategies]
-        
-        return render_template("strategies.html", strategies=strategies_data, total_count=len(strategies_data))
-    except Exception as e:
-        print(f"Error fetching strategies: {e}")
-        return render_template("strategies.html", strategies=[], total_count=0, error=str(e))
 
 
 @app.route('/get_access_token', methods=['GET'])
