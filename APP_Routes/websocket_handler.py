@@ -511,47 +511,66 @@ def sse_market_data():
     from flask import Response
     import json
     import time
+    import datetime
     
     def generate():
         global live_market_data
         last_sent = {}
         
-        # Send SSE headers
+        # Send connection confirmation
         yield "data: {\"type\": \"connected\"}\n\n"
         
-        while True:
-            try:
-                # Check for new data
-                for symbol, data in live_market_data.items():
-                    # Only send if data has changed
-                    data_str = json.dumps(data)
-                    if last_sent.get(symbol) != data_str:
-                        last_sent[symbol] = data_str
-                        # Send live market data
-                        sse_data = {
-                            "symbol": symbol,
-                            "ltp": data.get("ltp"),
-                            "open_price": data.get("open_price"),
-                            "ch": data.get("ch"),
-                            "chp": data.get("chp"),
-                            "timestamp": time.time()
-                        }
-                        yield f"data: {json.dumps(sse_data)}\n\n"
+        try:
+            iteration = 0
+            while True:
+                iteration += 1
                 
-                # Prevent worker timeout with minimal sleep
-                import time
-                time.sleep(0.05)  # Very short sleep to prevent timeout
+                # Send available market data
+                if live_market_data:
+                    for symbol, data in live_market_data.items():
+                        # Only send if data has changed
+                        current_ltp = data.get('ltp', 0)
+                        if last_sent.get(symbol) != current_ltp:
+                            last_sent[symbol] = current_ltp
+                            
+                            # Create SSE message
+                            message = {
+                                "symbol": symbol,
+                                "ltp": current_ltp,
+                                "open_price": data.get("open_price", 0),
+                                "change": data.get("change", 0),
+                                "prev_close_price": data.get("prev_close_price", 0),
+                                "timestamp": datetime.datetime.now().isoformat()
+                            }
+                            
+                            yield f"data: {json.dumps(message)}\n\n"
+                            print(f"📤 SSE: {symbol} = ₹{current_ltp}")
                 
-            except GeneratorExit:
-                break
-            except Exception as e:
-                print(f"SSE error: {e}")
-                break
+                # Send heartbeat every 100 iterations
+                if iteration % 100 == 0:
+                    heartbeat = {
+                        "type": "heartbeat",
+                        "count": len(live_market_data),
+                        "timestamp": datetime.datetime.now().isoformat()
+                    }
+                    yield f"data: {json.dumps(heartbeat)}\n\n"
+                
+                # Short sleep to prevent timeout but allow responsiveness
+                time.sleep(0.1)
+                
+        except GeneratorExit:
+            print("📤 SSE connection closed")
+        except Exception as e:
+            print(f"📤 SSE error: {e}")
+            yield f"data: {{\"type\": \"error\", \"message\": \"{str(e)}\"}}\n\n"
     
-    return Response(generate(), mimetype='text/event-stream',
-                   headers={'Cache-Control': 'no-cache',
-                           'Connection': 'keep-alive',
-                           'Access-Control-Allow-Origin': '*'})
+    return Response(generate(), 
+                   mimetype='text/event-stream',
+                   headers={
+                       'Cache-Control': 'no-cache',
+                       'Connection': 'keep-alive',
+                       'Access-Control-Allow-Origin': '*'
+                   })
 
 @websocket_bp.route('/websocket_status', methods=['GET'])
 def websocket_status():

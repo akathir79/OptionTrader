@@ -233,47 +233,52 @@ class WebSocketHandler {
     }
     
     startLiveDataStream() {
-        // Use SSE for live market data streaming
-        if (this.eventSource && this.eventSource.readyState === EventSource.OPEN) {
-            console.log('🎯 SSE already connected');
+        // Use AJAX polling for live market data streaming (more reliable than SSE)
+        if (this.pollingInterval) {
+            console.log('🎯 Polling already active');
             return;
         }
         
-        console.log('🎯 Starting SSE connection for live market data');
-        this.startSSEStream();
+        console.log('🎯 Starting market data polling for live updates');
+        this.startMarketDataPolling();
     }
     
-    startSSEStream() {
-        // Fallback to Server-Sent Events if WebSocket fails
-        if (this.eventSource) {
-            this.eventSource.close();
+    startMarketDataPolling() {
+        // Use reliable AJAX polling instead of problematic SSE
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
         }
         
-        try {
-            this.eventSource = new EventSource('/sse/market_data');
-            
-            this.eventSource.onopen = () => {
-                console.log('🎯 SSE connected for live market data');
-                this.isConnected = true;
-            };
-            
-            this.eventSource.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    this.handleLiveMarketData(data);
-                } catch (error) {
-                    console.error('Error parsing SSE message:', error);
+        this.pollingInterval = setInterval(async () => {
+            try {
+                const response = await fetch('/live_market_data');
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        // Process each symbol's data
+                        Object.entries(result.data).forEach(([symbol, data]) => {
+                            this.handleLiveMarketData({
+                                symbol: symbol,
+                                ltp: data.ltp,
+                                open_price: data.open_price,
+                                change: data.change,
+                                prev_close_price: data.prev_close_price,
+                                ch: data.change,
+                                chp: ((data.change / data.prev_close_price) * 100).toFixed(2),
+                                timestamp: data.timestamp
+                            });
+                        });
+                        console.log(`📊 Polled data for ${Object.keys(result.data).length} symbols`);
+                        this.isConnected = true;
+                    }
                 }
-            };
-            
-            this.eventSource.onerror = (error) => {
-                console.error('SSE error:', error);
+            } catch (error) {
+                console.error('🚨 Market data polling error:', error);
                 this.isConnected = false;
-            };
-            
-        } catch (error) {
-            console.error('Error starting SSE:', error);
-        }
+            }
+        }, 2000); // Poll every 2 seconds
+        
+        console.log('✅ Market data polling started (2s interval)');
     }
     
     handleLiveMarketData(data) {
