@@ -104,28 +104,28 @@ class WebSocketHandler {
     }
     
     startSpotPriceUpdates() {
-        // Update spot price every 2 seconds
+        // Update spot price every 10 seconds (reduced frequency to prevent rate limiting)
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
         }
         
         this.updateInterval = setInterval(() => {
             this.updateSpotPrice();
-        }, 2000);
+        }, 10000);
         
         // Initial update
         this.updateSpotPrice();
     }
     
     startFuturesPriceUpdates() {
-        // Update futures price every 2 seconds via websocket streaming
+        // Update futures price every 10 seconds (reduced frequency to prevent rate limiting)
         if (this.futuresUpdateInterval) {
             clearInterval(this.futuresUpdateInterval);
         }
         
         this.futuresUpdateInterval = setInterval(() => {
             this.updateFuturesPrice();
-        }, 2000);
+        }, 10000);
         
         // Initial update
         this.updateFuturesPrice();
@@ -235,12 +235,12 @@ class WebSocketHandler {
             clearInterval(this.volumeOIUpdateInterval);
         }
         
-        // Update VOL/OI/Change in OI every 3 seconds using option chain API
+        // Update VOL/OI/Change in OI every 15 seconds (reduced frequency to prevent rate limiting)
         this.volumeOIUpdateInterval = setInterval(() => {
             this.updateVolumeOIData();
-        }, 3000);
+        }, 15000);
         
-        console.log('🔄 VOL/OI timer updates started (every 3 seconds)');
+        console.log('🔄 VOL/OI timer updates started (every 15 seconds)');
     }
     
     async updateVolumeOIData() {
@@ -1056,10 +1056,10 @@ class WebSocketHandler {
     
     setupRealTimeDataListener() {
         // Setup periodic polling for real-time data (Server-sent events alternative)
-        console.log('Setting up real-time data listener with 1-second polling');
+        console.log('Setting up real-time data listener with 5-second polling');
         this.realTimeInterval = setInterval(() => {
             this.checkForRealTimeUpdates();
-        }, 1000); // Check every second for real-time updates
+        }, 5000); // Check every 5 seconds for real-time updates (reduced frequency)
     }
     
     async checkForRealTimeUpdates() {
