@@ -9,6 +9,8 @@ import psycopg2
 from psycopg2 import sql
 from sqlalchemy import create_engine, text
 
+# Paper trading blueprint will be imported after db initialization
+
 class Base(DeclarativeBase):
     pass
 
@@ -106,7 +108,7 @@ with app.app_context():
             print("Please check your PostgreSQL connection settings.")
 
 # Import models after db is initialized
-from models import BrokerSettings
+from models import BrokerSettings, OptionStrategy
 
 # Import and register blueprints
 from APP_Routes.symbol_selector import symbol_selector_bp
@@ -136,6 +138,10 @@ app.register_blueprint(vix_bp)
 from APP_Routes.futures_api import futures_bp
 app.register_blueprint(futures_bp)
 
+# Import and register Paper Trading blueprint (after db initialization)
+from paper_trading_api import paper_trading_bp
+app.register_blueprint(paper_trading_bp)
+
 # Import market times functions
 from APP_Routes.market_times import (
     api_list_market_times, api_create_market_time, api_update_market_time,
@@ -160,6 +166,19 @@ def live_trade():
 def option_trade():
     return render_template("option_trade.html")
 
+@app.route("/strategies")
+def strategies():
+    """Display all memorized option trading strategies from the books"""
+    try:
+        # Query all strategies using ORM
+        strategies = OptionStrategy.query.order_by(OptionStrategy.name).all()
+        strategies_data = [strategy.to_dict() for strategy in strategies]
+        
+        return render_template("strategies.html", strategies=strategies_data, total_count=len(strategies_data))
+    except Exception as e:
+        print(f"Error fetching strategies: {e}")
+        return render_template("strategies.html", strategies=[], total_count=0, error=str(e))
+
 
 @app.route('/get_access_token', methods=['GET'])
 def get_access_token():
@@ -176,6 +195,8 @@ def get_access_token():
         return jsonify({"access_token": broker_setting.access_token})
     else:
         return jsonify({"error": "Token not found"}), 404
+
+# Paper trading blueprint already registered above
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

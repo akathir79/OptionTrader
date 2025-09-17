@@ -12,13 +12,15 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔥 VIX Analysis system initialized');
     
-    // Update VIX data every 30 seconds
-    updateVixData();
-    setInterval(updateVixData, 30000);
+    // Update VIX data once initially - real-time updates via WebSocket streaming
+    console.log('🚀 VIX: Using WebSocket streaming instead of REST API polling');
+    // updateVixData(); // Disabled - using WebSocket streaming
+    // setInterval(updateVixData, 30000); // Disabled - using WebSocket streaming
     
-    // Update futures data every 30 seconds
-    updateFuturesData();
-    setInterval(updateFuturesData, 30000);
+    // Update futures data once initially - real-time updates via WebSocket streaming
+    console.log('🚀 Futures: Using WebSocket streaming instead of REST API polling');
+    // updateFuturesData(); // Disabled - using WebSocket streaming
+    // setInterval(updateFuturesData, 30000); // Disabled - using WebSocket streaming
     
     // Add event listeners for dropdown changes to trigger immediate updates
     addDropdownChangeListeners();
@@ -47,7 +49,7 @@ async function updateVixData() {
 }
 
 /**
- * Update VIX display in the carousel
+ * Update VIX display in the carousel using three-row format
  */
 function updateVixDisplay(vixData) {
     const vixValueEl = document.getElementById('vixValue');
@@ -59,26 +61,27 @@ function updateVixDisplay(vixData) {
     const change = parseFloat(vixData.change);
     const changePercent = parseFloat(vixData.change_percent);
     
-    // Update VIX value
+    // Update VIX value (Row 2) - consistent with new three-row design
     vixValueEl.textContent = currentVix.toFixed(2);
+    vixValueEl.classList.remove('text-muted');
+    vixValueEl.classList.add('text-dark');
     
-    // Update change indicator
+    // Update change indicator (Row 3) - consistent with new three-row design
     if (vixChangeEl) {
         const changeText = `${change >= 0 ? '+' : ''}${change.toFixed(2)} (${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%)`;
         vixChangeEl.textContent = changeText;
         
-        // Color based on change
+        // Apply consistent color scheme with other market data
+        vixChangeEl.classList.remove('text-success', 'text-danger', 'text-muted');
+        
         if (change > 0) {
-            vixChangeEl.className = 'ms-1 text-danger';
+            vixChangeEl.classList.add('text-danger'); // VIX up is typically bad (red)
         } else if (change < 0) {
-            vixChangeEl.className = 'ms-1 text-success';
+            vixChangeEl.classList.add('text-success'); // VIX down is typically good (green)
         } else {
-            vixChangeEl.className = 'ms-1 text-muted';
+            vixChangeEl.classList.add('text-muted');
         }
     }
-    
-    // Color VIX value based on level
-    updateVixColor(vixValueEl, currentVix);
 }
 
 /**
@@ -159,7 +162,7 @@ function updateFuturesDisplay(futuresData) {
     const basis = futuresPrice - spotPrice;
     const basisPercent = (basis / spotPrice) * 100;
     
-    // Update futures price
+    // Update futures price - let websocket_handler.js control the color
     futuresPriceEl.textContent = futuresPrice.toLocaleString('en-IN');
     
     // Update basis indicator
@@ -177,35 +180,16 @@ function updateFuturesDisplay(futuresData) {
         }
     }
     
-    // Color futures price based on regime
-    updateFuturesColor(futuresPriceEl, futuresData.analysis?.regime || 'NORMAL');
+    // Don't color futures price - let websocket_handler.js maintain consistent dark color
 }
 
 /**
- * Set futures color based on basis regime
+ * Set futures color based on basis regime (DISABLED for consistent UI)
+ * Now using consistent dark color for all market data values
  */
 function updateFuturesColor(element, regime) {
-    element.className = element.className.replace(/text-\w+/g, '');
-    
-    switch (regime) {
-        case 'STRONG_CONTANGO':
-            element.classList.add('text-primary'); // Strong contango - blue
-            break;
-        case 'MILD_CONTANGO':
-            element.classList.add('text-info'); // Mild contango - light blue
-            break;
-        case 'NORMAL':
-            element.classList.add('text-secondary'); // Normal - gray
-            break;
-        case 'MILD_BACKWARDATION':
-            element.classList.add('text-warning'); // Mild backwardation - orange
-            break;
-        case 'STRONG_BACKWARDATION':
-            element.classList.add('text-danger'); // Strong backwardation - red
-            break;
-        default:
-            element.classList.add('text-secondary');
-    }
+    // Disabled - maintaining consistent dark color for all market data
+    // The websocket_handler.js will apply text-dark class consistently
 }
 
 /**
@@ -217,7 +201,7 @@ function setFuturesError() {
     
     if (futuresPriceEl) {
         futuresPriceEl.textContent = '--';
-        futuresPriceEl.className = 'text-secondary';
+        // Don't set color class - let websocket_handler.js control the color
     }
     
     if (futuresChangeEl) {

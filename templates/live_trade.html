@@ -1207,7 +1207,7 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
 }
 
 /* Strike column enhancement */
-#optionChainTable tbody td:nth-child(20) {
+#optionChainTable tbody td:nth-child(22) {
   font-weight: 600;
   background-color: #fff3cd;
   border-left: 2px solid #f39c12;
@@ -1333,12 +1333,12 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
           </div>
 
           <!-- Expiry Dates Section (Collapsible) -->
-          <div id="expiryDateSection" class="expiry-date-section" style="display: none; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 8px; padding: 0.75rem; margin-top: 0rem; border: 1px solid #dee2e6;">
+          <div id="expiryDateSection" class="expiry-date-section" style="display: none; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 8px; padding: 0.25rem 0.5rem; margin-top: 0.5rem; border: none;">
             <!-- Horizontal Separator -->
             <hr class="my-2" style="border-color: #dee2e6; margin-top: 0 !important; margin-bottom: 0 !important; display: none;">
 
             <!-- Expiry Dates Row -->
-            <div class="d-flex align-items-center mb-1">
+            <div class="d-flex align-items-center" style="margin-bottom: 0rem;">
               <button id="expiryPrevBtn" class="nav-btn-modern me-2">
                 <span class="icon-modern icon-chevron-left"></span>
               </button>
@@ -1353,13 +1353,13 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
             </div>
 
             <!-- Horizontal Separator -->
-            <hr class="my-1" style="border-color: #dee2e6; margin-top: 0.25rem !important; margin-bottom: 0.25rem !important;">
+            <hr class="my-1" style="border-color: #dee2e6; margin-top: 0rem !important; margin-bottom: 0rem !important; display: none;">
           </div>
         </div>
       </div>
 
       <!-- Market Data Card (Collapsible) -->
-      <div class="card shadow-sm market-data-card mb-1" id="marketDataCard" style="display: none;">
+      <div class="card shadow-sm market-data-card" id="marketDataCard" style="display: none; margin-top: 0.25rem; margin-bottom: 0.5rem;">
         <div class="card-body" style="padding: 0.5rem !important;">
           <!-- Market Data Carousel -->
           <div class="d-flex align-items-center position-relative" onmouseenter="document.getElementById('leftPanelToggle').style.opacity='1'" onmouseleave="document.getElementById('leftPanelToggle').style.opacity='0'">
@@ -1376,34 +1376,32 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
                 <div class="carousel-page">
                   <div class="d-flex justify-content-between align-items-center">
                     <div class="text-center">
-                      <small class="fw-semibold me-1" style="font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;">Spot Price:</small>
-                      <strong id="spotPrice" class="text-muted">Select Symbol</strong>
-                      <span id="chartIcon" class="icon-modern icon-chart text-primary ms-2" 
-                         style="cursor: pointer; display: none;" 
-                         title="Open Candlestick Chart"
-                         onclick="openCandlestickChart()"></span>
+                      <small class="fw-semibold d-block" style="font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; cursor: pointer; margin-bottom: 2px;" 
+                             onclick="openCandlestickChart()" 
+                             title="Click for candlestick chart">Spot Price:</small>
+                      <strong id="spotPrice" class="d-block text-dark" style="font-size: 13px; margin-bottom: 1px;">Select Symbol</strong>
+                      <small id="spotChange" class="d-block" style="font-size: 9px;">--</small>
                     </div>
                     <div class="text-center">
-                      <small class="fw-semibold me-1" style="font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;">Day Open:</small>
-                      <strong class="day-open-value text-secondary">--</strong>
-                      <br>
-                      <small class="gap-analysis text-muted" style="font-size: 10px; cursor: pointer;" 
+                      <small class="fw-semibold d-block" style="font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; margin-bottom: 2px;">Day Open:</small>
+                      <strong class="day-open-value d-block text-dark" style="font-size: 13px; margin-bottom: 1px;">--</strong>
+                      <small class="gap-analysis d-block" style="font-size: 9px; cursor: pointer;" 
                              onclick="openGapAnalysis()" 
-                             title="Click for gap analysis">Gap: --</small>
+                             title="Click for gap analysis">--</small>
                     </div>
                     <div class="text-center">
-                      <small class="fw-semibold me-1" style="font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;">Future:</small>
-                      <strong id="futuresPrice" class="text-secondary" style="cursor: pointer;" 
+                      <small class="fw-semibold d-block" style="font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; margin-bottom: 2px;">Future:</small>
+                      <strong id="futuresPrice" class="d-block text-dark" style="font-size: 13px; margin-bottom: 1px; cursor: pointer;" 
                               onclick="openFuturesAnalysis()" 
                               title="Click for detailed futures analysis">--</strong>
-                      <span id="futuresChange" class="ms-1" style="font-size: 10px;"></span>
+                      <small id="futuresChange" class="d-block" style="font-size: 9px;">--</small>
                     </div>
                     <div class="text-center">
-                      <small class="fw-semibold me-1" style="font-size: 12px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;">VIX:</small>
-                      <strong id="vixValue" class="text-warning" style="cursor: pointer;" 
+                      <small class="fw-semibold d-block" style="font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; margin-bottom: 2px;">VIX:</small>
+                      <strong id="vixValue" class="d-block text-dark" style="font-size: 13px; margin-bottom: 1px; cursor: pointer;" 
                               onclick="openVixAnalysis()" 
                               title="Click for detailed VIX analysis">--</strong>
-                      <span id="vixChange" class="ms-1" style="font-size: 10px;"></span>
+                      <small id="vixChange" class="d-block" style="font-size: 9px;">--</small>
                     </div>
                   </div>
                 </div>
@@ -1619,6 +1617,8 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
                     <th>Ask Qty</th>
                     <th>Chng in OI</th>
                     <th>OI</th>
+                    <th>Prev OI</th>
+                    <th>% Chng OI</th>
                     <th>Vol</th>
                     <th>Chart</th>
                     <th>LTP</th>
@@ -1629,6 +1629,8 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
                     <th>Chart</th>
                     <th>Vol</th>
                     <th>OI</th>
+                    <th>Prev OI</th>
+                    <th>% Chng OI</th>
                     <th>Chng in OI</th>
                     <th>Ask Qty</th>
                     <th>Ask</th>

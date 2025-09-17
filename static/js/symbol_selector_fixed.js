@@ -42,19 +42,80 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =================================================================
+     SYMBOL CHANGE EVENT HANDLING
+     ================================================================= */
+  function emitSymbolChanging() {
+    // Emit custom event to signal symbol is changing
+    window.dispatchEvent(new CustomEvent('symbol:changing', {
+      detail: { timestamp: Date.now() }
+    }));
+  }
+
+  // Set up listener to clear market data when symbol changes
+  window.addEventListener('symbol:changing', () => {
+    if (window.marketDataUI) {
+      window.marketDataUI.clearMarketDataLabels({ preserve: ['vix'] });
+    } else {
+      // Defensive fallback if marketDataUI isn't loaded yet
+      console.log('🔄 MarketDataUI not yet loaded, performing basic symbol clearing');
+      const marketElements = document.querySelectorAll('[data-market-data], .price-display, .market-value');
+      marketElements.forEach(element => {
+        // Check if it's a VIX element (preserve VIX)
+        const elementId = element.id?.toLowerCase() || '';
+        const dataMarketData = element.getAttribute('data-market-data')?.toLowerCase() || '';
+        const classNames = element.className?.toLowerCase() || '';
+        
+        const isVix = elementId.includes('vix') || 
+                     dataMarketData.includes('vix') || 
+                     classNames.includes('vix-display') ||
+                     classNames.includes('vix-value');
+        
+        if (!isVix) {
+          element.textContent = '—';
+          element.classList.remove('md-up', 'md-down', 'flash-up', 'flash-down', 'text-success', 'text-danger');
+        }
+      });
+    }
+  });
+
+  /* =================================================================
      EVENTS
      ================================================================= */
   indexSelect?.addEventListener("change", () => {
+    console.log(`🔍 INDEX CHANGE DETECTED: ${indexSelect.value}`);
+    
     if (!indexSelect.value) {
       clearExpiry();
       updateSectionVisibility();
       return;
     }
+    // Clear market data before changing symbol
+    emitSymbolChanging();
+    
     exchangeSel.value = "";
     extraSelect.innerHTML = '<option value="">Select Symbol</option>';
     fetchExpiryForIndex(indexSelect.value);
     // Lookup symbol and lot size for index
     lookupSymbolAndLotSize('index', indexSelect.value, '');
+    
+    // CRITICAL FIX: Start spot price and VIX updates immediately when index changes
+    console.log(`🔍 WebSocketHandler exists: ${!!window.webSocketHandler}`);
+    if (window.webSocketHandler) {
+      const indexMapping = {
+        'NIFTY': 'NSE:NIFTY50-INDEX',
+        'NIFTY 50': 'NSE:NIFTY50-INDEX', 
+        'BANKNIFTY': 'NSE:NIFTYBANK-INDEX',
+        'BANK NIFTY': 'NSE:NIFTYBANK-INDEX',
+        'FINNIFTY': 'NSE:FINNIFTY-INDEX'
+      };
+      const fyersSymbol = indexMapping[indexSelect.value] || `NSE:${indexSelect.value}-INDEX`;
+      console.log(`📊 Index changed to ${indexSelect.value}, starting live data for ${fyersSymbol}`);
+      console.log(`🔍 About to call startLiveData with symbol: ${fyersSymbol}`);
+      window.webSocketHandler.startLiveData(fyersSymbol);
+    } else {
+      console.error(`❌ WebSocketHandler not found when index changed to ${indexSelect.value}`);
+    }
+    
     // Spot price updates will be started automatically after symbol lookup completes
     updateSectionVisibility();
   });
@@ -67,11 +128,17 @@ document.addEventListener("DOMContentLoaded", () => {
       updateSectionVisibility();
       return;
     }
+    // Clear market data before changing symbol
+    emitSymbolChanging();
+    
     loadExtraSymbols(exchangeSel.value);
     updateSectionVisibility();
   });
 
   extraSelect?.addEventListener("change", () => {
+    // Clear market data before changing symbol
+    emitSymbolChanging();
+    
     indexSelect.value = "";
     clearExpiry();
     if (exchangeSel.value && extraSelect.value) {

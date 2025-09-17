@@ -417,3 +417,265 @@ class AnalysisSnapshot(db.Model):
             'calendar_opportunity': self.calendar_opportunity,
             'volatility_opportunity': self.volatility_opportunity
         }
+
+
+class PaperPortfolio(db.Model):
+    """
+    Paper trading portfolio - virtual trading account for risk-free practice
+    """
+    __tablename__ = "paper_portfolios"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(50), nullable=False, default='default_user')  # Session-based user identification
+    
+    # Portfolio balances
+    balance = db.Column(Numeric(18, 2), nullable=False, default=100000.00)  # Current available balance
+    initial_balance = db.Column(Numeric(18, 2), nullable=False, default=100000.00)  # Starting balance
+    total_pnl = db.Column(Numeric(18, 2), nullable=False, default=0.00)  # Total profit/loss
+    
+    # Portfolio statistics
+    total_trades = db.Column(db.Integer, default=0)
+    winning_trades = db.Column(db.Integer, default=0)
+    losing_trades = db.Column(db.Integer, default=0)
+    
+    # Risk management
+    daily_loss_limit = db.Column(Numeric(18, 2), default=5000.00)
+    max_position_size = db.Column(Numeric(18, 2), default=10000.00)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    trades = db.relationship('PaperTrade', backref='portfolio', lazy='dynamic', cascade='all, delete-orphan')
+    
+    # Constraints
+    __table_args__ = (
+        db.UniqueConstraint('user_id', name='uix_paper_portfolio_user'),
+        Index('ix_paper_portfolio_user', 'user_id'),
+    )
+
+    def __repr__(self) -> str:
+        return f"<PaperPortfolio user:{self.user_id} balance:{self.balance}>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'balance': float(self.balance),
+            'initial_balance': float(self.initial_balance),
+            'total_pnl': float(self.total_pnl),
+            'total_trades': self.total_trades,
+            'winning_trades': self.winning_trades,
+            'losing_trades': self.losing_trades,
+            'daily_loss_limit': float(self.daily_loss_limit),
+            'max_position_size': float(self.max_position_size),
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+
+class OptionStrategy(db.Model):
+    """
+    Option trading strategies from books and educational sources
+    """
+    __tablename__ = "option_strategies"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    category = db.Column(db.String(100))
+    description = db.Column(db.Text)
+    market_condition = db.Column(db.String(200))
+    risk_profile = db.Column(db.String(200))
+    max_profit = db.Column(db.Text)
+    max_loss = db.Column(db.Text)
+    breakeven_points = db.Column(db.Text)
+    construction = db.Column(db.Text)
+    adjustments = db.Column(db.Text)
+    source_book = db.Column(db.String(300))
+    author = db.Column(db.String(200))
+    page_reference = db.Column(db.String(50))
+    examples = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Performance index
+    __table_args__ = (
+        Index('ix_option_strategies_name_category', 'name', 'category'),
+    )
+
+    def __repr__(self) -> str:
+        return f"<OptionStrategy {self.name} ({self.category})>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'category': self.category,
+            'description': self.description,
+            'market_condition': self.market_condition,
+            'risk_profile': self.risk_profile,
+            'max_profit': self.max_profit,
+            'max_loss': self.max_loss,
+            'breakeven_points': self.breakeven_points,
+            'construction': self.construction,
+            'adjustments': self.adjustments,
+            'source_book': self.source_book,
+            'author': self.author,
+            'page_reference': self.page_reference,
+            'examples': self.examples,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class PaperTrade(db.Model):
+    """
+    Individual paper trades - virtual buy/sell transactions
+    """
+    __tablename__ = "paper_trades"
+
+    id = db.Column(db.Integer, primary_key=True)
+    portfolio_id = db.Column(db.Integer, db.ForeignKey('paper_portfolios.id'), nullable=False)
+    
+    # Trade identification
+    symbol = db.Column(db.String(100), nullable=False)
+    trade_type = db.Column(db.String(10), nullable=False)  # 'BUY' or 'SELL'
+    option_type = db.Column(db.String(10))  # 'CE', 'PE', or None for stocks/indices
+    strike_price = db.Column(Numeric(18, 2))
+    expiry_date = db.Column(db.Date)
+    
+    # Trade details
+    quantity = db.Column(db.Integer, nullable=False)
+    entry_price = db.Column(Numeric(18, 6), nullable=False)
+    exit_price = db.Column(Numeric(18, 6))
+    
+    # P&L calculation
+    pnl = db.Column(Numeric(18, 2), default=0.00)
+    pnl_pct = db.Column(Numeric(10, 4), default=0.00)
+    
+    # Trade status
+    status = db.Column(db.String(20), default='OPEN')  # 'OPEN', 'CLOSED', 'CANCELLED'
+    
+    # Timestamps
+    executed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    closed_at = db.Column(db.DateTime)
+    
+    # Additional metadata
+    notes = db.Column(db.Text)
+    order_type = db.Column(db.String(20), default='MARKET')  # 'MARKET', 'LIMIT', 'STOP'
+    
+    # Constraints and indexes
+    __table_args__ = (
+        Index('ix_paper_trade_portfolio_symbol', 'portfolio_id', 'symbol'),
+        Index('ix_paper_trade_status_executed', 'status', 'executed_at'),
+        CheckConstraint('quantity > 0', name='chk_paper_trade_positive_quantity'),
+        CheckConstraint('entry_price > 0', name='chk_paper_trade_positive_entry_price'),
+    )
+
+    def __repr__(self) -> str:
+        return f"<PaperTrade {self.trade_type} {self.quantity} {self.symbol} @{self.entry_price}>"
+
+    def calculate_pnl(self, current_price=None):
+        """Calculate current P&L based on current price or exit price"""
+        if self.status == 'CLOSED' and self.exit_price:
+            if self.trade_type == 'BUY':
+                self.pnl = (self.exit_price - self.entry_price) * self.quantity
+            else:  # SELL
+                self.pnl = (self.entry_price - self.exit_price) * self.quantity
+        elif current_price and self.status == 'OPEN':
+            if self.trade_type == 'BUY':
+                self.pnl = (current_price - self.entry_price) * self.quantity
+            else:  # SELL
+                self.pnl = (self.entry_price - current_price) * self.quantity
+        
+        # Calculate percentage P&L
+        if self.entry_price and self.entry_price > 0:
+            trade_value = self.entry_price * self.quantity
+            self.pnl_pct = (self.pnl / trade_value) * 100 if trade_value > 0 else 0
+        
+        return float(self.pnl)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'portfolio_id': self.portfolio_id,
+            'symbol': self.symbol,
+            'trade_type': self.trade_type,
+            'option_type': self.option_type,
+            'strike_price': float(self.strike_price) if self.strike_price else None,
+            'expiry_date': self.expiry_date.isoformat() if self.expiry_date else None,
+            'quantity': self.quantity,
+            'entry_price': float(self.entry_price),
+            'exit_price': float(self.exit_price) if self.exit_price else None,
+            'pnl': float(self.pnl),
+            'pnl_pct': float(self.pnl_pct),
+            'status': self.status,
+            'executed_at': self.executed_at.isoformat() if self.executed_at else None,
+            'closed_at': self.closed_at.isoformat() if self.closed_at else None,
+            'notes': self.notes,
+            'order_type': self.order_type
+        }
+
+
+class PaperTradingSettings(db.Model):
+    """
+    Paper trading configuration and preferences for users
+    """
+    __tablename__ = "paper_trading_settings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(50), nullable=False)
+    
+    # Trading mode
+    is_paper_mode = db.Column(db.Boolean, default=True)
+    
+    # Risk management settings
+    risk_tolerance = db.Column(db.String(20), default='MODERATE')  # 'CONSERVATIVE', 'MODERATE', 'AGGRESSIVE'
+    max_position_size = db.Column(Numeric(18, 2), default=10000.00)
+    daily_loss_limit = db.Column(Numeric(18, 2), default=5000.00)
+    max_open_positions = db.Column(db.Integer, default=10)
+    
+    # Execution settings
+    enable_slippage = db.Column(db.Boolean, default=True)
+    slippage_percentage = db.Column(Numeric(5, 4), default=0.05)  # 0.05% default slippage
+    enable_fees = db.Column(db.Boolean, default=True)
+    brokerage_per_trade = db.Column(Numeric(10, 2), default=20.00)  # Fixed brokerage per trade
+    
+    # Notification preferences
+    notify_on_fill = db.Column(db.Boolean, default=True)
+    notify_on_pnl_threshold = db.Column(db.Boolean, default=True)
+    pnl_notification_threshold = db.Column(Numeric(10, 2), default=1000.00)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Constraints
+    __table_args__ = (
+        db.UniqueConstraint('user_id', name='uix_paper_trading_settings_user'),
+        Index('ix_paper_trading_settings_user', 'user_id'),
+        CheckConstraint('max_position_size > 0', name='chk_paper_settings_positive_position_size'),
+        CheckConstraint('daily_loss_limit > 0', name='chk_paper_settings_positive_loss_limit'),
+    )
+
+    def __repr__(self) -> str:
+        return f"<PaperTradingSettings user:{self.user_id} mode:{self.is_paper_mode}>"
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'is_paper_mode': self.is_paper_mode,
+            'risk_tolerance': self.risk_tolerance,
+            'max_position_size': float(self.max_position_size),
+            'daily_loss_limit': float(self.daily_loss_limit),
+            'max_open_positions': self.max_open_positions,
+            'enable_slippage': self.enable_slippage,
+            'slippage_percentage': float(self.slippage_percentage),
+            'enable_fees': self.enable_fees,
+            'brokerage_per_trade': float(self.brokerage_per_trade),
+            'notify_on_fill': self.notify_on_fill,
+            'notify_on_pnl_threshold': self.notify_on_pnl_threshold,
+            'pnl_notification_threshold': float(self.pnl_notification_threshold),
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }

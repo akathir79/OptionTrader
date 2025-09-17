@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Option Trading Strategies | Trading Platform{% endblock %}
+
+{% block head %}
+    <style>
+        .strategy-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            border-left: 4px solid #6c757d;
+        }
+        .strategy-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .strategy-card.bullish {
+            border-left-color: #198754;
+        }
+        .strategy-card.bearish {
+            border-left-color: #dc3545;
+        }
+        .strategy-card.neutral {
+            border-left-color: #0d6efd;
+        }
+        .strategy-card.volatility {
+            border-left-color: #fd7e14;
+        }
+        .category-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .search-box {
+            border-radius: 25px;
+            padding: 0.75rem 1.25rem;
+            border: 2px solid #e9ecef;
+            transition: border-color 0.3s ease;
+        }
+        .search-box:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid py-4 bg-light" style="min-height: 100vh;">
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <h1 class="display-6 mb-2">
+                    <i class="fas fa-book-open text-primary me-3"></i>
+                    Option Trading Strategies Library
+                </h1>
+                <p class="text-muted">Comprehensive collection of memorized trading strategies from expert authors</p>
+            </div>
+            <div class="col-md-4">
+                <div class="card stats-card text-center">
+                    <div class="card-body">
+                        <h3 class="mb-0">{{ total_count }}</h3>
+                        <small>Strategies Memorized</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <input type="text" id="searchBox" class="form-control search-box" 
+                       placeholder="🔍 Search strategies by name, category, or market condition...">
+            </div>
+            <div class="col-md-6">
+                <select id="categoryFilter" class="form-select">
+                    <option value="">All Categories</option>
+                    <option value="bullish">Bullish Strategies</option>
+                    <option value="bearish">Bearish Strategies</option>
+                    <option value="neutral">Neutral Strategies</option>
+                    <option value="volatility">Volatility Strategies</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Strategies Grid -->
+        {% if error %}
+        <div class="alert alert-warning" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Error loading strategies: {{ error }}
+        </div>
+        {% endif %}
+
+        <div class="row" id="strategiesContainer">
+            {% for strategy in strategies %}
+            <div class="col-lg-6 col-xl-4 mb-4 strategy-item" 
+                 data-category="{{ (strategy.category or 'other')|lower }}"
+                 data-name="{{ strategy.name|lower }}"
+                 data-market="{{ (strategy.market_condition or '')|lower }}">
+                <div class="card strategy-card h-100 
+                    {% if strategy.category and 'bull' in (strategy.category|lower) %}bullish
+                    {% elif strategy.category and 'bear' in (strategy.category|lower) %}bearish
+                    {% elif strategy.category and ('neutral' in (strategy.category|lower) or 'time' in (strategy.category|lower)) %}neutral
+                    {% elif strategy.category and 'volatility' in (strategy.category|lower) %}volatility
+                    {% endif %}">
+                    <div class="card-header bg-light border-bottom-0">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0 text-dark">
+                                <i class="fas fa-cog me-2"></i>{{ strategy.name }}
+                            </h5>
+                            {% if strategy.category %}
+                            <span class="badge category-badge 
+                                {% if 'bull' in (strategy.category|lower) %}bg-success
+                                {% elif 'bear' in (strategy.category|lower) %}bg-danger
+                                {% elif 'neutral' in (strategy.category|lower) or 'time' in (strategy.category|lower) %}bg-primary
+                                {% elif 'volatility' in (strategy.category|lower) %}bg-warning text-dark
+                                {% else %}bg-secondary
+                                {% endif %}">
+                                {{ strategy.category }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if strategy.description %}
+                        <p class="card-text mb-3">{{ strategy.description }}</p>
+                        {% endif %}
+                        
+                        <div class="row g-2 mb-3">
+                            {% if strategy.market_condition %}
+                            <div class="col-12">
+                                <small class="text-muted">
+                                    <i class="fas fa-chart-bar me-1"></i>
+                                    <strong>Market:</strong> {{ strategy.market_condition }}
+                                </small>
+                            </div>
+                            {% endif %}
+                            {% if strategy.risk_profile %}
+                            <div class="col-12">
+                                <small class="text-muted">
+                                    <i class="fas fa-shield-alt me-1"></i>
+                                    <strong>Risk:</strong> {{ strategy.risk_profile }}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        {% if strategy.construction %}
+                        <div class="mb-3">
+                            <h6 class="text-primary">
+                                <i class="fas fa-tools me-1"></i>Construction:
+                            </h6>
+                            <small class="text-dark">{{ strategy.construction }}</small>
+                        </div>
+                        {% endif %}
+
+                        <div class="mt-auto">
+                            <small class="text-muted d-block">
+                                <i class="fas fa-book me-1"></i>
+                                Source: {{ strategy.source_book or 'Option Trading Handbook' }}
+                            </small>
+                            {% if strategy.author %}
+                            <small class="text-muted d-block">
+                                <i class="fas fa-user me-1"></i>
+                                Author: {{ strategy.author }}
+                            </small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if total_count == 0 %}
+        <div class="text-center py-5">
+            <i class="fas fa-book-open fa-5x text-muted mb-3"></i>
+            <h3 class="text-muted">No strategies found</h3>
+            <p class="text-muted">The strategy library is being built. Please check back later.</p>
+        </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        // Search and Filter Functionality
+        const searchBox = document.getElementById('searchBox');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const strategyItems = document.querySelectorAll('.strategy-item');
+
+        function filterStrategies() {
+            const searchTerm = searchBox.value.toLowerCase();
+            const selectedCategory = categoryFilter.value.toLowerCase();
+
+            strategyItems.forEach(item => {
+                const name = item.dataset.name;
+                const category = item.dataset.category;
+                const market = item.dataset.market;
+
+                const matchesSearch = !searchTerm || 
+                    name.includes(searchTerm) || 
+                    category.includes(searchTerm) || 
+                    market.includes(searchTerm);
+
+                const matchesCategory = !selectedCategory || 
+                    category.includes(selectedCategory) ||
+                    (selectedCategory === 'volatility' && name.includes('straddle')) ||
+                    (selectedCategory === 'volatility' && name.includes('strangle'));
+
+                if (matchesSearch && matchesCategory) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        searchBox.addEventListener('input', filterStrategies);
+        categoryFilter.addEventListener('change', filterStrategies);
+
+        // Strategy Card Click Effects
+        document.querySelectorAll('.strategy-card').forEach(card => {
+            card.addEventListener('click', function() {
+                // Add a subtle click effect
+                this.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    this.style.transform = '';
+                }, 150);
+            });
+        });
+
+        console.log('📚 Strategies Library loaded with {{ total_count }} strategies');
+    </script>
+{% endblock %}

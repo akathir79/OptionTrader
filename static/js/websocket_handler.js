@@ -77,8 +77,17 @@ class WebSocketHandler {
                 this.volumeOIUpdateInterval = null;
             }
             
+            // Clear futures update interval to prevent using stale symbol
+            if (this.futuresUpdateInterval) {
+                clearInterval(this.futuresUpdateInterval);
+                this.futuresUpdateInterval = null;
+            }
+            
             // Start spot price updates
             this.startSpotPriceUpdates();
+            
+            // Start futures price updates
+            this.startFuturesPriceUpdates();
             
             // Start option chain updates if expiry is provided
             if (expiry) {
@@ -95,77 +104,144 @@ class WebSocketHandler {
     }
     
     startSpotPriceUpdates() {
-        // Update spot price every 2 seconds
-        if (this.updateInterval) {
-            clearInterval(this.updateInterval);
-        }
+        // Real-time WebSocket streaming for spot prices - no REST API polling
+        console.log('🚀 Starting real-time WebSocket streaming for spot prices');
         
-        this.updateInterval = setInterval(() => {
-            this.updateSpotPrice();
-        }, 2000);
+        // Subscribe spot symbol to WebSocket for real-time tick data
+        this.subscribeSpotToWebSocket();
         
-        // Initial update
-        this.updateSpotPrice();
+        // No more REST API polling - rely only on WebSocket streaming
+        console.log('✅ Spot price will update via WebSocket streaming only');
+    }
+    
+    startFuturesPriceUpdates() {
+        // Real-time WebSocket streaming for futures prices - no REST API polling
+        console.log('🚀 Starting real-time WebSocket streaming for futures prices');
+        
+        // Subscribe futures symbol to WebSocket for real-time tick data
+        this.subscribeFuturesToWebSocket();
+        
+        // No more REST API polling - rely only on WebSocket streaming
+        console.log('✅ Futures price will update via WebSocket streaming only');
+    }
+    
+    async updateFuturesPrice() {
+        // This method is now deprecated - futures updates via WebSocket streaming only
+        console.log('🚨 updateFuturesPrice() called but disabled - using WebSocket streaming instead');
+        return;
     }
     
     async updateSpotPrice() {
-        if (!this.currentSymbol) return;
+        // This method is now deprecated - spot updates via WebSocket streaming only
+        console.log('🚨 updateSpotPrice() called but disabled - using WebSocket streaming instead');
+        return;
+    }
+    
+    updateDayOpenDisplay(dayOpenValue, spotPrice) {
+        // Update Day Open value (Row 2) - consistent with three-row format
+        const dayOpenElement = document.querySelector('.day-open-value');
+        if (dayOpenElement) {
+            dayOpenElement.textContent = this.formatPrice(dayOpenValue);
+            dayOpenElement.classList.remove('text-muted');
+            dayOpenElement.classList.add('text-dark');
+        }
         
-        try {
-            // Use symbol as-is since it should already be in correct format from symbol lookup
-            const response = await fetch(`/get_spot_price?symbol=${encodeURIComponent(this.currentSymbol)}`);
-            const data = await response.json();
+        // Update Gap Analysis (Row 3) - consistent with three-row format
+        const gapElement = document.querySelector('.gap-analysis');
+        if (gapElement && spotPrice && dayOpenValue) {
+            const gap = spotPrice - dayOpenValue;
+            const gapPercent = (gap / dayOpenValue) * 100;
+            const gapText = `${gap >= 0 ? '+' : ''}${gap.toFixed(1)} (${gapPercent >= 0 ? '+' : ''}${gapPercent.toFixed(2)}%)`;
             
-            if (data.success) {
-                // Store full quote data globally for modal access
-                window.currentQuoteData = {
-                    symbol: data.symbol,
-                    spot_price: data.spot_price,
-                    day_open: data.day_open,
-                    prev_close: data.prev_close,
-                    change: data.change,
-                    change_percent: data.change_percent,
-                    gap_abs: data.gap_abs,
-                    gap_pct: data.gap_pct,
-                    fyers_symbol: data.fyers_symbol,
-                    timestamp: data.timestamp
-                };
-                
-                this.updateSpotPriceDisplay(data.spot_price);
-                this.updateATMDisplay(data.spot_price);
-                
-                // Update day open display if element exists
-                this.updateDayOpenDisplay(data.day_open, data.gap_abs, data.gap_pct);
-                
-                console.log(`Spot updated: ${data.spot_price} | Open: ${data.day_open} | Gap: ${data.gap_abs?.toFixed(2)} (${data.gap_pct?.toFixed(2)}%)`);
+            gapElement.textContent = gapText;
+            gapElement.classList.remove('text-success', 'text-danger', 'text-muted');
+            
+            if (gap > 0) {
+                gapElement.classList.add('text-success');
+            } else if (gap < 0) {
+                gapElement.classList.add('text-danger');
             } else {
-                console.error('Spot price update failed:', data.error);
+                gapElement.classList.add('text-muted');
             }
-        } catch (error) {
-            console.error('Error updating spot price:', error);
         }
     }
     
-    updateDayOpenDisplay(dayOpen, gapAbs, gapPct) {
-        // Update day open price display elements
-        const dayOpenElements = document.querySelectorAll('.day-open-value');
-        dayOpenElements.forEach(element => {
-            element.textContent = dayOpen ? dayOpen.toFixed(2) : '--';
-        });
+    subscribeSpotToWebSocket() {
+        // Subscribe spot symbol AND VIX to WebSocket for real-time tick data
+        if (!this.currentSymbol) return;
         
-        // Update gap analysis display
-        const gapElements = document.querySelectorAll('.gap-analysis');
-        gapElements.forEach(element => {
-            if (gapAbs !== undefined && gapPct !== undefined) {
-                const gapText = `${gapAbs > 0 ? '+' : ''}${gapAbs.toFixed(2)} (${gapPct.toFixed(2)}%)`;
-                const gapClass = gapAbs > 0 ? 'text-success' : gapAbs < 0 ? 'text-danger' : 'text-muted';
-                element.innerHTML = `<span class="${gapClass}">${gapText}</span>`;
-                element.style.cursor = 'pointer';
-                element.title = 'Click for gap analysis';
-            } else {
-                element.textContent = '--';
-            }
-        });
+        try {
+            // Add spot symbol AND VIX symbol to WebSocket subscription
+            const symbolsToSubscribe = [
+                this.currentSymbol, // Spot symbol (e.g., NSE:NIFTY50-INDEX)
+                'NSE:INDIAVIX-INDEX' // Always add VIX for market volatility data
+            ];
+            
+            fetch('/update_subscriptions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    symbols: symbolsToSubscribe,
+                    action: 'add'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('🎯 Spot and VIX symbols subscribed to WebSocket:', symbolsToSubscribe);
+            })
+            .catch(error => {
+                console.error('Error subscribing spot/VIX to WebSocket:', error);
+            });
+        } catch (error) {
+            console.error('Error in subscribeSpotToWebSocket:', error);
+        }
+    }
+    
+    subscribeFuturesToWebSocket() {
+        // Subscribe futures symbol to WebSocket for real-time tick data
+        if (!this.currentSymbol) return;
+        
+        try {
+            // Generate futures symbol from spot symbol
+            const futuresSymbol = this.getFuturesSymbolFromSpot(this.currentSymbol);
+            
+            // Add futures symbol to WebSocket subscription
+            fetch('/update_subscriptions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    symbols: [futuresSymbol], // Add futures symbol for streaming
+                    action: 'add'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('🎯 Futures symbol subscribed to WebSocket:', futuresSymbol);
+            })
+            .catch(error => {
+                console.error('Error subscribing futures to WebSocket:', error);
+            });
+        } catch (error) {
+            console.error('Error in subscribeFuturesToWebSocket:', error);
+        }
+    }
+    
+    getFuturesSymbolFromSpot(spotSymbol) {
+        // Convert spot symbol to current month futures symbol using correct FYERS symbols
+        if (spotSymbol === 'NSE:NIFTY50-INDEX') {
+            return 'NSE:NIFTY25SEP';  // Current month futures - September 2025
+        } else if (spotSymbol === 'NSE:NIFTYBANK-INDEX') {
+            return 'NSE:BANKNIFTY25SEP';  // Current month futures - September 2025
+        } else if (spotSymbol === 'NSE:FINNIFTY-INDEX') {
+            return 'NSE:FINNIFTY25SEP';  // Current month futures - September 2025
+        }
+        
+        // Default mapping for other symbols
+        return spotSymbol.replace('-INDEX', '25SEP');
     }
     
     startVolumeOIUpdates() {
@@ -174,12 +250,12 @@ class WebSocketHandler {
             clearInterval(this.volumeOIUpdateInterval);
         }
         
-        // Update VOL/OI/Change in OI every 3 seconds using option chain API
+        // Update VOL/OI/Change in OI every 15 seconds (reduced frequency to prevent rate limiting)
         this.volumeOIUpdateInterval = setInterval(() => {
             this.updateVolumeOIData();
-        }, 3000);
+        }, 15000);
         
-        console.log('🔄 VOL/OI timer updates started (every 3 seconds)');
+        console.log('🔄 VOL/OI timer updates started (every 15 seconds)');
     }
     
     async updateVolumeOIData() {
@@ -215,17 +291,72 @@ class WebSocketHandler {
             });
             
             if (matchingRow) {
-                // Update only VOL/OI/Change in OI columns (not LTP)
+                // Calculate previous OI from Fyers API fields: prev_oi = current_oi - change_in_oi
+                const prevCeOI = this.calculatePrevOI(strike.ce_oi, strike.ce_oich);
+                const prevPeOI = this.calculatePrevOI(strike.pe_oi, strike.pe_oich);
+                
+                // Calculate percentage change in OI from Fyers API data
+                const ceOIChangePercent = this.calculateOIPercentageFromAPI(strike.ce_oich, prevCeOI);
+                const peOIChangePercent = this.calculateOIPercentageFromAPI(strike.pe_oich, prevPeOI);
+                
+                // Update existing VOL/OI/Change in OI columns
                 this.updateCellValue(matchingRow, '.ce-volume', strike.ce_volume);
                 this.updateCellValue(matchingRow, '.ce-oi', strike.ce_oi);
                 this.updateCellValueWithColor(matchingRow, '.ce-oi-change', strike.ce_oich);
                 this.updateCellValue(matchingRow, '.pe-volume', strike.pe_volume);
                 this.updateCellValue(matchingRow, '.pe-oi', strike.pe_oi);
                 this.updateCellValueWithColor(matchingRow, '.pe-oi-change', strike.pe_oich);
+                
+                // Update new Prev OI and % Change OI columns with proper formatting
+                this.updateCellValue(matchingRow, '.ce-prev-oi', prevCeOI);
+                this.updateOIPercentageCell(matchingRow, '.ce-oichp', ceOIChangePercent);
+                this.updateCellValue(matchingRow, '.pe-prev-oi', prevPeOI);
+                this.updateOIPercentageCell(matchingRow, '.pe-oichp', peOIChangePercent);
             }
         });
     }
     
+    calculatePrevOI(currentOI, changeInOI) {
+        // Previous OI = Current OI - Change in OI (from Fyers API)
+        const prevOI = (currentOI || 0) - (changeInOI || 0);
+        return Math.max(prevOI, 0); // Ensure non-negative
+    }
+
+    calculateOIPercentageFromAPI(changeInOI, prevOI) {
+        // Calculate percentage change: (change / previous) * 100
+        if (!prevOI || prevOI === 0 || changeInOI === null || changeInOI === undefined) {
+            return 0;
+        }
+        
+        const percentage = (changeInOI / prevOI) * 100;
+        return Math.round(percentage * 100) / 100; // Round to 2 decimal places
+    }
+
+    updateOIPercentageCell(row, selector, percentage) {
+        const cell = row.querySelector(selector);
+        if (cell) {
+            // Format percentage with % sign
+            const displayValue = percentage === 0 ? '0%' : `${percentage}%`;
+            cell.textContent = displayValue;
+            
+            // Apply color: positive = green, negative = red, zero = neutral
+            cell.classList.remove('text-success', 'text-danger', 'text-muted');
+            if (percentage > 0) {
+                cell.classList.add('text-success');
+            } else if (percentage < 0) {
+                cell.classList.add('text-danger');
+            } else {
+                cell.classList.add('text-muted'); // Neutral for 0%
+            }
+            
+            // Add update animation
+            cell.classList.add('cell-updated');
+            setTimeout(() => {
+                cell.classList.remove('cell-updated');
+            }, 1000);
+        }
+    }
+
     updateCellValueWithColor(row, selector, value) {
         const cell = row.querySelector(selector);
         if (cell) {
@@ -271,43 +402,43 @@ class WebSocketHandler {
         return `NSE:${symbol}-EQ`;
     }
     
-    updateSpotPriceDisplay(spotPrice) {
-        // Update spot price in the market data carousel
+    updateSpotPriceDisplay(spotPrice, dayOpen = null) {
+        // Update the main spot price element (Row 2)
+        const spotPriceElement = document.getElementById('spotPrice');
+        if (spotPriceElement) {
+            spotPriceElement.textContent = this.formatPrice(spotPrice);
+            spotPriceElement.classList.remove('text-muted');
+            spotPriceElement.classList.add('text-dark');
+        }
+        
+        // Update spot price percentage change (Row 3)
+        const spotChangeElement = document.getElementById('spotChange');
+        if (spotChangeElement && dayOpen && dayOpen > 0) {
+            const change = spotPrice - dayOpen;
+            const changePercent = (change / dayOpen) * 100;
+            const changeText = `${change >= 0 ? '+' : ''}${change.toFixed(1)} (${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%)`;
+            
+            spotChangeElement.textContent = changeText;
+            spotChangeElement.classList.remove('text-success', 'text-danger', 'text-muted');
+            
+            if (change > 0) {
+                spotChangeElement.classList.add('text-success');
+            } else if (change < 0) {
+                spotChangeElement.classList.add('text-danger');
+            } else {
+                spotChangeElement.classList.add('text-muted');
+            }
+        }
+        
+        // Update other spot price display elements
         const spotPriceElements = document.querySelectorAll('.spot-price-value');
         spotPriceElements.forEach(element => {
             element.textContent = this.formatPrice(spotPrice);
         });
         
-        // Update the specific spot price element with ID "spotPrice"
-        const spotPriceElement = document.getElementById('spotPrice');
-        if (spotPriceElement) {
-            spotPriceElement.textContent = this.formatPrice(spotPrice);
-            spotPriceElement.classList.remove('text-muted');
-            spotPriceElement.classList.add('text-primary');
-            spotPriceElement.classList.add('spot-price-updated');
-            setTimeout(() => {
-                spotPriceElement.classList.remove('spot-price-updated');
-            }, 500);
-        }
         
-        // Show chart icon when symbol is selected
-        const chartIcon = document.getElementById('chartIcon');
-        if (chartIcon && this.currentSymbol) {
-            chartIcon.style.display = 'inline';
-        }
-        
-        // Update any element containing "Spot Price:"
-        const allElements = document.querySelectorAll('*');
-        allElements.forEach(element => {
-            if (element.textContent && element.textContent.includes('Spot Price:')) {
-                const textNodes = this.getTextNodes(element);
-                textNodes.forEach(node => {
-                    if (node.textContent.includes('Spot Price:')) {
-                        node.textContent = node.textContent.replace(/Spot Price:\s*[\d,]+/, `Spot Price: ${this.formatPrice(spotPrice)}`);
-                    }
-                });
-            }
-        });
+        // Store for day open calculations
+        this.lastSpotPrice = spotPrice;
         
         // Store current spot price for ITM calculations
         this.currentSpotPrice = spotPrice;
@@ -319,6 +450,95 @@ class WebSocketHandler {
         // Update payoff chart spot price line if chart exists
         console.log(`[SPOT UPDATE] About to call updatePayoffChartSpotPrice with spot: ${this.currentSpotPrice}`);
         this.updatePayoffChartSpotPrice();
+    }
+
+    updateFuturesPriceDisplay(futuresPrice, change, changePercent) {
+        // Update futures price (Row 2)
+        const futuresPriceElement = document.getElementById('futuresPrice');
+        if (futuresPriceElement) {
+            futuresPriceElement.textContent = this.formatPrice(futuresPrice);
+            // Remove all possible color classes that might cause blue/cyan colors
+            futuresPriceElement.classList.remove('text-muted', 'text-info', 'text-primary', 'text-secondary', 'text-warning', 'text-danger', 'text-success', 'md-up', 'md-down', 'futures-price');
+            futuresPriceElement.classList.add('text-dark');
+            // Force dark color with inline style to override any CSS
+            futuresPriceElement.style.color = '#212529';
+            futuresPriceElement.style.setProperty('color', '#212529', 'important');
+        }
+
+        // Update futures change display with green/red colors (Row 3)
+        const futuresChangeElement = document.getElementById('futuresChange');
+        if (futuresChangeElement && change !== undefined && changePercent !== undefined) {
+            const changeText = `${change >= 0 ? '+' : ''}${change.toFixed(1)} (${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%)`;
+            
+            futuresChangeElement.textContent = changeText;
+            futuresChangeElement.classList.remove('text-success', 'text-danger', 'text-muted');
+            
+            if (change > 0) {
+                futuresChangeElement.classList.add('text-success');
+            } else if (change < 0) {
+                futuresChangeElement.classList.add('text-danger');
+            } else {
+                futuresChangeElement.classList.add('text-muted');
+            }
+        }
+
+        console.log(`📊 Futures display updated: ${futuresPrice} | Change: ${change?.toFixed(2)} (${changePercent?.toFixed(2)}%)`);    
+    }
+    
+    updateVixDisplay(vixValue, change, changePercent) {
+        // Update VIX value (Row 2)
+        const vixValueElement = document.getElementById('vixValue');
+        if (vixValueElement) {
+            vixValueElement.textContent = vixValue.toFixed(2);
+            vixValueElement.classList.remove('text-muted');
+            vixValueElement.classList.add('text-dark');
+        }
+
+        // Update VIX change display with green/red colors (Row 3)
+        const vixChangeElement = document.getElementById('vixChange');
+        if (vixChangeElement && change !== undefined && changePercent !== undefined) {
+            const changeText = `${change >= 0 ? '+' : ''}${change.toFixed(2)} (${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%)`;
+            
+            vixChangeElement.textContent = changeText;
+            vixChangeElement.classList.remove('text-success', 'text-danger', 'text-muted');
+            
+            if (change > 0) {
+                vixChangeElement.classList.add('text-success');
+            } else if (change < 0) {
+                vixChangeElement.classList.add('text-danger');
+            } else {
+                vixChangeElement.classList.add('text-muted');
+            }
+        }
+    }
+    
+    updateDayOpenDisplay(dayOpenValue, spotPrice) {
+        // Update Day Open value (Row 2)
+        const dayOpenElement = document.querySelector('.day-open-value');
+        if (dayOpenElement) {
+            dayOpenElement.textContent = this.formatPrice(dayOpenValue);
+            dayOpenElement.classList.remove('text-muted');
+            dayOpenElement.classList.add('text-dark');
+        }
+        
+        // Update Gap Analysis (Row 3)
+        const gapElement = document.querySelector('.gap-analysis');
+        if (gapElement && spotPrice && dayOpenValue) {
+            const gap = spotPrice - dayOpenValue;
+            const gapPercent = (gap / dayOpenValue) * 100;
+            const gapText = `${gap >= 0 ? '+' : ''}${gap.toFixed(1)} (${gapPercent >= 0 ? '+' : ''}${gapPercent.toFixed(2)}%)`;
+            
+            gapElement.textContent = gapText;
+            gapElement.classList.remove('text-success', 'text-danger', 'text-muted');
+            
+            if (gap > 0) {
+                gapElement.classList.add('text-success');
+            } else if (gap < 0) {
+                gapElement.classList.add('text-danger');
+            } else {
+                gapElement.classList.add('text-muted');
+            }
+        }
     }
 
     getCurrentSpotPrice() {
@@ -333,7 +553,7 @@ class WebSocketHandler {
         let minDifference = Infinity;
         
         rows.forEach(row => {
-            const strikeCell = row.querySelector('td:nth-child(20)'); // Strike column
+            const strikeCell = row.querySelector('td:nth-child(22)'); // Strike column
             if (strikeCell) {
                 const strike = parseFloat(strikeCell.textContent);
                 if (!isNaN(strike)) {
@@ -354,7 +574,7 @@ class WebSocketHandler {
         
         const rows = this.optionChainTable.querySelectorAll('tbody tr');
         rows.forEach(row => {
-            const strikeCell = row.querySelector('td:nth-child(20)'); // Strike column
+            const strikeCell = row.querySelector('td:nth-child(22)'); // Strike column
             if (strikeCell) {
                 const strike = parseFloat(strikeCell.textContent);
                 if (!isNaN(strike)) {
@@ -645,6 +865,8 @@ class WebSocketHandler {
             `<td class="text-center ce-ask-qty">${strike.ce_ask_qty || 0}</td>`,
             `<td class="text-center ce-oi-change ${strike.ce_oich >= 0 ? 'text-success' : 'text-danger'}">${strike.ce_oich || 0}</td>`,
             `<td class="text-center ce-oi">${strike.ce_oi || 0}</td>`,
+            `<td class="text-center ce-prev-oi">${strike.ce_prev_oi || 0}</td>`,
+            `<td class="text-center ce-oichp ${(strike.ce_oichp >= 0 ? 'text-success' : 'text-danger')}">${strike.ce_oichp || 0}</td>`,
             `<td class="text-center ce-volume">${strike.ce_volume || 0}</td>`,
             `<td class="microchart-cell" id="ce-chart-${strike.strike}"></td>`,
             `<td class="text-center ce-ltp call-ltp ${isCallITM ? 'itm' : 'otm'}" data-symbol="${strike.ce_symbol}">${this.formatPrice(strike.ce_ltp)}</td>`,
@@ -657,6 +879,8 @@ class WebSocketHandler {
             `<td class="microchart-cell" id="pe-chart-${strike.strike}"></td>`,
             `<td class="text-center pe-volume">${strike.pe_volume || 0}</td>`,
             `<td class="text-center pe-oi">${strike.pe_oi || 0}</td>`,
+            `<td class="text-center pe-prev-oi">${strike.pe_prev_oi || 0}</td>`,
+            `<td class="text-center pe-oichp ${(strike.pe_oichp >= 0 ? 'text-success' : 'text-danger')}">${strike.pe_oichp || 0}</td>`,
             `<td class="text-center pe-oi-change ${strike.pe_oich >= 0 ? 'text-success' : 'text-danger'}">${strike.pe_oich || 0}</td>`,
             `<td class="text-center pe-ask-qty">${strike.pe_ask_qty || 0}</td>`,
             `<td class="text-center pe-ask">${this.formatPrice(strike.pe_ask)}</td>`,
@@ -847,10 +1071,10 @@ class WebSocketHandler {
     
     setupRealTimeDataListener() {
         // Setup periodic polling for real-time data (Server-sent events alternative)
-        console.log('Setting up real-time data listener with 1-second polling');
+        console.log('Setting up real-time data listener with 5-second polling');
         this.realTimeInterval = setInterval(() => {
             this.checkForRealTimeUpdates();
-        }, 1000); // Check every second for real-time updates
+        }, 5000); // Check every 5 seconds for real-time updates (reduced frequency)
     }
     
     async checkForRealTimeUpdates() {
@@ -867,18 +1091,78 @@ class WebSocketHandler {
                 // Update option chain table with live data
                 this.updateTableWithLiveData(result.data);
                 
+                // Process VIX data from WebSocket
+                if (result.data['NSE:INDIAVIX-INDEX']) {
+                    const vixData = result.data['NSE:INDIAVIX-INDEX'];
+                    const vixChange = vixData.change || 0;
+                    const vixChangePct = vixData.prev_close_price > 0 ? (vixChange / vixData.prev_close_price) * 100 : 0;
+                    this.updateVixDisplay(vixData.ltp, vixChange, vixChangePct);
+                    console.log(`📊 VIX updated: ${vixData.ltp} (${vixChange >= 0 ? '+' : ''}${vixChange.toFixed(2)})`);
+                } else {
+                    console.warn(`⚠️ VIX data not found in WebSocket result:`, Object.keys(result.data || {}));
+                }
+                
                 // Update Current Positions table with live LTP and P&L
                 if (typeof window.updatePositionTableLivePrices === 'function') {
                     window.updatePositionTableLivePrices();
                 }
                 
-                // Update spot price if available for current symbol
+                // Update spot price if available for current symbol via WebSocket streaming
                 if (this.currentSymbol && result.data[this.currentSymbol]) {
-                    const newSpotPrice = result.data[this.currentSymbol].ltp;
+                    const spotData = result.data[this.currentSymbol];
+                    const newSpotPrice = spotData.ltp;
+                    const dayOpen = spotData.open_price;
+                    
+                    // DEBUG: Log all spot data to identify day open issue
+                    console.log(`🔍 SPOT DATA DEBUG:`, {
+                        symbol: this.currentSymbol,
+                        ltp: newSpotPrice,
+                        open_price: dayOpen,
+                        spotData: spotData
+                    });
+                    
                     if (newSpotPrice !== this.currentSpotPrice) {
-                        this.updateSpotPriceDisplay(newSpotPrice);
+                        this.updateSpotPriceDisplay(newSpotPrice, dayOpen);
                         this.updateATMDisplay(newSpotPrice);
                         this.updatePayoffChartSpotPrice();
+                        console.log(`🚀 WebSocket spot price update: ${newSpotPrice}`);
+                    }
+                    
+                    // FIXED: Always try to update day open, even if 0 - might be valid
+                    if (dayOpen !== null && dayOpen !== undefined) {
+                        this.updateDayOpenDisplay(dayOpen, newSpotPrice);
+                        console.log(`📅 Day open updated: ${dayOpen} (Gap: ${(newSpotPrice - dayOpen).toFixed(1)})`);
+                    } else {
+                        console.warn(`⚠️ Day open is null/undefined for ${this.currentSymbol}`);
+                    }
+                }
+                
+                // Update futures price if available via WebSocket streaming
+                if (this.currentSymbol) {
+                    const futuresSymbol = this.getFuturesSymbolFromSpot(this.currentSymbol);
+                    if (result.data[futuresSymbol]) {
+                        const futuresData = result.data[futuresSymbol];
+                        const futuresPrice = futuresData.ltp;
+                        
+                        // Calculate change from stored spot price
+                        if (this.currentSpotPrice && futuresPrice) {
+                            const change = futuresPrice - this.currentSpotPrice;
+                            const changePercent = (change / this.currentSpotPrice) * 100;
+                            
+                            // Store futures data globally
+                            window.currentFuturesData = {
+                                symbol: this.currentSymbol,
+                                futures_price: futuresPrice,
+                                change: change,
+                                change_percent: changePercent,
+                                basis: change,
+                                basis_pct: changePercent,
+                                timestamp: new Date().toISOString()
+                            };
+                            
+                            this.updateFuturesPriceDisplay(futuresPrice, change, changePercent);
+                            console.log(`🚀 WebSocket futures price update: ${futuresPrice}`);
+                        }
                     }
                 }
             }
