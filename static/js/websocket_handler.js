@@ -147,54 +147,23 @@ class WebSocketHandler {
     }
     
     updateDayOpenDisplay(dayOpen, gapAbs, gapPct) {
-        // Update day open price display elements with professional styling
+        // Update day open price display elements
         const dayOpenElements = document.querySelectorAll('.day-open-value');
         dayOpenElements.forEach(element => {
-            element.setAttribute('data-market-data', 'day-open');
-            element.classList.add('price-display');
-            
-            if (window.marketDataUI && dayOpen !== null && dayOpen !== undefined) {
-                window.marketDataUI.applyPriceUpdate(element, dayOpen, null, {
-                    decimals: 2,
-                    addCommas: true
-                });
-            } else {
-                element.textContent = dayOpen ? dayOpen.toFixed(2) : '--';
-            }
+            element.textContent = dayOpen ? dayOpen.toFixed(2) : '--';
         });
         
-        // Update gap analysis display with professional styling
+        // Update gap analysis display
         const gapElements = document.querySelectorAll('.gap-analysis');
         gapElements.forEach(element => {
-            element.setAttribute('data-market-data', 'gap-analysis');
-            element.classList.add('market-value');
-            
             if (gapAbs !== undefined && gapPct !== undefined) {
-                if (window.marketDataUI) {
-                    // Format gap text professionally
-                    const gapText = `${gapAbs > 0 ? '+' : ''}${gapAbs.toFixed(2)} (${gapPct.toFixed(2)}%)`;
-                    
-                    // Apply styling based on gap direction
-                    element.textContent = gapText;
-                    element.classList.remove('md-up', 'md-down');
-                    
-                    if (gapAbs > 0) {
-                        element.classList.add('md-up');
-                    } else if (gapAbs < 0) {
-                        element.classList.add('md-down');
-                    }
-                } else {
-                    // Fallback to old method
-                    const gapText = `${gapAbs > 0 ? '+' : ''}${gapAbs.toFixed(2)} (${gapPct.toFixed(2)}%)`;
-                    const gapClass = gapAbs > 0 ? 'text-success' : gapAbs < 0 ? 'text-danger' : 'text-muted';
-                    element.innerHTML = `<span class="${gapClass}">${gapText}</span>`;
-                }
-                
+                const gapText = `${gapAbs > 0 ? '+' : ''}${gapAbs.toFixed(2)} (${gapPct.toFixed(2)}%)`;
+                const gapClass = gapAbs > 0 ? 'text-success' : gapAbs < 0 ? 'text-danger' : 'text-muted';
+                element.innerHTML = `<span class="${gapClass}">${gapText}</span>`;
                 element.style.cursor = 'pointer';
                 element.title = 'Click for gap analysis';
             } else {
                 element.textContent = '--';
-                element.classList.remove('md-up', 'md-down');
             }
         });
     }
@@ -303,45 +272,22 @@ class WebSocketHandler {
     }
     
     updateSpotPriceDisplay(spotPrice) {
-        // Update spot price using professional market data styling
+        // Update spot price in the market data carousel
         const spotPriceElements = document.querySelectorAll('.spot-price-value');
         spotPriceElements.forEach(element => {
-            // Add professional styling attributes
-            element.setAttribute('data-market-data', 'spot-price');
-            element.classList.add('price-display');
-            
-            // Use the professional market data UI system
-            if (window.marketDataUI) {
-                window.marketDataUI.applyPriceUpdate(element, spotPrice, null, {
-                    decimals: 2,
-                    addCommas: true
-                });
-            } else {
-                element.textContent = this.formatPrice(spotPrice);
-            }
+            element.textContent = this.formatPrice(spotPrice);
         });
         
         // Update the specific spot price element with ID "spotPrice"
         const spotPriceElement = document.getElementById('spotPrice');
         if (spotPriceElement) {
-            spotPriceElement.setAttribute('data-market-data', 'main-spot-price');
-            spotPriceElement.classList.add('price-display', 'spot-price');
-            
-            if (window.marketDataUI) {
-                window.marketDataUI.applyPriceUpdate(spotPriceElement, spotPrice, null, {
-                    decimals: 2,
-                    addCommas: true
-                });
-            } else {
-                // Fallback to old method
-                spotPriceElement.textContent = this.formatPrice(spotPrice);
-                spotPriceElement.classList.remove('text-muted');
-                spotPriceElement.classList.add('text-primary');
-                spotPriceElement.classList.add('spot-price-updated');
-                setTimeout(() => {
-                    spotPriceElement.classList.remove('spot-price-updated');
-                }, 500);
-            }
+            spotPriceElement.textContent = this.formatPrice(spotPrice);
+            spotPriceElement.classList.remove('text-muted');
+            spotPriceElement.classList.add('text-primary');
+            spotPriceElement.classList.add('spot-price-updated');
+            setTimeout(() => {
+                spotPriceElement.classList.remove('spot-price-updated');
+            }, 500);
         }
         
         // Show chart icon when symbol is selected

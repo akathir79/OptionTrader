@@ -42,43 +42,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /* =================================================================
-     SYMBOL CHANGE EVENT HANDLING
-     ================================================================= */
-  function emitSymbolChanging() {
-    // Emit custom event to signal symbol is changing
-    window.dispatchEvent(new CustomEvent('symbol:changing', {
-      detail: { timestamp: Date.now() }
-    }));
-  }
-
-  // Set up listener to clear market data when symbol changes
-  window.addEventListener('symbol:changing', () => {
-    if (window.marketDataUI) {
-      window.marketDataUI.clearMarketDataLabels({ preserve: ['vix'] });
-    } else {
-      // Defensive fallback if marketDataUI isn't loaded yet
-      console.log('🔄 MarketDataUI not yet loaded, performing basic symbol clearing');
-      const marketElements = document.querySelectorAll('[data-market-data], .price-display, .market-value');
-      marketElements.forEach(element => {
-        // Check if it's a VIX element (preserve VIX)
-        const elementId = element.id?.toLowerCase() || '';
-        const dataMarketData = element.getAttribute('data-market-data')?.toLowerCase() || '';
-        const classNames = element.className?.toLowerCase() || '';
-        
-        const isVix = elementId.includes('vix') || 
-                     dataMarketData.includes('vix') || 
-                     classNames.includes('vix-display') ||
-                     classNames.includes('vix-value');
-        
-        if (!isVix) {
-          element.textContent = '—';
-          element.classList.remove('md-up', 'md-down', 'flash-up', 'flash-down', 'text-success', 'text-danger');
-        }
-      });
-    }
-  });
-
-  /* =================================================================
      EVENTS
      ================================================================= */
   indexSelect?.addEventListener("change", () => {
@@ -87,9 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
       updateSectionVisibility();
       return;
     }
-    // Clear market data before changing symbol
-    emitSymbolChanging();
-    
     exchangeSel.value = "";
     extraSelect.innerHTML = '<option value="">Select Symbol</option>';
     fetchExpiryForIndex(indexSelect.value);
@@ -107,17 +67,11 @@ document.addEventListener("DOMContentLoaded", () => {
       updateSectionVisibility();
       return;
     }
-    // Clear market data before changing symbol
-    emitSymbolChanging();
-    
     loadExtraSymbols(exchangeSel.value);
     updateSectionVisibility();
   });
 
   extraSelect?.addEventListener("change", () => {
-    // Clear market data before changing symbol
-    emitSymbolChanging();
-    
     indexSelect.value = "";
     clearExpiry();
     if (exchangeSel.value && extraSelect.value) {
