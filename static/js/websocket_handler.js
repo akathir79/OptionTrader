@@ -167,27 +167,32 @@ class WebSocketHandler {
     }
     
     subscribeSpotToWebSocket() {
-        // Subscribe spot symbol to WebSocket for real-time tick data
+        // Subscribe spot symbol AND VIX to WebSocket for real-time tick data
         if (!this.currentSymbol) return;
         
         try {
-            // Add spot symbol to WebSocket subscription
+            // Add spot symbol AND VIX symbol to WebSocket subscription
+            const symbolsToSubscribe = [
+                this.currentSymbol, // Spot symbol (e.g., NSE:NIFTY50-INDEX)
+                'NSE:INDIAVIX-INDEX' // Always add VIX for market volatility data
+            ];
+            
             fetch('/update_subscriptions', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    symbols: [this.currentSymbol], // Add spot symbol for streaming
+                    symbols: symbolsToSubscribe,
                     action: 'add'
                 })
             })
             .then(response => response.json())
             .then(data => {
-                console.log('🎯 Spot symbol subscribed to WebSocket:', this.currentSymbol);
+                console.log('🎯 Spot and VIX symbols subscribed to WebSocket:', symbolsToSubscribe);
             })
             .catch(error => {
-                console.error('Error subscribing spot to WebSocket:', error);
+                console.error('Error subscribing spot/VIX to WebSocket:', error);
             });
         } catch (error) {
             console.error('Error in subscribeSpotToWebSocket:', error);

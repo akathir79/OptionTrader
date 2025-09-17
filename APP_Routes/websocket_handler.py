@@ -133,12 +133,21 @@ def get_option_chain():
         # Initialize FYERS model
         fyers = fyersModel.FyersModel(client_id=client_id, token=access_token, is_async=False, log_path="")
         
-        # Get spot price
-        spot_data = fyers.quotes({"symbols": symbol})
+        # Get spot price from WebSocket data instead of REST API to avoid 429 errors
         spot_price = 0
-        # ⚠️ CRITICAL: Fyers API response structure - ['d'][0]['v'] is mandatory path!
-        if spot_data.get('s') == 'ok' and spot_data.get('d'):
-            spot_price = spot_data['d'][0]['v'].get('lp', 0)
+        try:
+            # Try to get spot price from WebSocket live data first
+            global live_market_data
+            if symbol in live_market_data:
+                spot_price = live_market_data[symbol].get('ltp', 0)
+                print(f"SPOT PRICE FROM WEBSOCKET: {spot_price}")
+            else:
+                # No WebSocket data available - delay ATM calculation until data arrives
+                print(f"NO WEBSOCKET DATA FOR {symbol} - waiting for real-time data")
+                return {'success': False, 'error': 'Waiting for live market data to calculate ATM'}
+        except Exception as e:
+            print(f"SPOT PRICE WEBSOCKET ERROR: {e}")
+            return {'success': False, 'error': 'Unable to determine spot price from live data'}
         
         # Get expiry data if no expiry provided
         if not expiry_timestamp:
@@ -340,23 +349,31 @@ def start_websocket_subscription(symbols):
                 # Store live data in global variable for frontend polling
                 global live_market_data
                 if message and 'symbol' in message:
-                    live_market_data[message['symbol']] = {
+                    symbol = message['symbol']
+                    live_market_data[symbol] = {
                         'ltp': message.get('ltp', 0),
                         'volume': message.get('vol_traded_today', 0),
-                        'oi': message.get('tot_buy_qty', 0),
+                        'total_buy_qty': message.get('tot_buy_qty', 0),  # Correct field name
+                        'total_sell_qty': message.get('tot_sell_qty', 0),  # Add sell qty too
                         'change': message.get('ch', 0),
                         'bid': message.get('bid_price', 0),
                         'ask': message.get('ask_price', 0),
+                        'open_price': message.get('open_price', 0),
+                        'prev_close_price': message.get('prev_close_price', 0),
                         'timestamp': datetime.now().isoformat()
                     }
+                    
+                    # Check if this is a main market data symbol (spot, futures, VIX)
+                    if symbol.endswith('-INDEX') or symbol in ['NSE:INDIAVIX-INDEX']:
+                        print(f"📈 MAIN MARKET DATA UPDATE: {symbol} = {message.get('ltp', 0)}")
             except Exception as e:
                 print(f"WebSocket message error: {str(e)}")
 
         def on_error(error):
             print(f"WebSocket error: {str(error)}")
 
-        def on_close():
-            print("WebSocket connection closed")
+        def on_close(close_status_code=None, close_msg=None):
+            print(f"WebSocket connection closed: {close_status_code} - {close_msg}")
 
         def on_open():
             print("WebSocket connection opened")
@@ -393,7 +410,7 @@ def start_websocket_subscription(symbols):
 @websocket_bp.route('/update_subscriptions', methods=['POST'])
 def update_subscriptions():
     """Update WebSocket subscriptions with new symbols"""
-    global fyers_ws, current_subscriptions, market_data_cache
+    global fyers_ws, current_subscriptions, live_market_data
     
     try:
         data = request.get_json()
@@ -403,7 +420,7 @@ def update_subscriptions():
             return jsonify({"error": "No active WebSocket connection"}), 400
             
         # Clear cache for clean data
-        market_data_cache.clear()
+        live_market_data.clear()
         
         # Unsubscribe from old symbols if any
         if current_subscriptions:
@@ -435,7 +452,7 @@ def update_subscriptions():
 @websocket_bp.route('/stop_websocket', methods=['POST'])
 def stop_websocket():
     """Stop WebSocket subscription"""
-    global fyers_ws, current_subscriptions, market_data_cache
+    global fyers_ws, current_subscriptions, live_market_data
     
     try:
         if fyers_ws:
@@ -443,7 +460,7 @@ def stop_websocket():
             fyers_ws.close_connection()
             fyers_ws = None
             current_subscriptions = []
-            market_data_cache.clear()
+            live_market_data.clear()
             return jsonify({"success": True, "message": "WebSocket stopped"})
         else:
             return jsonify({"success": True, "message": "No active WebSocket connection"})
