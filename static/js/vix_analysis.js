@@ -120,33 +120,8 @@ function setVixError() {
     }
 }
 
-/**
- * Fetch and update real-time futures data
- */
-async function updateFuturesData() {
-    try {
-        // Get current symbol for futures lookup
-        const currentSymbol = getCurrentSelectedSymbol();
-        if (!currentSymbol) {
-            setFuturesError();
-            return;
-        }
-        
-        const response = await fetch(`/api/futures/current?symbol=${encodeURIComponent(currentSymbol)}`);
-        const result = await response.json();
-        
-        if (result.success && result.futures_price) {
-            updateFuturesDisplay(result);
-            console.log('📊 Futures data updated:', result.futures_price);
-        } else {
-            console.warn('⚠️ Failed to fetch futures data:', result.error);
-            setFuturesError();
-        }
-    } catch (error) {
-        console.error('❌ Error fetching futures data:', error);
-        setFuturesError();
-    }
-}
+// REMOVED: updateFuturesData() - Now using WebSocket streaming only
+// All futures data updates handled by WebSocket SSE stream
 
 /**
  * Update futures display in the carousel
@@ -276,54 +251,22 @@ function addDropdownChangeListeners() {
                 const currentSymbol = getCurrentSelectedSymbol();
                 console.log('📊 Dropdown changed, updating futures data for:', currentSymbol);
                 
-                // Immediately update futures data
-                updateFuturesData();
+                // WebSocket will handle all updates automatically
+                console.log('📊 Dropdown changed, WebSocket will update market data automatically');
                 
-                // Also update spot data for market card
-                updateSpotPriceData();
+                // Trigger WebSocket subscription for new symbol
+                if (window.webSocketHandler) {
+                    const newSymbol = getCurrentSelectedSymbol();
+                    console.log('🔄 Symbol changed via dropdown, subscribing to:', newSymbol);
+                    window.webSocketHandler.handleSymbolChange(newSymbol);
+                }
             });
         }
     });
 }
 
-/**
- * Update spot price data for market card
- */
-async function updateSpotPriceData() {
-    try {
-        const currentSymbol = getCurrentSelectedSymbol();
-        if (!currentSymbol) return;
-        
-        const response = await fetch(`/get_spot_price?symbol=${encodeURIComponent(currentSymbol)}`);
-        const result = await response.json();
-        
-        if (result.success) {
-            // Update spot price display in market card
-            const spotPriceEl = document.getElementById('spotPrice');
-            const dayOpenEl = document.getElementById('dayOpen');
-            const gapEl = document.getElementById('gapPercent');
-            
-            if (spotPriceEl) {
-                spotPriceEl.textContent = result.spot_price.toLocaleString('en-IN');
-            }
-            
-            if (dayOpenEl && result.day_open) {
-                dayOpenEl.textContent = result.day_open.toLocaleString('en-IN');
-            }
-            
-            if (gapEl && result.gap_pct) {
-                const gapClass = result.gap_pct >= 0 ? 'text-success' : 'text-danger';
-                const gapSign = result.gap_pct >= 0 ? '+' : '';
-                gapEl.textContent = `${gapSign}${result.gap_pct.toFixed(2)}%`;
-                gapEl.className = `ms-1 ${gapClass}`;
-            }
-            
-            console.log('💼 Spot price updated:', result.spot_price);
-        }
-    } catch (error) {
-        console.error('❌ Error updating spot price:', error);
-    }
-}
+// REMOVED: updateSpotPriceData() - Now using WebSocket streaming only
+// All spot price updates handled by WebSocket SSE stream
 
 /**
  * Open comprehensive futures analysis popup

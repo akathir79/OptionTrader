@@ -288,6 +288,7 @@ class WebSocketHandler {
         // Update spot price if it matches current symbol
         if (symbol === this.currentSymbol && ltp) {
             this.updateSpotPriceDisplay(ltp, data.open_price);
+            this.updateMarketDataCarousel(symbol, data);
             console.log(`💼 Spot price updated via WebSocket: ${ltp}`);
         }
         
@@ -303,6 +304,125 @@ class WebSocketHandler {
             this.updateFuturesPriceDisplay(ltp, data.ch, data.chp);
             console.log(`📊 Futures price updated via WebSocket: ${ltp}`);
         }
+    }
+    
+    updateMarketDataCarousel(symbol, data) {
+        // Update market data carousel labels directly from WebSocket
+        const spotPriceEl = document.getElementById('spotPrice');
+        const dayOpenEl = document.querySelector('.day-open-value');
+        const gapAnalysisEl = document.querySelector('.gap-analysis');
+        
+        if (spotPriceEl && data.ltp) {
+            spotPriceEl.textContent = parseFloat(data.ltp).toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            spotPriceEl.classList.remove('text-muted');
+            spotPriceEl.classList.add('text-dark');
+        }
+        
+        if (dayOpenEl && data.open_price) {
+            dayOpenEl.textContent = parseFloat(data.open_price).toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            dayOpenEl.classList.remove('text-muted');
+            dayOpenEl.classList.add('text-dark');
+        }
+        
+        // Calculate and update gap analysis
+        if (gapAnalysisEl && data.ltp && data.open_price) {
+            const gap = parseFloat(data.ltp) - parseFloat(data.open_price);
+            const gapPercent = (gap / parseFloat(data.open_price)) * 100;
+            const gapText = `${gap >= 0 ? '+' : ''}${gap.toFixed(1)} (${gapPercent >= 0 ? '+' : ''}${gapPercent.toFixed(2)}%)`;
+            
+            gapAnalysisEl.textContent = gapText;
+            gapAnalysisEl.classList.remove('text-success', 'text-danger', 'text-muted');
+            
+            if (gap > 0) {
+                gapAnalysisEl.classList.add('text-success');
+            } else if (gap < 0) {
+                gapAnalysisEl.classList.add('text-danger');
+            } else {
+                gapAnalysisEl.classList.add('text-muted');
+            }
+        }
+    }
+    
+    handleSymbolChange(newSymbol) {
+        // Handle dynamic symbol changes from dropdown selections
+        console.log(`🔄 Handling symbol change from ${this.currentSymbol} to ${newSymbol}`);
+        
+        // Clear existing subscriptions and data
+        this.clearMarketData();
+        
+        // Update current symbol
+        this.currentSymbol = newSymbol;
+        
+        // Unsubscribe from old symbols and subscribe to new ones
+        this.updateSymbolSubscriptions(newSymbol);
+    }
+    
+    updateSymbolSubscriptions(newSymbol) {
+        // Update WebSocket subscriptions for new symbol
+        const symbolsToSubscribe = [
+            newSymbol,                    // Main symbol (spot/equity)
+            'NSE:INDIAVIX-INDEX'         // Always include VIX
+        ];
+        
+        // Add futures symbol if it's an index
+        if (newSymbol.includes('-INDEX')) {
+            const futuresSymbol = this.getFuturesSymbolFromSpot(newSymbol);
+            symbolsToSubscribe.push(futuresSymbol);
+        }
+        
+        console.log(`🔄 Updating WebSocket subscriptions for symbols:`, symbolsToSubscribe);
+        
+        // Call backend to update subscriptions
+        fetch('/update_subscriptions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                symbols: symbolsToSubscribe,
+                action: 'replace'  // Replace all subscriptions with new ones
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('✅ Symbol subscriptions updated:', data);
+            // Start live data stream
+            this.startLiveDataStream();
+        })
+        .catch(error => {
+            console.error('❌ Error updating symbol subscriptions:', error);
+        });
+    }
+    
+    clearMarketData() {
+        // Clear all market data displays when switching symbols
+        const elementsToClare = [
+            '.spot-price-value',
+            '.day-open-value', 
+            '.gap-analysis',
+            '#futuresPrice',
+            '#futuresChange',
+            '#spotPrice',
+            '#dayOpen',
+            '#gapPercent'
+        ];
+        
+        elementsToClare.forEach(selector => {
+            const element = document.querySelector(selector);
+            if (element) {
+                element.textContent = '—';
+                element.classList.remove('text-success', 'text-danger', 'text-dark');
+                element.classList.add('text-muted');
+            }
+        });
+        
+        console.log('🗑️ Market data cleared for symbol change');
     }
 
     getFuturesSymbolFromSpot(spotSymbol) {

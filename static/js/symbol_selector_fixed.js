@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Lookup symbol and lot size for index
     lookupSymbolAndLotSize('index', indexSelect.value, '');
     
-    // CRITICAL FIX: Start spot price and VIX updates immediately when index changes
+    // WebSocket-only symbol change handling
     console.log(`🔍 WebSocketHandler exists: ${!!window.webSocketHandler}`);
     if (window.webSocketHandler) {
       const indexMapping = {
@@ -115,9 +115,10 @@ document.addEventListener("DOMContentLoaded", () => {
         'FINNIFTY': 'NSE:FINNIFTY-INDEX'
       };
       const fyersSymbol = indexMapping[indexSelect.value] || `NSE:${indexSelect.value}-INDEX`;
-      console.log(`📊 Index changed to ${indexSelect.value}, starting live data for ${fyersSymbol}`);
-      console.log(`🔍 About to call startLiveData with symbol: ${fyersSymbol}`);
-      window.webSocketHandler.startLiveData(fyersSymbol);
+      console.log(`📊 Index changed to ${indexSelect.value}, handling symbol change for ${fyersSymbol}`);
+      
+      // Use enhanced WebSocket symbol change handler
+      window.webSocketHandler.handleSymbolChange(fyersSymbol);
     } else {
       console.error(`❌ WebSocketHandler not found when index changed to ${indexSelect.value}`);
     }
@@ -151,6 +152,17 @@ document.addEventListener("DOMContentLoaded", () => {
       fetchExpiryForSymbol(exchangeSel.value, extraSelect.value);
       // Lookup symbol and lot size for exchange+symbol
       lookupSymbolAndLotSize('exchange', extraSelect.value, exchangeSel.value);
+      
+      // Handle WebSocket symbol change for exchange+symbol selection
+      if (window.webSocketHandler) {
+        const exchange = exchangeSel.value;
+        const symbol = extraSelect.value;
+        const fyersSymbol = exchange === 'MCX' ? `${exchange}:${symbol}` : `${exchange}:${symbol}-EQ`;
+        console.log(`📊 Exchange+Symbol changed to ${fyersSymbol}`);
+        
+        // Use enhanced WebSocket symbol change handler
+        window.webSocketHandler.handleSymbolChange(fyersSymbol);
+      }
     }
     updateSectionVisibility();
   });
