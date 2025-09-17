@@ -78,7 +78,7 @@ class VixService:
             client = self.fyers_service.get_client()
             if not client:
                 logger.error("Fyers client not available for VIX data even after refresh attempt")
-                return self._get_fallback_vix_data()
+                return None
             
             # Fyers India VIX symbol - independent of current selected symbol
             vix_symbol = "NSE:INDIAVIX-INDEX"
@@ -88,8 +88,8 @@ class VixService:
             # Handle coroutine response by checking if it's a dict or coroutine
             if hasattr(response, '__await__'):
                 # If response is a coroutine, get the actual response data
-                logger.warning("VIX API response is coroutine - using fallback data")
-                return self._get_fallback_vix_data()
+                logger.error("VIX API response is coroutine - cannot fetch VIX data")
+                return None
             
             # ⚠️ CRITICAL: Fyers API response structure - response['d'] is LIST, NOT dictionary!
             # Must access response['d'][0] first, then ['v'] for values - DO NOT modify!
@@ -118,29 +118,12 @@ class VixService:
                 return vix_result
             else:
                 logger.error(f"Failed to get VIX data from API: {response}")
-                return self._get_fallback_vix_data()
+                return None
                 
         except Exception as e:
             logger.error(f"Error fetching real-time VIX: {str(e)}")
-            return self._get_fallback_vix_data()
+            return None
     
-    def _get_fallback_vix_data(self) -> Dict[str, Any]:
-        """Provide fallback VIX data when API is unavailable - still references NIFTY 50 baseline"""
-        logger.info("Using fallback VIX data with NIFTY 50 baseline")
-        return {
-            'symbol': 'NSE:INDIAVIX-INDEX',
-            'ltp': 18.5,  # Reasonable fallback value near historical mean
-            'change': 0.0,
-            'change_percent': 0.0,
-            'open': 18.5,
-            'high': 19.0,
-            'low': 18.0,
-            'volume': 0,
-            'timestamp': datetime.now().isoformat(),
-            'baseline_symbol': 'NSE:NIFTY50-INDEX',  # Always use NIFTY 50 as baseline
-            'analysis_note': 'Fallback VIX data - analysis always compares against NIFTY 50',
-            'is_fallback': True
-        }
     
     def get_historical_vix_data(self, days: int = 30) -> Optional[VixHistoricalData]:
         """Get historical VIX data for analysis"""
