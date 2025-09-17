@@ -104,37 +104,74 @@ class WebSocketHandler {
     }
     
     startSpotPriceUpdates() {
-        // Real-time WebSocket streaming for spot prices - no REST API polling
-        console.log('🚀 Starting real-time WebSocket streaming for spot prices');
+        // HOTFIX: Use REST polling until WebSocket streaming is fixed
+        console.log('🔄 Starting REST polling for spot prices (WebSocket fallback)');
         
-        // Subscribe spot symbol to WebSocket for real-time tick data
-        this.subscribeSpotToWebSocket();
+        // Start immediate update
+        this.updateSpotPrice();
         
-        // No more REST API polling - rely only on WebSocket streaming
-        console.log('✅ Spot price will update via WebSocket streaming only');
+        // Set up polling every 3 seconds
+        if (this.spotUpdateInterval) {
+            clearInterval(this.spotUpdateInterval);
+        }
+        this.spotUpdateInterval = setInterval(() => {
+            this.updateSpotPrice();
+        }, 3000);
+        
+        console.log('✅ Spot price polling started every 3 seconds');
     }
     
     startFuturesPriceUpdates() {
-        // Real-time WebSocket streaming for futures prices - no REST API polling
-        console.log('🚀 Starting real-time WebSocket streaming for futures prices');
+        // HOTFIX: Use REST polling until WebSocket streaming is fixed
+        console.log('🔄 Starting REST polling for futures prices (WebSocket fallback)');
         
-        // Subscribe futures symbol to WebSocket for real-time tick data
-        this.subscribeFuturesToWebSocket();
+        // Start immediate update
+        this.updateFuturesPrice();
         
-        // No more REST API polling - rely only on WebSocket streaming
-        console.log('✅ Futures price will update via WebSocket streaming only');
+        // Set up polling every 3 seconds
+        if (this.futuresUpdateInterval) {
+            clearInterval(this.futuresUpdateInterval);
+        }
+        this.futuresUpdateInterval = setInterval(() => {
+            this.updateFuturesPrice();
+        }, 3000);
+        
+        console.log('✅ Futures price polling started every 3 seconds');
     }
     
     async updateFuturesPrice() {
-        // This method is now deprecated - futures updates via WebSocket streaming only
-        console.log('🚨 updateFuturesPrice() called but disabled - using WebSocket streaming instead');
-        return;
+        // HOTFIX: Re-enable REST polling until WebSocket streaming is fixed
+        if (!this.currentSymbol) return;
+        
+        try {
+            const futuresSymbol = this.getFuturesSymbolFromSpot(this.currentSymbol);
+            const response = await fetch(`/get_futures_price?symbol=${encodeURIComponent(futuresSymbol)}`);
+            const result = await response.json();
+            
+            if (result.success && result.futures_price) {
+                this.updateFuturesPriceDisplay(result.futures_price, result.change, result.change_percent);
+                console.log(`📊 Futures price updated via REST: ${result.futures_price}`);
+            }
+        } catch (error) {
+            console.error('Error updating futures price:', error);
+        }
     }
     
     async updateSpotPrice() {
-        // This method is now deprecated - spot updates via WebSocket streaming only
-        console.log('🚨 updateSpotPrice() called but disabled - using WebSocket streaming instead');
-        return;
+        // HOTFIX: Re-enable REST polling until WebSocket streaming is fixed
+        if (!this.currentSymbol) return;
+        
+        try {
+            const response = await fetch(`/get_spot_price?symbol=${encodeURIComponent(this.currentSymbol)}`);
+            const result = await response.json();
+            
+            if (result.success && result.spot_price) {
+                this.updateSpotPriceDisplay(result.spot_price, result.day_open);
+                console.log(`💼 Spot price updated via REST: ${result.spot_price}`);
+            }
+        } catch (error) {
+            console.error('Error updating spot price:', error);
+        }
     }
     
     updateDayOpenDisplay(dayOpenValue, spotPrice) {
