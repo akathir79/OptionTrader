@@ -483,6 +483,52 @@ def stop_websocket():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@websocket_bp.route('/sse/market_data')
+def sse_market_data():
+    """Server-Sent Events endpoint for streaming live market data to clients"""
+    from flask import Response
+    import json
+    import time
+    
+    def generate():
+        global live_market_data
+        last_sent = {}
+        
+        # Send SSE headers
+        yield "data: {\"type\": \"connected\"}\n\n"
+        
+        while True:
+            try:
+                # Check for new data
+                for symbol, data in live_market_data.items():
+                    # Only send if data has changed
+                    data_str = json.dumps(data)
+                    if last_sent.get(symbol) != data_str:
+                        last_sent[symbol] = data_str
+                        # Send live market data
+                        sse_data = {
+                            "symbol": symbol,
+                            "ltp": data.get("ltp"),
+                            "open_price": data.get("open_price"),
+                            "ch": data.get("ch"),
+                            "chp": data.get("chp"),
+                            "timestamp": time.time()
+                        }
+                        yield f"data: {json.dumps(sse_data)}\n\n"
+                
+                time.sleep(0.5)  # Send updates every 500ms
+                
+            except GeneratorExit:
+                break
+            except Exception as e:
+                print(f"SSE error: {e}")
+                break
+    
+    return Response(generate(), mimetype='text/event-stream',
+                   headers={'Cache-Control': 'no-cache',
+                           'Connection': 'keep-alive',
+                           'Access-Control-Allow-Origin': '*'})
+
 @websocket_bp.route('/websocket_status', methods=['GET'])
 def websocket_status():
     """Get WebSocket connection status"""

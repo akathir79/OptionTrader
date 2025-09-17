@@ -233,51 +233,14 @@ class WebSocketHandler {
     }
     
     startLiveDataStream() {
-        // Establish WebSocket connection to receive live data
-        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
-            console.log('🎯 WebSocket already connected');
+        // Use SSE for live market data streaming
+        if (this.eventSource && this.eventSource.readyState === EventSource.OPEN) {
+            console.log('🎯 SSE already connected');
             return;
         }
         
-        try {
-            // Create WebSocket connection
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}/ws/market_data`;
-            
-            this.websocket = new WebSocket(wsUrl);
-            
-            this.websocket.onopen = () => {
-                console.log('🎯 WebSocket connected for live market data');
-                this.isConnected = true;
-            };
-            
-            this.websocket.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    this.handleLiveMarketData(data);
-                } catch (error) {
-                    console.error('Error parsing WebSocket message:', error);
-                }
-            };
-            
-            this.websocket.onerror = (error) => {
-                console.error('WebSocket error:', error);
-            };
-            
-            this.websocket.onclose = () => {
-                console.log('🎯 WebSocket disconnected, attempting reconnect...');
-                this.isConnected = false;
-                // Reconnect after 3 seconds
-                setTimeout(() => {
-                    this.startLiveDataStream();
-                }, 3000);
-            };
-            
-        } catch (error) {
-            console.error('Error starting WebSocket:', error);
-            // Fallback to SSE if WebSocket fails
-            this.startSSEStream();
-        }
+        console.log('🎯 Starting SSE connection for live market data');
+        this.startSSEStream();
     }
     
     startSSEStream() {
