@@ -95,6 +95,21 @@ document.addEventListener("DOMContentLoaded", () => {
     fetchExpiryForIndex(indexSelect.value);
     // Lookup symbol and lot size for index
     lookupSymbolAndLotSize('index', indexSelect.value, '');
+    
+    // CRITICAL FIX: Start spot price and VIX updates immediately when index changes
+    if (window.webSocketHandler) {
+      const indexMapping = {
+        'NIFTY': 'NSE:NIFTY50-INDEX',
+        'NIFTY 50': 'NSE:NIFTY50-INDEX', 
+        'BANKNIFTY': 'NSE:NIFTYBANK-INDEX',
+        'BANK NIFTY': 'NSE:NIFTYBANK-INDEX',
+        'FINNIFTY': 'NSE:FINNIFTY-INDEX'
+      };
+      const fyersSymbol = indexMapping[indexSelect.value] || `NSE:${indexSelect.value}-INDEX`;
+      console.log(`📊 Index changed to ${indexSelect.value}, starting live data for ${fyersSymbol}`);
+      window.webSocketHandler.startLiveData(fyersSymbol);
+    }
+    
     // Spot price updates will be started automatically after symbol lookup completes
     updateSectionVisibility();
   });

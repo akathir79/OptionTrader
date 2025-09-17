@@ -231,16 +231,17 @@ class WebSocketHandler {
     }
     
     getFuturesSymbolFromSpot(spotSymbol) {
-        // Convert spot symbol to current month futures symbol
-        // This is a simplified mapping - would need to be enhanced for actual futures symbols
+        // Convert spot symbol to current month futures symbol using correct FYERS symbols
         if (spotSymbol === 'NSE:NIFTY50-INDEX') {
-            return 'NSE:NIFTY25JAN';  // Current month futures
+            return 'NSE:NIFTY25SEP';  // Current month futures - September 2025
         } else if (spotSymbol === 'NSE:NIFTYBANK-INDEX') {
-            return 'NSE:BANKNIFTY25JAN';  // Current month futures
+            return 'NSE:BANKNIFTY25SEP';  // Current month futures - September 2025
+        } else if (spotSymbol === 'NSE:FINNIFTY-INDEX') {
+            return 'NSE:FINNIFTY25SEP';  // Current month futures - September 2025
         }
         
         // Default mapping for other symbols
-        return spotSymbol.replace('-INDEX', '25JAN');
+        return spotSymbol.replace('-INDEX', '25SEP');
     }
     
     startVolumeOIUpdates() {
