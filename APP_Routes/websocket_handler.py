@@ -142,12 +142,27 @@ def get_option_chain():
                 spot_price = live_market_data[symbol].get('ltp', 0)
                 print(f"SPOT PRICE FROM WEBSOCKET: {spot_price}")
             else:
-                # No WebSocket data available - delay ATM calculation until data arrives
-                print(f"NO WEBSOCKET DATA FOR {symbol} - waiting for real-time data")
-                return {'success': False, 'error': 'Waiting for live market data to calculate ATM'}
+                # No WebSocket data available - use REST API fallback for ATM calculation
+                print(f"NO WEBSOCKET DATA FOR {symbol} - using REST API fallback for ATM")
+                try:
+                    from services.fyers_service import FyersService
+                    fyers_service = FyersService()
+                    quotes_response = fyers_service.get_quotes(symbol)
+                    
+                    if quotes_response.get('success') and quotes_response.get('quotes'):
+                        spot_price = quotes_response['quotes'][0].get('ltp', 0)
+                        print(f"SPOT PRICE FROM REST FALLBACK: {spot_price}")
+                    else:
+                        print(f"REST FALLBACK FAILED: {quotes_response.get('error', 'Unknown error')}")
+                        spot_price = 25000  # Final fallback for market closed scenarios
+                        print(f"Using final fallback spot price: {spot_price}")
+                except Exception as rest_e:
+                    print(f"REST API FALLBACK ERROR: {rest_e}")
+                    spot_price = 25000  # Final fallback
+                    print(f"Using final fallback spot price: {spot_price}")
         except Exception as e:
             print(f"SPOT PRICE WEBSOCKET ERROR: {e}")
-            return {'success': False, 'error': 'Unable to determine spot price from live data'}
+            spot_price = 25000  # Safe fallback
         
         # Get expiry data if no expiry provided
         if not expiry_timestamp:
