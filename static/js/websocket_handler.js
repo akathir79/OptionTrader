@@ -185,11 +185,11 @@ class WebSocketHandler {
                     timestamp: data.timestamp
                 };
                 
-                this.updateSpotPriceDisplay(data.spot_price, data.day_open);
+                this.updateSpotPriceDisplay(data.spot_price);
                 this.updateATMDisplay(data.spot_price);
                 
-                // Update day open display with new three-row format
-                this.updateDayOpenDisplay(data.day_open, data.spot_price);
+                // Update day open display if element exists
+                this.updateDayOpenDisplay(data.day_open, data.gap_abs, data.gap_pct);
                 
                 console.log(`Spot updated: ${data.spot_price} | Open: ${data.day_open} | Gap: ${data.gap_abs?.toFixed(2)} (${data.gap_pct?.toFixed(2)}%)`);
             } else {
@@ -200,33 +200,57 @@ class WebSocketHandler {
         }
     }
     
-    updateDayOpenDisplay(dayOpenValue, spotPrice) {
-        // Update Day Open value (Row 2) - consistent with three-row format
-        const dayOpenElement = document.querySelector('.day-open-value');
-        if (dayOpenElement) {
-            dayOpenElement.textContent = this.formatPrice(dayOpenValue);
-            dayOpenElement.classList.remove('text-muted');
-            dayOpenElement.classList.add('text-dark');
-        }
-        
-        // Update Gap Analysis (Row 3) - consistent with three-row format
-        const gapElement = document.querySelector('.gap-analysis');
-        if (gapElement && spotPrice && dayOpenValue) {
-            const gap = spotPrice - dayOpenValue;
-            const gapPercent = (gap / dayOpenValue) * 100;
-            const gapText = `${gap >= 0 ? '+' : ''}${gap.toFixed(1)} (${gapPercent >= 0 ? '+' : ''}${gapPercent.toFixed(2)}%)`;
+    updateDayOpenDisplay(dayOpen, gapAbs, gapPct) {
+        // Update day open price display elements with professional styling
+        const dayOpenElements = document.querySelectorAll('.day-open-value');
+        dayOpenElements.forEach(element => {
+            element.setAttribute('data-market-data', 'day-open');
+            element.classList.add('price-display');
             
-            gapElement.textContent = gapText;
-            gapElement.classList.remove('text-success', 'text-danger', 'text-muted');
-            
-            if (gap > 0) {
-                gapElement.classList.add('text-success');
-            } else if (gap < 0) {
-                gapElement.classList.add('text-danger');
+            if (window.marketDataUI && dayOpen !== null && dayOpen !== undefined) {
+                window.marketDataUI.applyPriceUpdate(element, dayOpen, null, {
+                    decimals: 2,
+                    addCommas: true
+                });
             } else {
-                gapElement.classList.add('text-muted');
+                element.textContent = dayOpen ? dayOpen.toFixed(2) : '--';
             }
-        }
+        });
+        
+        // Update gap analysis display with professional styling
+        const gapElements = document.querySelectorAll('.gap-analysis');
+        gapElements.forEach(element => {
+            element.setAttribute('data-market-data', 'gap-analysis');
+            element.classList.add('market-value');
+            
+            if (gapAbs !== undefined && gapPct !== undefined) {
+                if (window.marketDataUI) {
+                    // Format gap text professionally
+                    const gapText = `${gapAbs > 0 ? '+' : ''}${gapAbs.toFixed(2)} (${gapPct.toFixed(2)}%)`;
+                    
+                    // Apply styling based on gap direction
+                    element.textContent = gapText;
+                    element.classList.remove('md-up', 'md-down');
+                    
+                    if (gapAbs > 0) {
+                        element.classList.add('md-up');
+                    } else if (gapAbs < 0) {
+                        element.classList.add('md-down');
+                    }
+                } else {
+                    // Fallback to old method
+                    const gapText = `${gapAbs > 0 ? '+' : ''}${gapAbs.toFixed(2)} (${gapPct.toFixed(2)}%)`;
+                    const gapClass = gapAbs > 0 ? 'text-success' : gapAbs < 0 ? 'text-danger' : 'text-muted';
+                    element.innerHTML = `<span class="${gapClass}">${gapText}</span>`;
+                }
+                
+                element.style.cursor = 'pointer';
+                element.title = 'Click for gap analysis';
+            } else {
+                element.textContent = '--';
+                element.classList.remove('md-up', 'md-down');
+            }
+        });
     }
     
     startVolumeOIUpdates() {
@@ -332,43 +356,61 @@ class WebSocketHandler {
         return `NSE:${symbol}-EQ`;
     }
     
-    updateSpotPriceDisplay(spotPrice, dayOpen = null) {
-        // Update the main spot price element (Row 2)
+    updateSpotPriceDisplay(spotPrice) {
+        // Update spot price using professional market data styling
+        const spotPriceElements = document.querySelectorAll('.spot-price-value');
+        spotPriceElements.forEach(element => {
+            // Add professional styling attributes
+            element.setAttribute('data-market-data', 'spot-price');
+            element.classList.add('price-display');
+            
+            // Use the professional market data UI system
+            if (window.marketDataUI) {
+                window.marketDataUI.applyPriceUpdate(element, spotPrice, null, {
+                    decimals: 2,
+                    addCommas: true
+                });
+            } else {
+                element.textContent = this.formatPrice(spotPrice);
+            }
+        });
+        
+        // Update the specific spot price element with ID "spotPrice"
         const spotPriceElement = document.getElementById('spotPrice');
         if (spotPriceElement) {
-            spotPriceElement.textContent = this.formatPrice(spotPrice);
-            spotPriceElement.classList.remove('text-muted');
-            spotPriceElement.classList.add('text-dark');
-        }
-        
-        // Update spot price percentage change (Row 3)
-        const spotChangeElement = document.getElementById('spotChange');
-        if (spotChangeElement && dayOpen && dayOpen > 0) {
-            const change = spotPrice - dayOpen;
-            const changePercent = (change / dayOpen) * 100;
-            const changeText = `${change >= 0 ? '+' : ''}${change.toFixed(1)} (${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%)`;
+            spotPriceElement.setAttribute('data-market-data', 'main-spot-price');
+            spotPriceElement.classList.add('price-display', 'spot-price');
             
-            spotChangeElement.textContent = changeText;
-            spotChangeElement.classList.remove('text-success', 'text-danger', 'text-muted');
-            
-            if (change > 0) {
-                spotChangeElement.classList.add('text-success');
-            } else if (change < 0) {
-                spotChangeElement.classList.add('text-danger');
+            if (window.marketDataUI) {
+                window.marketDataUI.applyPriceUpdate(spotPriceElement, spotPrice, null, {
+                    decimals: 2,
+                    addCommas: true
+                });
             } else {
-                spotChangeElement.classList.add('text-muted');
+                // Fallback to old method
+                spotPriceElement.textContent = this.formatPrice(spotPrice);
+                spotPriceElement.classList.remove('text-muted');
+                spotPriceElement.classList.add('text-primary');
+                spotPriceElement.classList.add('spot-price-updated');
+                setTimeout(() => {
+                    spotPriceElement.classList.remove('spot-price-updated');
+                }, 500);
             }
         }
         
-        // Update other spot price display elements
-        const spotPriceElements = document.querySelectorAll('.spot-price-value');
-        spotPriceElements.forEach(element => {
-            element.textContent = this.formatPrice(spotPrice);
+        
+        // Update any element containing "Spot Price:"
+        const allElements = document.querySelectorAll('*');
+        allElements.forEach(element => {
+            if (element.textContent && element.textContent.includes('Spot Price:')) {
+                const textNodes = this.getTextNodes(element);
+                textNodes.forEach(node => {
+                    if (node.textContent.includes('Spot Price:')) {
+                        node.textContent = node.textContent.replace(/Spot Price:\s*[\d,]+/, `Spot Price: ${this.formatPrice(spotPrice)}`);
+                    }
+                });
+            }
         });
-        
-        
-        // Store for day open calculations
-        this.lastSpotPrice = spotPrice;
         
         // Store current spot price for ITM calculations
         this.currentSpotPrice = spotPrice;
@@ -383,89 +425,51 @@ class WebSocketHandler {
     }
 
     updateFuturesPriceDisplay(futuresPrice, change, changePercent) {
-        // Update futures price (Row 2)
+        // Update futures price using professional market data styling
         const futuresPriceElement = document.getElementById('futuresPrice');
         if (futuresPriceElement) {
-            futuresPriceElement.textContent = this.formatPrice(futuresPrice);
-            // Remove all possible color classes that might cause blue/cyan colors
-            futuresPriceElement.classList.remove('text-muted', 'text-info', 'text-primary', 'text-secondary', 'text-warning', 'text-danger', 'text-success');
-            futuresPriceElement.classList.add('text-dark');
+            // Add professional styling attributes
+            futuresPriceElement.setAttribute('data-market-data', 'futures-price');
+            futuresPriceElement.classList.add('price-display');
+            
+            // Use the professional market data UI system for price updates
+            if (window.marketDataUI) {
+                window.marketDataUI.applyPriceUpdate(futuresPriceElement, futuresPrice, null, {
+                    decimals: 2,
+                    addCommas: true
+                });
+            } else {
+                // Fallback to old method
+                futuresPriceElement.textContent = this.formatPrice(futuresPrice);
+                futuresPriceElement.classList.remove('text-muted');
+                futuresPriceElement.classList.add('text-info');
+            }
         }
 
-        // Update futures change display with green/red colors (Row 3)
+        // Update futures change display with green/red colors
         const futuresChangeElement = document.getElementById('futuresChange');
         if (futuresChangeElement && change !== undefined && changePercent !== undefined) {
+            // Format change and percentage
             const changeText = `${change >= 0 ? '+' : ''}${change.toFixed(1)} (${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%)`;
             
-            futuresChangeElement.textContent = changeText;
-            futuresChangeElement.classList.remove('text-success', 'text-danger', 'text-muted');
-            
-            if (change > 0) {
-                futuresChangeElement.classList.add('text-success');
-            } else if (change < 0) {
-                futuresChangeElement.classList.add('text-danger');
+            // Apply professional styling for movement direction
+            if (window.marketDataUI) {
+                futuresChangeElement.textContent = changeText;
+                futuresChangeElement.classList.remove('md-up', 'md-down', 'text-success', 'text-danger');
+                
+                if (change > 0) {
+                    futuresChangeElement.classList.add('md-up');
+                } else if (change < 0) {
+                    futuresChangeElement.classList.add('md-down');
+                }
             } else {
-                futuresChangeElement.classList.add('text-muted');
+                // Fallback styling
+                const changeClass = change > 0 ? 'text-success' : change < 0 ? 'text-danger' : 'text-muted';
+                futuresChangeElement.innerHTML = `<span class="${changeClass}">${changeText}</span>`;
             }
         }
 
-        console.log(`📊 Futures display updated: ${futuresPrice} | Change: ${change?.toFixed(2)} (${changePercent?.toFixed(2)}%)`);    
-    }
-    
-    updateVixDisplay(vixValue, change, changePercent) {
-        // Update VIX value (Row 2)
-        const vixValueElement = document.getElementById('vixValue');
-        if (vixValueElement) {
-            vixValueElement.textContent = vixValue.toFixed(2);
-            vixValueElement.classList.remove('text-muted');
-            vixValueElement.classList.add('text-dark');
-        }
-
-        // Update VIX change display with green/red colors (Row 3)
-        const vixChangeElement = document.getElementById('vixChange');
-        if (vixChangeElement && change !== undefined && changePercent !== undefined) {
-            const changeText = `${change >= 0 ? '+' : ''}${change.toFixed(2)} (${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%)`;
-            
-            vixChangeElement.textContent = changeText;
-            vixChangeElement.classList.remove('text-success', 'text-danger', 'text-muted');
-            
-            if (change > 0) {
-                vixChangeElement.classList.add('text-success');
-            } else if (change < 0) {
-                vixChangeElement.classList.add('text-danger');
-            } else {
-                vixChangeElement.classList.add('text-muted');
-            }
-        }
-    }
-    
-    updateDayOpenDisplay(dayOpenValue, spotPrice) {
-        // Update Day Open value (Row 2)
-        const dayOpenElement = document.querySelector('.day-open-value');
-        if (dayOpenElement) {
-            dayOpenElement.textContent = this.formatPrice(dayOpenValue);
-            dayOpenElement.classList.remove('text-muted');
-            dayOpenElement.classList.add('text-dark');
-        }
-        
-        // Update Gap Analysis (Row 3)
-        const gapElement = document.querySelector('.gap-analysis');
-        if (gapElement && spotPrice && dayOpenValue) {
-            const gap = spotPrice - dayOpenValue;
-            const gapPercent = (gap / dayOpenValue) * 100;
-            const gapText = `${gap >= 0 ? '+' : ''}${gap.toFixed(1)} (${gapPercent >= 0 ? '+' : ''}${gapPercent.toFixed(2)}%)`;
-            
-            gapElement.textContent = gapText;
-            gapElement.classList.remove('text-success', 'text-danger', 'text-muted');
-            
-            if (gap > 0) {
-                gapElement.classList.add('text-success');
-            } else if (gap < 0) {
-                gapElement.classList.add('text-danger');
-            } else {
-                gapElement.classList.add('text-muted');
-            }
-        }
+        console.log(`📊 Futures display updated: ${futuresPrice} | Change: ${change?.toFixed(2)} (${changePercent?.toFixed(2)}%)`);
     }
 
     getCurrentSpotPrice() {

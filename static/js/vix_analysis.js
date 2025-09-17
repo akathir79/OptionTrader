@@ -47,7 +47,7 @@ async function updateVixData() {
 }
 
 /**
- * Update VIX display in the carousel using three-row format
+ * Update VIX display in the carousel
  */
 function updateVixDisplay(vixData) {
     const vixValueEl = document.getElementById('vixValue');
@@ -59,27 +59,26 @@ function updateVixDisplay(vixData) {
     const change = parseFloat(vixData.change);
     const changePercent = parseFloat(vixData.change_percent);
     
-    // Update VIX value (Row 2) - consistent with new three-row design
+    // Update VIX value
     vixValueEl.textContent = currentVix.toFixed(2);
-    vixValueEl.classList.remove('text-muted');
-    vixValueEl.classList.add('text-dark');
     
-    // Update change indicator (Row 3) - consistent with new three-row design
+    // Update change indicator
     if (vixChangeEl) {
         const changeText = `${change >= 0 ? '+' : ''}${change.toFixed(2)} (${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%)`;
         vixChangeEl.textContent = changeText;
         
-        // Apply consistent color scheme with other market data
-        vixChangeEl.classList.remove('text-success', 'text-danger', 'text-muted');
-        
+        // Color based on change
         if (change > 0) {
-            vixChangeEl.classList.add('text-danger'); // VIX up is typically bad (red)
+            vixChangeEl.className = 'ms-1 text-danger';
         } else if (change < 0) {
-            vixChangeEl.classList.add('text-success'); // VIX down is typically good (green)
+            vixChangeEl.className = 'ms-1 text-success';
         } else {
-            vixChangeEl.classList.add('text-muted');
+            vixChangeEl.className = 'ms-1 text-muted';
         }
     }
+    
+    // Color VIX value based on level
+    updateVixColor(vixValueEl, currentVix);
 }
 
 /**
@@ -160,7 +159,7 @@ function updateFuturesDisplay(futuresData) {
     const basis = futuresPrice - spotPrice;
     const basisPercent = (basis / spotPrice) * 100;
     
-    // Update futures price - let websocket_handler.js control the color
+    // Update futures price
     futuresPriceEl.textContent = futuresPrice.toLocaleString('en-IN');
     
     // Update basis indicator
@@ -178,16 +177,35 @@ function updateFuturesDisplay(futuresData) {
         }
     }
     
-    // Don't color futures price - let websocket_handler.js maintain consistent dark color
+    // Color futures price based on regime
+    updateFuturesColor(futuresPriceEl, futuresData.analysis?.regime || 'NORMAL');
 }
 
 /**
- * Set futures color based on basis regime (DISABLED for consistent UI)
- * Now using consistent dark color for all market data values
+ * Set futures color based on basis regime
  */
 function updateFuturesColor(element, regime) {
-    // Disabled - maintaining consistent dark color for all market data
-    // The websocket_handler.js will apply text-dark class consistently
+    element.className = element.className.replace(/text-\w+/g, '');
+    
+    switch (regime) {
+        case 'STRONG_CONTANGO':
+            element.classList.add('text-primary'); // Strong contango - blue
+            break;
+        case 'MILD_CONTANGO':
+            element.classList.add('text-info'); // Mild contango - light blue
+            break;
+        case 'NORMAL':
+            element.classList.add('text-secondary'); // Normal - gray
+            break;
+        case 'MILD_BACKWARDATION':
+            element.classList.add('text-warning'); // Mild backwardation - orange
+            break;
+        case 'STRONG_BACKWARDATION':
+            element.classList.add('text-danger'); // Strong backwardation - red
+            break;
+        default:
+            element.classList.add('text-secondary');
+    }
 }
 
 /**
@@ -199,7 +217,7 @@ function setFuturesError() {
     
     if (futuresPriceEl) {
         futuresPriceEl.textContent = '--';
-        // Don't set color class - let websocket_handler.js control the color
+        futuresPriceEl.className = 'text-secondary';
     }
     
     if (futuresChangeEl) {
