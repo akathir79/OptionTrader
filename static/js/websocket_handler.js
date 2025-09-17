@@ -289,12 +289,19 @@ class WebSocketHandler {
         const ltp = data.ltp;
         
         console.log(`🎯 Live data received for ${symbol}: ${ltp}`);
+        console.log(`🔍 DEBUG: currentSymbol=${this.currentSymbol}, checking symbol=${symbol}`);
         
-        // Update spot price if it matches current symbol
-        if (symbol === this.currentSymbol && ltp) {
+        // Update spot price if it matches current symbol OR is a major index
+        if ((symbol === this.currentSymbol || symbol === 'NSE:NIFTY50-INDEX' || symbol === 'NSE:NIFTYBANK-INDEX') && ltp) {
             this.updateSpotPriceDisplay(ltp, data.open_price);
             this.updateMarketDataCarousel(symbol, data);
             console.log(`💼 Spot price updated via WebSocket: ${ltp}`);
+            
+            // Update currentSymbol if it was null
+            if (!this.currentSymbol) {
+                this.currentSymbol = symbol;
+                console.log(`🔧 Set currentSymbol to: ${symbol}`);
+            }
         }
         
         // Update VIX if received
