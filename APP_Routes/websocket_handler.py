@@ -3,11 +3,10 @@ WebSocket handler for live option chain data
 """
 from fyers_apiv3 import fyersModel
 from fyers_apiv3.FyersWebsocket import data_ws
-from flask import Blueprint, request, jsonify, Response, stream_with_context
+from flask import Blueprint, request, jsonify
 import logging
 import json
 import threading
-import queue
 from datetime import datetime
 import pytz
 from app import db
@@ -20,11 +19,6 @@ websocket_bp = Blueprint('websocket', __name__)
 fyers_ws = None
 current_subscriptions = []
 live_market_data = {}
-
-# SSE publisher for immediate real-time updates
-sse_subscribers = []
-market_data_lock = threading.Lock()
-sse_lock = threading.Lock()  # Protect SSE subscriber list
 
 def get_fyers_client():
     """Get FYERS client with access token"""
@@ -368,55 +362,21 @@ def start_websocket_subscription(symbols):
                 print(f"WebSocket message: {message}")
                 
                 # Store live data in global variable for frontend polling
-                global live_market_data, sse_subscribers
+                global live_market_data
                 if message and 'symbol' in message:
                     symbol = message['symbol']
-                    
-                    # Thread-safe update of live_market_data
-                    with market_data_lock:
-                        live_market_data[symbol] = {
-                            'ltp': message.get('ltp', 0),
-                            'volume': message.get('vol_traded_today', 0),
-                            'total_buy_qty': message.get('tot_buy_qty', 0),  # Correct field name
-                            'total_sell_qty': message.get('tot_sell_qty', 0),  # Add sell qty too
-                            'change': message.get('ch', 0),
-                            'bid': message.get('bid_price', 0),
-                            'ask': message.get('ask_price', 0),
-                            'open_price': message.get('open_price', 0),
-                            'prev_close_price': message.get('prev_close_price', 0),
-                            'timestamp': datetime.now().isoformat()
-                        }
-                    
-                    # IMMEDIATE SSE PUSH: Publish to all connected browsers instantly
-                    sse_data = {
-                        'symbol': symbol,
+                    live_market_data[symbol] = {
                         'ltp': message.get('ltp', 0),
+                        'volume': message.get('vol_traded_today', 0),
+                        'total_buy_qty': message.get('tot_buy_qty', 0),  # Correct field name
+                        'total_sell_qty': message.get('tot_sell_qty', 0),  # Add sell qty too
+                        'change': message.get('ch', 0),
+                        'bid': message.get('bid_price', 0),
+                        'ask': message.get('ask_price', 0),
                         'open_price': message.get('open_price', 0),
                         'prev_close_price': message.get('prev_close_price', 0),
-                        'change': message.get('ch', 0),
                         'timestamp': datetime.now().isoformat()
                     }
-                    
-                    # Push to all SSE subscribers immediately (thread-safe)
-                    with sse_lock:
-                        dead_subscribers = []
-                        for subscriber_queue in sse_subscribers[:]:  # Copy list to avoid concurrent modification
-                            try:
-                                subscriber_queue.put_nowait(json.dumps(sse_data))
-                            except queue.Full:
-                                # Drop oldest message for slow clients
-                                try:
-                                    subscriber_queue.get_nowait()
-                                    subscriber_queue.put_nowait(json.dumps(sse_data))
-                                except:
-                                    dead_subscribers.append(subscriber_queue)
-                            except:
-                                dead_subscribers.append(subscriber_queue)
-                        
-                        # Remove dead subscribers
-                        for dead_queue in dead_subscribers:
-                            if dead_queue in sse_subscribers:
-                                sse_subscribers.remove(dead_queue)
                     
                     # Check if this is a main market data symbol (spot, futures, VIX)
                     if symbol.endswith('-INDEX') or symbol in ['NSE:INDIAVIX-INDEX']:
@@ -534,53 +494,10 @@ def websocket_status():
         "symbols": current_subscriptions
     })
 
-@websocket_bp.route('/sse/market', methods=['GET'])
-def market_data_stream():
-    """Server-Sent Events stream for immediate real-time market data"""
-    global sse_subscribers
-    
-    def event_stream():
-        client_queue = queue.Queue(maxsize=1000)
-        
-        # Add client queue thread-safely
-        with sse_lock:
-            sse_subscribers.append(client_queue)
-        
-        try:
-            while True:
-                try:
-                    # Get data from queue with timeout to handle disconnections
-                    data = client_queue.get(timeout=30)
-                    yield f"data: {data}\n\n"
-                except queue.Empty:
-                    # Send heartbeat to keep connection alive
-                    yield f"data: {json.dumps({'type': 'heartbeat', 'timestamp': datetime.now().isoformat()})}\n\n"
-                except:
-                    break
-        finally:
-            # Clean up when client disconnects
-            if client_queue in sse_subscribers:
-                sse_subscribers.remove(client_queue)
-    
-    response = Response(
-        stream_with_context(event_stream()),
-        mimetype='text/event-stream',
-        headers={
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Cache-Control'
-        }
-    )
-    return response
-
 @websocket_bp.route('/live_market_data', methods=['GET'])
 def get_live_market_data():
-    """Get live market data for frontend polling (legacy - will be replaced by SSE)"""
+    """Get live market data for frontend polling"""
     global live_market_data
-    
-    with market_data_lock:
-        data_copy = live_market_data.copy()
     
     return jsonify({
         "success": True,

@@ -89,9 +89,6 @@ class WebSocketHandler {
             // Start futures price updates
             this.startFuturesPriceUpdates();
             
-            // ✅ START IMMEDIATE SSE UPDATES - no more polling delays!
-            this.setupRealTimeDataListener();
-            
             // Start option chain updates if expiry is provided
             if (expiry) {
                 console.log(`About to start option chain with symbol: ${this.currentSymbol}, expiry: ${this.currentExpiry}`);
@@ -1073,91 +1070,11 @@ class WebSocketHandler {
     }
     
     setupRealTimeDataListener() {
-        // Setup immediate real-time data listener using Server-Sent Events
-        console.log('🚀 Setting up IMMEDIATE real-time data listener using SSE (no polling delay)');
-        this.startEventStream();
-    }
-    
-    startEventStream() {
-        // Start Server-Sent Events for immediate WebSocket updates
-        if (this.eventSource) {
-            this.eventSource.close();
-        }
-        
-        this.eventSource = new EventSource('/sse/market');
-        
-        this.eventSource.onopen = () => {
-            console.log('✅ SSE connection opened - immediate updates active');
-        };
-        
-        this.eventSource.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                
-                // Skip heartbeat messages
-                if (data.type === 'heartbeat') {
-                    return;
-                }
-                
-                // IMMEDIATE LABEL UPDATES - each label updates instantly when WebSocket data arrives
-                this.handleImmediateMarketUpdate(data);
-                
-            } catch (error) {
-                console.error('SSE message parsing error:', error);
-            }
-        };
-        
-        this.eventSource.onerror = (error) => {
-            console.error('SSE connection error:', error);
-            // Reconnect after delay
-            setTimeout(() => {
-                console.log('Reconnecting SSE...');
-                this.startEventStream();
-            }, 5000);
-        };
-    }
-    
-    handleImmediateMarketUpdate(data) {
-        // IMMEDIATE UPDATES: Each respective label updates the moment WebSocket data arrives
-        const { symbol, ltp, open_price, prev_close_price, change } = data;
-        
-        console.log(`⚡ IMMEDIATE UPDATE: ${symbol} = ${ltp} (Day Open: ${open_price})`);
-        
-        // Update spot price immediately if it matches current symbol
-        if (this.currentSymbol && symbol === this.currentSymbol) {
-            this.updateSpotPriceDisplay(ltp, open_price);
-            this.updateDayOpenDisplay(open_price, ltp);
-            this.updateATMDisplay(ltp);
-            this.updatePayoffChartSpotPrice();
-            console.log(`🚀 IMMEDIATE spot price update: ${ltp}, Day Open: ${open_price}`);
-        }
-        
-        // Update VIX immediately
-        if (symbol === 'NSE:INDIAVIX-INDEX') {
-            const vixChangePct = prev_close_price > 0 ? (change / prev_close_price) * 100 : 0;
-            this.updateVixDisplay(ltp, change, vixChangePct);
-            console.log(`📊 IMMEDIATE VIX update: ${ltp}`);
-        }
-        
-        // Update futures immediately
-        const futuresSymbol = this.getFuturesSymbolFromSpot(this.currentSymbol);
-        if (symbol === futuresSymbol) {
-            const changePercent = this.currentSpotPrice ? ((ltp - this.currentSpotPrice) / this.currentSpotPrice) * 100 : 0;
-            this.updateFuturesPriceDisplay(ltp, ltp - this.currentSpotPrice, changePercent);
-            console.log(`🚀 IMMEDIATE futures price update: ${ltp}`);
-        }
-        
-        // Update option chain table immediately for option symbols
-        if (symbol.includes('CE') || symbol.includes('PE')) {
-            const singleSymbolData = {};
-            singleSymbolData[symbol] = {
-                ltp: ltp,
-                change: change,
-                open_price: open_price,
-                prev_close_price: prev_close_price
-            };
-            this.updateTableWithLiveData(singleSymbolData);
-        }
+        // Setup periodic polling for real-time data (Server-sent events alternative)
+        console.log('Setting up real-time data listener with 5-second polling');
+        this.realTimeInterval = setInterval(() => {
+            this.checkForRealTimeUpdates();
+        }, 5000); // Check every 5 seconds for real-time updates (reduced frequency)
     }
     
     async checkForRealTimeUpdates() {
@@ -1191,13 +1108,6 @@ class WebSocketHandler {
                 }
                 
                 // Update spot price if available for current symbol via WebSocket streaming
-                // DEBUG: Log current symbol and available data keys
-                console.log(`🔍 SYMBOL DEBUG:`, {
-                    currentSymbol: this.currentSymbol,
-                    availableKeys: Object.keys(result.data || {}),
-                    spotDataExists: !!(this.currentSymbol && result.data[this.currentSymbol])
-                });
-                
                 if (this.currentSymbol && result.data[this.currentSymbol]) {
                     const spotData = result.data[this.currentSymbol];
                     const newSpotPrice = spotData.ltp;
