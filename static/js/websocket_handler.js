@@ -104,94 +104,37 @@ class WebSocketHandler {
     }
     
     startSpotPriceUpdates() {
-        // Real-time WebSocket streaming for spot prices - no more REST API polling
+        // Real-time WebSocket streaming for spot prices - no REST API polling
         console.log('🚀 Starting real-time WebSocket streaming for spot prices');
         
         // Subscribe spot symbol to WebSocket for real-time tick data
         this.subscribeSpotToWebSocket();
         
-        // Get initial spot price once, then rely on WebSocket streaming
-        this.updateSpotPrice();
+        // No more REST API polling - rely only on WebSocket streaming
+        console.log('✅ Spot price will update via WebSocket streaming only');
     }
     
     startFuturesPriceUpdates() {
-        // Real-time WebSocket streaming for futures prices - no more REST API polling
+        // Real-time WebSocket streaming for futures prices - no REST API polling
         console.log('🚀 Starting real-time WebSocket streaming for futures prices');
         
         // Subscribe futures symbol to WebSocket for real-time tick data
         this.subscribeFuturesToWebSocket();
         
-        // Get initial futures price once, then rely on WebSocket streaming
-        this.updateFuturesPrice();
+        // No more REST API polling - rely only on WebSocket streaming
+        console.log('✅ Futures price will update via WebSocket streaming only');
     }
     
     async updateFuturesPrice() {
-        if (!this.currentSymbol) return;
-        
-        try {
-            // Fetch futures data from the API endpoint
-            const response = await fetch(`/api/futures/current?symbol=${encodeURIComponent(this.currentSymbol)}`);
-            const data = await response.json();
-            
-            if (data.success && data.analysis) {
-                // Store futures data globally for access
-                window.currentFuturesData = {
-                    symbol: this.currentSymbol,
-                    futures_price: data.analysis.futures_price,
-                    change: data.analysis.futures_price - data.analysis.spot_price,
-                    change_percent: ((data.analysis.futures_price - data.analysis.spot_price) / data.analysis.spot_price) * 100,
-                    basis: data.analysis.basis,
-                    basis_pct: data.analysis.basis_pct,
-                    timestamp: new Date().toISOString()
-                };
-                
-                this.updateFuturesPriceDisplay(data.analysis.futures_price, window.currentFuturesData.change, window.currentFuturesData.change_percent);
-                
-                console.log(`📊 Futures data updated:`, data.analysis.futures_price);
-            } else {
-                console.error('Futures price update failed:', data.error);
-            }
-        } catch (error) {
-            console.error('Error updating futures price:', error);
-        }
+        // This method is now deprecated - futures updates via WebSocket streaming only
+        console.log('🚨 updateFuturesPrice() called but disabled - using WebSocket streaming instead');
+        return;
     }
     
     async updateSpotPrice() {
-        if (!this.currentSymbol) return;
-        
-        try {
-            // Use symbol as-is since it should already be in correct format from symbol lookup
-            const response = await fetch(`/get_spot_price?symbol=${encodeURIComponent(this.currentSymbol)}`);
-            const data = await response.json();
-            
-            if (data.success) {
-                // Store full quote data globally for modal access
-                window.currentQuoteData = {
-                    symbol: data.symbol,
-                    spot_price: data.spot_price,
-                    day_open: data.day_open,
-                    prev_close: data.prev_close,
-                    change: data.change,
-                    change_percent: data.change_percent,
-                    gap_abs: data.gap_abs,
-                    gap_pct: data.gap_pct,
-                    fyers_symbol: data.fyers_symbol,
-                    timestamp: data.timestamp
-                };
-                
-                this.updateSpotPriceDisplay(data.spot_price, data.day_open);
-                this.updateATMDisplay(data.spot_price);
-                
-                // Update day open display with new three-row format
-                this.updateDayOpenDisplay(data.day_open, data.spot_price);
-                
-                console.log(`Spot updated: ${data.spot_price} | Open: ${data.day_open} | Gap: ${data.gap_abs?.toFixed(2)} (${data.gap_pct?.toFixed(2)}%)`);
-            } else {
-                console.error('Spot price update failed:', data.error);
-            }
-        } catch (error) {
-            console.error('Error updating spot price:', error);
-        }
+        // This method is now deprecated - spot updates via WebSocket streaming only
+        console.log('🚨 updateSpotPrice() called but disabled - using WebSocket streaming instead');
+        return;
     }
     
     updateDayOpenDisplay(dayOpenValue, spotPrice) {
