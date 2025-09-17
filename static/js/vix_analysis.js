@@ -12,15 +12,13 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🔥 VIX Analysis system initialized');
     
-    // Update VIX data once initially - real-time updates via WebSocket streaming
-    console.log('🚀 VIX: Using WebSocket streaming instead of REST API polling');
-    // updateVixData(); // Disabled - using WebSocket streaming
-    // setInterval(updateVixData, 30000); // Disabled - using WebSocket streaming
+    // Update VIX data every 30 seconds
+    updateVixData();
+    setInterval(updateVixData, 30000);
     
-    // Update futures data once initially - real-time updates via WebSocket streaming
-    console.log('🚀 Futures: Using WebSocket streaming instead of REST API polling');
-    // updateFuturesData(); // Disabled - using WebSocket streaming
-    // setInterval(updateFuturesData, 30000); // Disabled - using WebSocket streaming
+    // Update futures data every 30 seconds
+    updateFuturesData();
+    setInterval(updateFuturesData, 30000);
     
     // Add event listeners for dropdown changes to trigger immediate updates
     addDropdownChangeListeners();

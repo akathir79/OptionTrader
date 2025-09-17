@@ -7,8 +7,8 @@ class ColumnVisibilityController {
     constructor() {
         this.columnNames = [
             'CE B/S', 'Veta', 'Volga', 'Charm', 'Vanna', 'Vega', 'Theta', 'Gamma', 'Chng', 'Bid Qty',
-            'Bid', 'Ask', 'Ask Qty', 'Chng in OI', 'OI', 'Prev OI', '% Chng OI', 'Vol', 'Chart', 'LTP', 'Δ', 'Strike',
-            'Δ', 'LTP', 'Chart', 'Vol', 'OI', 'Prev OI', '% Chng OI', 'Chng in OI', 'Ask Qty', 'Ask', 'Bid', 'Bid Qty',
+            'Bid', 'Ask', 'Ask Qty', 'Chng in OI', 'OI', 'Vol', 'Chart', 'LTP', 'Δ', 'Strike',
+            'Δ', 'LTP', 'Chart', 'Vol', 'OI', 'Chng in OI', 'Ask Qty', 'Ask', 'Bid', 'Bid Qty',
             'Chng', 'Gamma', 'Theta', 'Vega', 'Vanna', 'Charm', 'Volga', 'Veta', 'PE B/S'
         ];
         this.columnStates = this.getDefaultColumnStates();
@@ -29,12 +29,11 @@ class ColumnVisibilityController {
     getDefaultColumnStates() {
         // Default visible columns for essential trading data only
         const defaults = {};
-        // Essential columns: CE B/S(0), Change in OI(13), OI(14), Vol(17), LTP(19), Delta(20), Strike(21), Delta(22), LTP(23), Vol(25), OI(26), Change in OI(29), PE B/S(42)
-        // Note: New columns Prev OI(15,27) and % Chng OI(16,28) are NOT included in defaults as requested
+        // Essential columns: CE B/S(0), Change in OI(13), OI(14), Vol(15), LTP(17), Delta(18), Strike(19), Delta(20), LTP(21), Vol(23), OI(24), Change in OI(25), PE B/S(38)
         // Re-enabled Change in OI columns since user confirmed Fyers API provides this data
-        const essentialColumns = [0, 13, 14, 17, 19, 20, 21, 22, 23, 25, 26, 29, 42];
+        const essentialColumns = [0, 13, 14, 15, 17, 18, 19, 20, 21, 23, 24, 25, 38];
         
-        for (let i = 0; i < 43; i++) {
+        for (let i = 0; i < 39; i++) {
             defaults[i] = essentialColumns.includes(i);
         }
         
@@ -85,34 +84,30 @@ class ColumnVisibilityController {
             'Ask Qty',          // 12
             'Chng in OI',       // 13
             'OI',               // 14
-            'Prev OI',          // 15
-            '% Chng OI',        // 16
-            'Vol',              // 17
-            'Chart',            // 18
-            'LTP',              // 19
-            'Δ (CE)',           // 20
-            'Strike',           // 21
-            'Δ (PE)',           // 22
-            'LTP',              // 23
-            'Chart',            // 24
-            'Vol',              // 25
-            'OI',               // 26
-            'Prev OI',          // 27
-            '% Chng OI',        // 28
-            'Chng in OI',       // 29
-            'Ask Qty',          // 30
-            'Ask',              // 31
-            'Bid',              // 32
-            'Bid Qty',          // 33
-            'Chng',             // 34
-            'Gamma',            // 35
-            'Theta',            // 36
-            'Vega',             // 37
-            'Vanna',            // 38
-            'Charm',            // 39
-            'Volga',            // 40
-            'Veta',             // 41
-            'PE B/S'            // 42
+            'Vol',              // 15
+            'Chart',            // 16
+            'LTP',              // 17
+            'Δ (CE)',           // 18
+            'Strike',           // 19
+            'Δ (PE)',           // 20
+            'LTP',              // 21
+            'Chart',            // 22
+            'Vol',              // 23
+            'OI',               // 24
+            'Chng in OI',       // 25
+            'Ask Qty',          // 26
+            'Ask',              // 27
+            'Bid',              // 28
+            'Bid Qty',          // 29
+            'Chng',             // 30
+            'Gamma',            // 31
+            'Theta',            // 32
+            'Vega',             // 33
+            'Vanna',            // 34
+            'Charm',            // 35
+            'Volga',            // 36
+            'Veta',             // 37
+            'PE B/S'            // 38
         ];
         
         // Add header with control buttons
@@ -139,10 +134,10 @@ class ColumnVisibilityController {
         rowHTML += '<div class="col-6">';
         rowHTML += '<div style="font-weight: 600; color: #28a745; margin-bottom: 8px; font-size: 11px; border-bottom: 1px solid #28a745; padding-bottom: 4px;">Call (CE) Options</div>';
         
-        // CE columns (0-20) + Strike (21)
-        for (let i = 0; i <= 21; i++) {
+        // CE columns (0-18) + Strike (19)
+        for (let i = 0; i <= 19; i++) {
             const isChecked = this.columnStates[i] ? 'checked' : '';
-            const labelStyle = i === 21 ? 'font-weight: 600; color: #f39c12;' : ''; // Highlight Strike
+            const labelStyle = i === 19 ? 'font-weight: 600; color: #f39c12;' : ''; // Highlight Strike
             rowHTML += `
                 <div class="form-check mb-1">
                     <input class="form-check-input" type="checkbox" data-column="${i}" id="col${i}" ${isChecked}>
@@ -154,12 +149,12 @@ class ColumnVisibilityController {
         }
         rowHTML += '</div>';
         
-        // PE (Put) columns - Right side (22-42)
+        // PE (Put) columns - Right side (20-38)
         rowHTML += '<div class="col-6">';
         rowHTML += '<div style="font-weight: 600; color: #dc3545; margin-bottom: 8px; font-size: 11px; border-bottom: 1px solid #dc3545; padding-bottom: 4px;">Put (PE) Options</div>';
         
-        // PE columns (22-42)
-        for (let i = 22; i < columnNames.length; i++) {
+        // PE columns (20-38)
+        for (let i = 20; i < columnNames.length; i++) {
             const isChecked = this.columnStates[i] ? 'checked' : '';
             rowHTML += `
                 <div class="form-check mb-1">
@@ -260,7 +255,7 @@ class ColumnVisibilityController {
         if (this.columnStates && typeof this.columnStates === 'object' && !Array.isArray(this.columnStates)) {
             console.log('🔧 Converting columnStates object to array...');
             const arrayStates = [];
-            for (let i = 0; i < 43; i++) { // 43 total columns
+            for (let i = 0; i < 39; i++) { // 39 total columns
                 arrayStates[i] = this.columnStates[i.toString()] || false;
             }
             this.columnStates = arrayStates;
@@ -328,7 +323,7 @@ class ColumnVisibilityController {
 
 
     selectAllColumns() {
-        for (let i = 0; i < 43; i++) {
+        for (let i = 0; i < 39; i++) {
             this.columnStates[i] = true;
         }
         this.updateCheckboxes();
@@ -338,7 +333,7 @@ class ColumnVisibilityController {
     }
 
     deselectAllColumns() {
-        for (let i = 0; i < 43; i++) {
+        for (let i = 0; i < 39; i++) {
             this.columnStates[i] = false;
         }
         this.updateCheckboxes();
