@@ -1098,6 +1098,8 @@ class WebSocketHandler {
                     const vixChangePct = vixData.prev_close_price > 0 ? (vixChange / vixData.prev_close_price) * 100 : 0;
                     this.updateVixDisplay(vixData.ltp, vixChange, vixChangePct);
                     console.log(`📊 VIX updated: ${vixData.ltp} (${vixChange >= 0 ? '+' : ''}${vixChange.toFixed(2)})`);
+                } else {
+                    console.warn(`⚠️ VIX data not found in WebSocket result:`, Object.keys(result.data || {}));
                 }
                 
                 // Update Current Positions table with live LTP and P&L
@@ -1111,6 +1113,14 @@ class WebSocketHandler {
                     const newSpotPrice = spotData.ltp;
                     const dayOpen = spotData.open_price;
                     
+                    // DEBUG: Log all spot data to identify day open issue
+                    console.log(`🔍 SPOT DATA DEBUG:`, {
+                        symbol: this.currentSymbol,
+                        ltp: newSpotPrice,
+                        open_price: dayOpen,
+                        spotData: spotData
+                    });
+                    
                     if (newSpotPrice !== this.currentSpotPrice) {
                         this.updateSpotPriceDisplay(newSpotPrice, dayOpen);
                         this.updateATMDisplay(newSpotPrice);
@@ -1118,10 +1128,12 @@ class WebSocketHandler {
                         console.log(`🚀 WebSocket spot price update: ${newSpotPrice}`);
                     }
                     
-                    // Update day open display if we have the data
-                    if (dayOpen && dayOpen > 0) {
+                    // FIXED: Always try to update day open, even if 0 - might be valid
+                    if (dayOpen !== null && dayOpen !== undefined) {
                         this.updateDayOpenDisplay(dayOpen, newSpotPrice);
                         console.log(`📅 Day open updated: ${dayOpen} (Gap: ${(newSpotPrice - dayOpen).toFixed(1)})`);
+                    } else {
+                        console.warn(`⚠️ Day open is null/undefined for ${this.currentSymbol}`);
                     }
                 }
                 
