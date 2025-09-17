@@ -409,6 +409,12 @@ class WebSocketHandler {
             spotPriceElement.textContent = this.formatPrice(spotPrice);
             spotPriceElement.classList.remove('text-muted');
             spotPriceElement.classList.add('text-dark');
+            
+            // 🔥 BLINK EFFECT: Visual confirmation of WebSocket data received
+            spotPriceElement.style.animation = 'websocketBlink 0.5s ease-in-out';
+            setTimeout(() => {
+                spotPriceElement.style.animation = '';
+            }, 500);
         }
         
         // Update spot price percentage change (Row 3)
