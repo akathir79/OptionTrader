@@ -262,83 +262,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const ALLOWED = ["fyers"];
 
-  // Beautiful custom auth code modal function
-  function showAuthCodeModal() {
-    return new Promise((resolve) => {
-      const modal = document.getElementById('fyersAuthModal');
-      const input = document.getElementById('authCodeInput');
-      const confirmBtn = document.getElementById('confirmAuthBtn');
-      const cancelBtn = document.getElementById('cancelAuthBtn');
-      
-      // Guard against missing elements
-      if (!modal || !input || !confirmBtn || !cancelBtn) {
-        console.error('Auth modal elements not found, falling back to prompt');
-        resolve(prompt("Paste the Fyers auth_code:"));
-        return;
-      }
-      
-      // Clear previous input and reset button state
-      input.value = '';
-      input.classList.remove('is-invalid');
-      confirmBtn.disabled = false;
-      
-      let submitted = false; // Prevent double submission
-      
-      // Show the modal
-      const bsModal = new bootstrap.Modal(modal);
-      bsModal.show();
-      
-      // Focus on input when modal is shown
-      const focusHandler = () => input.focus();
-      modal.addEventListener('shown.bs.modal', focusHandler, { once: true });
-      
-      // Handle Enter key in input (fixed: no { once: true })
-      const enterHandler = (e) => {
-        if (e.key === 'Enter' && input.value.trim()) {
-          confirmHandler();
-        }
-      };
-      input.addEventListener('keydown', enterHandler);
-      
-      // Handle confirm button
-      const confirmHandler = () => {
-        if (submitted) return; // Prevent double submission
-        
-        const code = input.value.trim();
-        if (!code) {
-          input.classList.add('is-invalid');
-          input.focus();
-          return;
-        }
-        
-        submitted = true;
-        confirmBtn.disabled = true; // Prevent double clicks
-        input.classList.remove('is-invalid');
-        bsModal.hide();
-        resolve(code);
-      };
-      
-      // Handle cancel button
-      const cancelHandler = () => {
-        if (submitted) return;
-        submitted = true;
-        bsModal.hide();
-        resolve(null);
-      };
-      
-      // Clean up event handlers when modal is hidden
-      modal.addEventListener('hidden.bs.modal', () => {
-        confirmBtn.removeEventListener('click', confirmHandler);
-        cancelBtn.removeEventListener('click', cancelHandler);
-        input.removeEventListener('keydown', enterHandler);
-      }, { once: true });
-      
-      // Attach event handlers
-      confirmBtn.addEventListener('click', confirmHandler);
-      cancelBtn.addEventListener('click', cancelHandler);
-    });
-  }
-
   async function handleToken(id, tr) {
     if (!ALLOWED.includes(tr.dataset.broker)) {
       toast("Select a valid broker for this action");
@@ -349,7 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const authURL = `https://api-t1.fyers.in/api/v3/generate-authcode?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redir)}&response_type=code&state=livetrade`;
     window.open(authURL, "_blank");
 
-    const code = await showAuthCodeModal();
+    const code = prompt("Paste the Fyers auth_code:");
     if (!code) return;
 
     try {
