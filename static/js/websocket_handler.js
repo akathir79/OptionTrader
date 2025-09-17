@@ -104,74 +104,35 @@ class WebSocketHandler {
     }
     
     startSpotPriceUpdates() {
-        // HOTFIX: Use REST polling until WebSocket streaming is fixed
-        console.log('🔄 Starting REST polling for spot prices (WebSocket fallback)');
+        // WebSocket streaming for spot prices 
+        console.log('🚀 Starting WebSocket streaming for spot prices');
         
-        // Start immediate update
-        this.updateSpotPrice();
+        // Subscribe spot symbol to WebSocket for real-time tick data
+        this.subscribeSpotToWebSocket();
         
-        // Set up polling every 3 seconds
-        if (this.spotUpdateInterval) {
-            clearInterval(this.spotUpdateInterval);
-        }
-        this.spotUpdateInterval = setInterval(() => {
-            this.updateSpotPrice();
-        }, 3000);
-        
-        console.log('✅ Spot price polling started every 3 seconds');
+        console.log('✅ Spot price WebSocket subscribed');
     }
     
     startFuturesPriceUpdates() {
-        // HOTFIX: Use REST polling until WebSocket streaming is fixed
-        console.log('🔄 Starting REST polling for futures prices (WebSocket fallback)');
+        // WebSocket streaming for futures prices
+        console.log('🚀 Starting WebSocket streaming for futures prices');
         
-        // Start immediate update
-        this.updateFuturesPrice();
+        // Subscribe futures symbol to WebSocket for real-time tick data
+        this.subscribeFuturesToWebSocket();
         
-        // Set up polling every 3 seconds
-        if (this.futuresUpdateInterval) {
-            clearInterval(this.futuresUpdateInterval);
-        }
-        this.futuresUpdateInterval = setInterval(() => {
-            this.updateFuturesPrice();
-        }, 3000);
-        
-        console.log('✅ Futures price polling started every 3 seconds');
+        console.log('✅ Futures price WebSocket subscribed');
     }
     
     async updateFuturesPrice() {
-        // HOTFIX: Re-enable REST polling until WebSocket streaming is fixed
-        if (!this.currentSymbol) return;
-        
-        try {
-            const futuresSymbol = this.getFuturesSymbolFromSpot(this.currentSymbol);
-            const response = await fetch(`/get_futures_price?symbol=${encodeURIComponent(futuresSymbol)}`);
-            const result = await response.json();
-            
-            if (result.success && result.futures_price) {
-                this.updateFuturesPriceDisplay(result.futures_price, result.change, result.change_percent);
-                console.log(`📊 Futures price updated via REST: ${result.futures_price}`);
-            }
-        } catch (error) {
-            console.error('Error updating futures price:', error);
-        }
+        // WebSocket streaming only - no REST polling
+        console.log('🚨 updateFuturesPrice() called - using WebSocket streaming only');
+        return;
     }
     
     async updateSpotPrice() {
-        // HOTFIX: Re-enable REST polling until WebSocket streaming is fixed
-        if (!this.currentSymbol) return;
-        
-        try {
-            const response = await fetch(`/get_spot_price?symbol=${encodeURIComponent(this.currentSymbol)}`);
-            const result = await response.json();
-            
-            if (result.success && result.spot_price) {
-                this.updateSpotPriceDisplay(result.spot_price, result.day_open);
-                console.log(`💼 Spot price updated via REST: ${result.spot_price}`);
-            }
-        } catch (error) {
-            console.error('Error updating spot price:', error);
-        }
+        // WebSocket streaming only - no REST polling  
+        console.log('🚨 updateSpotPrice() called - using WebSocket streaming only');
+        return;
     }
     
     updateDayOpenDisplay(dayOpenValue, spotPrice) {
@@ -227,6 +188,8 @@ class WebSocketHandler {
             .then(response => response.json())
             .then(data => {
                 console.log('🎯 Spot and VIX symbols subscribed to WebSocket:', symbolsToSubscribe);
+                // Start receiving live data if not already connected
+                this.startLiveDataStream();
             })
             .catch(error => {
                 console.error('Error subscribing spot/VIX to WebSocket:', error);
@@ -258,6 +221,8 @@ class WebSocketHandler {
             .then(response => response.json())
             .then(data => {
                 console.log('🎯 Futures symbol subscribed to WebSocket:', futuresSymbol);
+                // Start receiving live data if not already connected
+                this.startLiveDataStream();
             })
             .catch(error => {
                 console.error('Error subscribing futures to WebSocket:', error);
@@ -267,6 +232,116 @@ class WebSocketHandler {
         }
     }
     
+    startLiveDataStream() {
+        // Establish WebSocket connection to receive live data
+        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+            console.log('🎯 WebSocket already connected');
+            return;
+        }
+        
+        try {
+            // Create WebSocket connection
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws/market_data`;
+            
+            this.websocket = new WebSocket(wsUrl);
+            
+            this.websocket.onopen = () => {
+                console.log('🎯 WebSocket connected for live market data');
+                this.isConnected = true;
+            };
+            
+            this.websocket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    this.handleLiveMarketData(data);
+                } catch (error) {
+                    console.error('Error parsing WebSocket message:', error);
+                }
+            };
+            
+            this.websocket.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+            
+            this.websocket.onclose = () => {
+                console.log('🎯 WebSocket disconnected, attempting reconnect...');
+                this.isConnected = false;
+                // Reconnect after 3 seconds
+                setTimeout(() => {
+                    this.startLiveDataStream();
+                }, 3000);
+            };
+            
+        } catch (error) {
+            console.error('Error starting WebSocket:', error);
+            // Fallback to SSE if WebSocket fails
+            this.startSSEStream();
+        }
+    }
+    
+    startSSEStream() {
+        // Fallback to Server-Sent Events if WebSocket fails
+        if (this.eventSource) {
+            this.eventSource.close();
+        }
+        
+        try {
+            this.eventSource = new EventSource('/sse/market_data');
+            
+            this.eventSource.onopen = () => {
+                console.log('🎯 SSE connected for live market data');
+                this.isConnected = true;
+            };
+            
+            this.eventSource.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    this.handleLiveMarketData(data);
+                } catch (error) {
+                    console.error('Error parsing SSE message:', error);
+                }
+            };
+            
+            this.eventSource.onerror = (error) => {
+                console.error('SSE error:', error);
+                this.isConnected = false;
+            };
+            
+        } catch (error) {
+            console.error('Error starting SSE:', error);
+        }
+    }
+    
+    handleLiveMarketData(data) {
+        // Process incoming live market data
+        if (!data || !data.symbol) return;
+        
+        const symbol = data.symbol;
+        const ltp = data.ltp;
+        
+        console.log(`🎯 Live data received for ${symbol}: ${ltp}`);
+        
+        // Update spot price if it matches current symbol
+        if (symbol === this.currentSymbol && ltp) {
+            this.updateSpotPriceDisplay(ltp, data.open_price);
+            console.log(`💼 Spot price updated via WebSocket: ${ltp}`);
+        }
+        
+        // Update VIX if received
+        if (symbol === 'NSE:INDIAVIX-INDEX' && ltp) {
+            this.updateVixDisplay(ltp, data.ch, data.chp);
+            console.log(`📊 VIX updated via WebSocket: ${ltp}`);
+        }
+        
+        // Update futures if it matches futures symbol
+        const futuresSymbol = this.getFuturesSymbolFromSpot(this.currentSymbol);
+        if (symbol === futuresSymbol && ltp) {
+            this.updateFuturesPriceDisplay(ltp, data.ch, data.chp);
+            console.log(`📊 Futures price updated via WebSocket: ${ltp}`);
+        }
+    }
+
     getFuturesSymbolFromSpot(spotSymbol) {
         // Convert spot symbol to current month futures symbol using correct FYERS symbols
         if (spotSymbol === 'NSE:NIFTY50-INDEX') {
