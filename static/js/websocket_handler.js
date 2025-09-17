@@ -104,30 +104,24 @@ class WebSocketHandler {
     }
     
     startSpotPriceUpdates() {
-        // Update spot price every 10 seconds (reduced frequency to prevent rate limiting)
-        if (this.updateInterval) {
-            clearInterval(this.updateInterval);
-        }
+        // Real-time WebSocket streaming for spot prices - no more REST API polling
+        console.log('🚀 Starting real-time WebSocket streaming for spot prices');
         
-        this.updateInterval = setInterval(() => {
-            this.updateSpotPrice();
-        }, 10000);
+        // Subscribe spot symbol to WebSocket for real-time tick data
+        this.subscribeSpotToWebSocket();
         
-        // Initial update
+        // Get initial spot price once, then rely on WebSocket streaming
         this.updateSpotPrice();
     }
     
     startFuturesPriceUpdates() {
-        // Update futures price every 10 seconds (reduced frequency to prevent rate limiting)
-        if (this.futuresUpdateInterval) {
-            clearInterval(this.futuresUpdateInterval);
-        }
+        // Real-time WebSocket streaming for futures prices - no more REST API polling
+        console.log('🚀 Starting real-time WebSocket streaming for futures prices');
         
-        this.futuresUpdateInterval = setInterval(() => {
-            this.updateFuturesPrice();
-        }, 10000);
+        // Subscribe futures symbol to WebSocket for real-time tick data
+        this.subscribeFuturesToWebSocket();
         
-        // Initial update
+        // Get initial futures price once, then rely on WebSocket streaming
         this.updateFuturesPrice();
     }
     
@@ -227,6 +221,78 @@ class WebSocketHandler {
                 gapElement.classList.add('text-muted');
             }
         }
+    }
+    
+    subscribeSpotToWebSocket() {
+        // Subscribe spot symbol to WebSocket for real-time tick data
+        if (!this.currentSymbol) return;
+        
+        try {
+            // Add spot symbol to WebSocket subscription
+            fetch('/update_subscriptions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    symbols: [this.currentSymbol], // Add spot symbol for streaming
+                    action: 'add'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('🎯 Spot symbol subscribed to WebSocket:', this.currentSymbol);
+            })
+            .catch(error => {
+                console.error('Error subscribing spot to WebSocket:', error);
+            });
+        } catch (error) {
+            console.error('Error in subscribeSpotToWebSocket:', error);
+        }
+    }
+    
+    subscribeFuturesToWebSocket() {
+        // Subscribe futures symbol to WebSocket for real-time tick data
+        if (!this.currentSymbol) return;
+        
+        try {
+            // Generate futures symbol from spot symbol
+            const futuresSymbol = this.getFuturesSymbolFromSpot(this.currentSymbol);
+            
+            // Add futures symbol to WebSocket subscription
+            fetch('/update_subscriptions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    symbols: [futuresSymbol], // Add futures symbol for streaming
+                    action: 'add'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('🎯 Futures symbol subscribed to WebSocket:', futuresSymbol);
+            })
+            .catch(error => {
+                console.error('Error subscribing futures to WebSocket:', error);
+            });
+        } catch (error) {
+            console.error('Error in subscribeFuturesToWebSocket:', error);
+        }
+    }
+    
+    getFuturesSymbolFromSpot(spotSymbol) {
+        // Convert spot symbol to current month futures symbol
+        // This is a simplified mapping - would need to be enhanced for actual futures symbols
+        if (spotSymbol === 'NSE:NIFTY50-INDEX') {
+            return 'NSE:NIFTY25JAN';  // Current month futures
+        } else if (spotSymbol === 'NSE:NIFTYBANK-INDEX') {
+            return 'NSE:BANKNIFTY25JAN';  // Current month futures
+        }
+        
+        // Default mapping for other symbols
+        return spotSymbol.replace('-INDEX', '25JAN');
     }
     
     startVolumeOIUpdates() {
@@ -1081,13 +1147,44 @@ class WebSocketHandler {
                     window.updatePositionTableLivePrices();
                 }
                 
-                // Update spot price if available for current symbol
+                // Update spot price if available for current symbol via WebSocket streaming
                 if (this.currentSymbol && result.data[this.currentSymbol]) {
-                    const newSpotPrice = result.data[this.currentSymbol].ltp;
+                    const spotData = result.data[this.currentSymbol];
+                    const newSpotPrice = spotData.ltp;
                     if (newSpotPrice !== this.currentSpotPrice) {
                         this.updateSpotPriceDisplay(newSpotPrice);
                         this.updateATMDisplay(newSpotPrice);
                         this.updatePayoffChartSpotPrice();
+                        console.log(`🚀 WebSocket spot price update: ${newSpotPrice}`);
+                    }
+                }
+                
+                // Update futures price if available via WebSocket streaming
+                if (this.currentSymbol) {
+                    const futuresSymbol = this.getFuturesSymbolFromSpot(this.currentSymbol);
+                    if (result.data[futuresSymbol]) {
+                        const futuresData = result.data[futuresSymbol];
+                        const futuresPrice = futuresData.ltp;
+                        
+                        // Calculate change from stored spot price
+                        if (this.currentSpotPrice && futuresPrice) {
+                            const change = futuresPrice - this.currentSpotPrice;
+                            const changePercent = (change / this.currentSpotPrice) * 100;
+                            
+                            // Store futures data globally
+                            window.currentFuturesData = {
+                                symbol: this.currentSymbol,
+                                futures_price: futuresPrice,
+                                change: change,
+                                change_percent: changePercent,
+                                basis: change,
+                                basis_pct: changePercent,
+                                timestamp: new Date().toISOString()
+                            };
+                            
+                            this.updateFuturesPriceDisplay(futuresPrice, change, changePercent);
+                            console.log(`🚀 WebSocket futures price update: ${futuresPrice}`);
+                        }
                     }
                 }
             }
