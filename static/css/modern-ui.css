@@ -968,3 +968,14 @@ button#marketDataNextBtn {
 .vix-display {
   color: inherit !important;
 }
+
+/* ATM Strike Row Highlighting */
+.atm-row {
+  background-color: rgba(255, 182, 193, 0.15) !important; /* Slight pink background */
+  border-left: 3px solid rgba(255, 182, 193, 0.6) !important; /* Pink left border */
+  position: relative;
+}
+
+.atm-row:hover {
+  background-color: rgba(255, 182, 193, 0.25) !important; /* Slightly darker pink on hover */
+}
