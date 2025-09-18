@@ -10,7 +10,7 @@ import threading
 from datetime import datetime
 import pytz
 from app import db
-from models import BrokerSettings, BrokerType
+from models import BrokerSettings
 from services.fyers_service import FyersService
 
 websocket_bp = Blueprint('websocket', __name__)
@@ -169,22 +169,14 @@ def get_option_chain():
             data = {"symbol": symbol, "strikecount": 1, "timestamp": ""}
             response = fyers.optionchain(data=data)
             
-            # Check for token expiration and retry with refreshed token
+            # Check for token expiration - show user message to create new token
             if response.get('code') in [-8, -15, -16, -17]:  # Token expired/invalid codes
-                print(f"TOKEN EXPIRED - attempting refresh for expiry data")
-                try:
-                    from services.broker_service import BrokerService
-                    broker_service = BrokerService()
-                    if broker_service.refresh_access_token(BrokerType.FYERS):
-                        # Get updated token and retry
-                        broker_row = BrokerSettings.query.filter_by(brokername='FYERS').first()
-                        fyers = fyersModel.FyersModel(client_id=broker_row.clientid, token=broker_row.access_token, is_async=False, log_path="")
-                        response = fyers.optionchain(data=data)
-                        print(f"RETRY AFTER TOKEN REFRESH: {response.get('s')}")
-                    else:
-                        print("TOKEN REFRESH FAILED - manual re-authentication required")
-                except Exception as refresh_e:
-                    print(f"TOKEN REFRESH ERROR: {refresh_e}")
+                print(f"TOKEN EXPIRED - user needs to create new access token")
+                return jsonify({
+                    "error": "Access token has expired. Please create a new access token in the Broker Settings to continue using the platform.",
+                    "code": "TOKEN_EXPIRED",
+                    "action_required": "Create new access token"
+                }), 401
             
             if response.get('s') == 'ok':
                 expiry_data = response.get('data', {}).get('expiryData', [])
@@ -209,22 +201,14 @@ def get_option_chain():
             data_for_expiry = {"symbol": symbol, "strikecount": 1, "timestamp": ""}
             expiry_response = fyers.optionchain(data=data_for_expiry)
             
-            # Check for token expiration and retry with refreshed token
+            # Check for token expiration - show user message to create new token
             if expiry_response.get('code') in [-8, -15, -16, -17]:  # Token expired/invalid codes
-                print(f"TOKEN EXPIRED - attempting refresh for expiry conversion")
-                try:
-                    from services.broker_service import BrokerService
-                    broker_service = BrokerService()
-                    if broker_service.refresh_access_token(BrokerType.FYERS):
-                        # Get updated token and retry
-                        broker_row = BrokerSettings.query.filter_by(brokername='FYERS').first()
-                        fyers = fyersModel.FyersModel(client_id=broker_row.clientid, token=broker_row.access_token, is_async=False, log_path="")
-                        expiry_response = fyers.optionchain(data=data_for_expiry)
-                        print(f"RETRY AFTER TOKEN REFRESH: {expiry_response.get('s')}")
-                    else:
-                        print("TOKEN REFRESH FAILED - manual re-authentication required")
-                except Exception as refresh_e:
-                    print(f"TOKEN REFRESH ERROR: {refresh_e}")
+                print(f"TOKEN EXPIRED - user needs to create new access token")
+                return jsonify({
+                    "error": "Access token has expired. Please create a new access token in the Broker Settings to continue using the platform.",
+                    "code": "TOKEN_EXPIRED", 
+                    "action_required": "Create new access token"
+                }), 401
             
             if expiry_response.get('s') == 'ok':
                 expiry_data = expiry_response.get('data', {}).get('expiryData', [])
@@ -262,24 +246,14 @@ def get_option_chain():
         
         response = fyers.optionchain(data=data)
         
-        # Check for token expiration and retry with refreshed token
+        # Check for token expiration - show user message to create new token
         if response.get('code') in [-8, -15, -16, -17]:  # Token expired/invalid codes
-            print(f"TOKEN EXPIRED - attempting refresh for option chain")
-            try:
-                from services.broker_service import BrokerService
-                broker_service = BrokerService()
-                if broker_service.refresh_access_token(BrokerType.FYERS):
-                    # Get updated token and retry
-                    broker_row = BrokerSettings.query.filter_by(brokername='FYERS').first()
-                    fyers = fyersModel.FyersModel(client_id=broker_row.clientid, token=broker_row.access_token, is_async=False, log_path="")
-                    response = fyers.optionchain(data=data)
-                    print(f"RETRY AFTER TOKEN REFRESH: {response.get('s')}")
-                else:
-                    print("TOKEN REFRESH FAILED - manual re-authentication required")
-                    return jsonify({"error": "Access token expired and refresh failed. Please re-authenticate."}), 401
-            except Exception as refresh_e:
-                print(f"TOKEN REFRESH ERROR: {refresh_e}")
-                return jsonify({"error": f"Token refresh error: {str(refresh_e)}"}), 500
+            print(f"TOKEN EXPIRED - user needs to create new access token")
+            return jsonify({
+                "error": "Access token has expired. Please create a new access token in the Broker Settings to continue using the platform.",
+                "code": "TOKEN_EXPIRED",
+                "action_required": "Create new access token"
+            }), 401
         
         if response.get('s') != 'ok':
             return jsonify({"error": f"FYERS API Error: {response.get('message', 'Unknown error')}"}), 500
