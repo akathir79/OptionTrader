@@ -266,7 +266,7 @@ class WebSocketHandler {
     }
     
     updateMarketDisplayDirect(symbol, ltp, openPrice, changeData = {}) {
-        console.log(`📊 Direct update: ${symbol} = ${ltp}`);
+        console.log(`📊 Direct update: ${symbol} = ${ltp} (ch: ${changeData.ch || changeData.change}, chp: ${changeData.chp})`);
         
         // Update spot price display for index symbols
         if (symbol === this.currentSymbol || symbol.includes('NIFTY') || symbol.includes('MIDCP') || symbol.includes('BANK')) {
