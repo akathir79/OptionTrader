@@ -288,10 +288,31 @@ class BrokerService:
         return False
     
     def _refresh_fyers_token(self, settings: BrokerSettings) -> bool:
-        """Refresh Fyers access token"""
-        # Fyers tokens are typically regenerated daily, not refreshed
-        # This would need to be implemented based on Fyers refresh flow
-        return False
+        """Refresh Fyers access token using Fyers API v3 refresh flow"""
+        try:
+            # Import the refresh function from broker_settings
+            from APP_Routes.broker_settings import _fyers_refresh
+            
+            # Call the working refresh function
+            new_access_token = _fyers_refresh(settings)
+            
+            # Update the database with the new token
+            settings.access_token = new_access_token
+            settings.access_token_created_at = datetime.utcnow()
+            
+            # Commit changes to database
+            from app import db
+            db.session.commit()
+            
+            # Clear cached client to ensure new token is used
+            self.clear_client_cache(BrokerType.FYERS)
+            
+            logger.info(f"Successfully refreshed Fyers access token for {settings.broker_user_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to refresh Fyers token: {str(e)}")
+            return False
     
     def _refresh_zerodha_token(self, settings: BrokerSettings) -> bool:
         """Refresh Zerodha access token"""
