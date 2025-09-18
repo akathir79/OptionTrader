@@ -254,7 +254,7 @@ class WebSocketHandler {
                         // Update display for each symbol received
                         Object.entries(result.data).forEach(([symbol, data]) => {
                             if (data.ltp) {
-                                this.updateMarketDisplayDirect(symbol, data.ltp, data.open_price);
+                                this.updateMarketDisplayDirect(symbol, data.ltp, data.open_price, data);
                             }
                         });
                     }
@@ -265,7 +265,7 @@ class WebSocketHandler {
         }, 1000); // Check every second
     }
     
-    updateMarketDisplayDirect(symbol, ltp, openPrice) {
+    updateMarketDisplayDirect(symbol, ltp, openPrice, changeData = {}) {
         console.log(`📊 Direct update: ${symbol} = ${ltp}`);
         
         // Update spot price display for index symbols
@@ -276,8 +276,55 @@ class WebSocketHandler {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
                 });
-                spotPriceEl.style.color = '#28a745';
+                
+                // Color based on change
+                const change = changeData.ch || 0;
+                if (change > 0) {
+                    spotPriceEl.style.color = '#28a745';  // Green for up
+                } else if (change < 0) {
+                    spotPriceEl.style.color = '#dc3545';  // Red for down
+                } else {
+                    spotPriceEl.style.color = '#6c757d';  // Gray for no change
+                }
                 spotPriceEl.style.fontWeight = 'bold';
+            }
+            
+            // Update spot price change
+            if (changeData.ch !== undefined && changeData.chp !== undefined) {
+                const spotChangeElements = document.querySelectorAll('.spot-change, #spotChange');
+                spotChangeElements.forEach(el => {
+                    const changeValue = parseFloat(changeData.ch);
+                    const changePercent = parseFloat(changeData.chp);
+                    const sign = changeValue >= 0 ? '+' : '';
+                    el.textContent = `${sign}${changeValue.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)`;
+                    
+                    if (changeValue > 0) {
+                        el.style.color = '#28a745';  // Green for up
+                    } else if (changeValue < 0) {
+                        el.style.color = '#dc3545';  // Red for down
+                    } else {
+                        el.style.color = '#6c757d';  // Gray for no change
+                    }
+                });
+            }
+            
+            // Update day open change (calculate from spot vs open)
+            if (openPrice && openPrice > 0) {
+                const dayOpenChangeElements = document.querySelectorAll('.day-open-change, #dayOpenChange');
+                dayOpenChangeElements.forEach(el => {
+                    const openChange = parseFloat(ltp) - parseFloat(openPrice);
+                    const openChangePercent = (openChange / parseFloat(openPrice)) * 100;
+                    const sign = openChange >= 0 ? '+' : '';
+                    el.textContent = `${sign}${openChange.toFixed(2)} (${sign}${openChangePercent.toFixed(2)}%)`;
+                    
+                    if (openChange > 0) {
+                        el.style.color = '#28a745';  // Green for up
+                    } else if (openChange < 0) {
+                        el.style.color = '#dc3545';  // Red for down
+                    } else {
+                        el.style.color = '#6c757d';  // Gray for no change
+                    }
+                });
             }
             
             // Update Day Open
@@ -288,7 +335,7 @@ class WebSocketHandler {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
                     });
-                    el.style.color = '#28a745';
+                    el.style.color = '#007bff';  // Blue for day open
                 });
             }
             
@@ -300,9 +347,20 @@ class WebSocketHandler {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
                 });
-                el.style.color = '#28a745';
+                el.style.color = '#17a2b8';  // Teal for futures
                 el.style.fontWeight = 'bold';
             });
+            
+            // Update futures change
+            if (changeData.ch !== undefined) {
+                const futureChange = (futurePrice - parseFloat(ltp));
+                const futureChangePercent = ((futureChange / parseFloat(ltp)) * 100);
+                const futureChangeEl = document.getElementById('futuresChange');
+                if (futureChangeEl) {
+                    futureChangeEl.textContent = `+${futureChange.toFixed(2)} (+${futureChangePercent.toFixed(2)}%)`;
+                    futureChangeEl.style.color = '#28a745';  // Green for premium
+                }
+            }
         }
         
         // Update VIX display
@@ -310,9 +368,37 @@ class WebSocketHandler {
             const vixElements = document.querySelectorAll('.vix-display, .vix-value, #vixValue');
             vixElements.forEach(el => {
                 el.textContent = parseFloat(ltp).toFixed(2);
-                el.style.color = '#28a745';
+                
+                // Color based on change (VIX is inverse - high VIX is bad/red)
+                const change = changeData.ch || 0;
+                if (change > 0) {
+                    el.style.color = '#dc3545';  // Red for VIX up (bad)
+                } else if (change < 0) {
+                    el.style.color = '#28a745';  // Green for VIX down (good)
+                } else {
+                    el.style.color = '#6c757d';  // Gray for no change
+                }
                 el.style.fontWeight = 'bold';
             });
+            
+            // Update VIX change
+            if (changeData.ch !== undefined && changeData.chp !== undefined) {
+                const vixChangeEl = document.getElementById('vixChange');
+                if (vixChangeEl) {
+                    const changeValue = parseFloat(changeData.ch);
+                    const changePercent = parseFloat(changeData.chp);
+                    const sign = changeValue >= 0 ? '+' : '';
+                    vixChangeEl.textContent = `${sign}${changeValue.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)`;
+                    
+                    if (changeValue > 0) {
+                        vixChangeEl.style.color = '#dc3545';  // Red for VIX up
+                    } else if (changeValue < 0) {
+                        vixChangeEl.style.color = '#28a745';  // Green for VIX down
+                    } else {
+                        vixChangeEl.style.color = '#6c757d';  // Gray for no change
+                    }
+                }
+            }
         }
     }
     
