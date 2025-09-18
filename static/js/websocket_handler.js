@@ -310,7 +310,7 @@ class WebSocketHandler {
             
             // Update day open change (calculate from spot vs open)
             if (openPrice && openPrice > 0) {
-                const dayOpenChangeElements = document.querySelectorAll('.day-open-change, #dayOpenChange');
+                const dayOpenChangeElements = document.querySelectorAll('.day-open-change, .gap-analysis');
                 dayOpenChangeElements.forEach(el => {
                     const openChange = parseFloat(ltp) - parseFloat(openPrice);
                     const openChangePercent = (openChange / parseFloat(openPrice)) * 100;
