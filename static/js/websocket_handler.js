@@ -294,22 +294,24 @@ class WebSocketHandler {
             
             // Update Future (estimate 0.2% premium)
             const futurePrice = parseFloat(ltp) * 1.002;
-            const futureElements = document.querySelectorAll('.future-value, #futurePrice');
+            const futureElements = document.querySelectorAll('.future-value, #futuresPrice');
             futureElements.forEach(el => {
                 el.textContent = futurePrice.toLocaleString('en-IN', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
                 });
                 el.style.color = '#28a745';
+                el.style.fontWeight = 'bold';
             });
         }
         
         // Update VIX display
         if (symbol === 'NSE:INDIAVIX-INDEX') {
-            const vixElements = document.querySelectorAll('.vix-display, .vix-value, #vixPrice');
+            const vixElements = document.querySelectorAll('.vix-display, .vix-value, #vixValue');
             vixElements.forEach(el => {
                 el.textContent = parseFloat(ltp).toFixed(2);
                 el.style.color = '#28a745';
+                el.style.fontWeight = 'bold';
             });
         }
     }
