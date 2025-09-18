@@ -251,12 +251,13 @@ class WebSocketHandler {
         
         this.pollingInterval = setInterval(async () => {
             try {
-                const response = await fetch('/live_market_data');
+                const response = await fetch('/websocket/live_market_data');
                 if (response.ok) {
                     const result = await response.json();
                     if (result.success && result.data) {
                         // Process each symbol's data
                         Object.entries(result.data).forEach(([symbol, data]) => {
+                            console.log(`📊 POLLING RECEIVED: ${symbol} = ${data.ltp}`);
                             this.handleLiveMarketData({
                                 symbol: symbol,
                                 ltp: data.ltp,
@@ -302,6 +303,13 @@ class WebSocketHandler {
                 this.currentSymbol = symbol;
                 console.log(`🔧 Set currentSymbol to: ${symbol}`);
             }
+        }
+        
+        // FORCE DISPLAY FOR NIFTY 50 - Always show NIFTY data when received
+        if (symbol === 'NSE:NIFTY50-INDEX' && ltp) {
+            console.log(`🚀 FORCING NIFTY DISPLAY: ${symbol} = ${ltp}`);
+            this.updateSpotPriceDisplay(ltp, data.open_price);
+            this.updateMarketDataCarousel(symbol, data);
         }
         
         // Update VIX if received
