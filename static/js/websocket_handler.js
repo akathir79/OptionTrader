@@ -233,9 +233,60 @@ class WebSocketHandler {
     }
     
     startLiveDataStream() {
-        // Direct WebSocket data flow - no polling needed
-        console.log('🎯 Starting direct WebSocket data stream');
+        // Start direct data polling to get backend WebSocket data
+        console.log('🎯 Starting live data stream');
+        this.startDirectDataPolling();
         this.isConnected = true;
+    }
+    
+    startDirectDataPolling() {
+        // Simple polling to get backend WebSocket data
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+        }
+        
+        this.pollingInterval = setInterval(async () => {
+            try {
+                const response = await fetch('/live_market_data');
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.data) {
+                        // Update display for each symbol received
+                        Object.entries(result.data).forEach(([symbol, data]) => {
+                            if (data.ltp) {
+                                this.updateMarketDisplayDirect(symbol, data.ltp, data.open_price);
+                            }
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Live data fetch error:', error);
+            }
+        }, 1000); // Check every second
+    }
+    
+    updateMarketDisplayDirect(symbol, ltp, openPrice) {
+        console.log(`📊 Direct update: ${symbol} = ${ltp}`);
+        
+        // Update spot price display
+        const spotPriceEl = document.getElementById('spotPrice');
+        if (spotPriceEl && (symbol === this.currentSymbol || symbol.includes('NIFTY') || symbol.includes('MIDCP'))) {
+            spotPriceEl.textContent = parseFloat(ltp).toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            spotPriceEl.style.color = '#28a745';
+            spotPriceEl.style.fontWeight = 'bold';
+        }
+        
+        // Update VIX display
+        if (symbol === 'NSE:INDIAVIX-INDEX') {
+            const vixElements = document.querySelectorAll('.vix-display, .vix-value');
+            vixElements.forEach(el => {
+                el.textContent = parseFloat(ltp).toFixed(2);
+                el.style.color = '#28a745';
+            });
+        }
     }
     
     handleLiveMarketData(data) {
