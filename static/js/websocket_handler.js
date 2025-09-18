@@ -277,12 +277,12 @@ class WebSocketHandler {
                     maximumFractionDigits: 2
                 });
                 
-                // Color based on change (map API fields) - CRISP BOLD COLORS
+                // Color based on change (map API fields)
                 const change = changeData.ch || changeData.change || 0;
                 if (change > 0) {
-                    spotPriceEl.style.color = '#00C851';  // Crisp green for up
+                    spotPriceEl.style.color = '#28a745';  // Green for up
                 } else if (change < 0) {
-                    spotPriceEl.style.color = '#FF4444';  // Crisp red for down
+                    spotPriceEl.style.color = '#dc3545';  // Red for down
                 } else {
                     spotPriceEl.style.color = '#6c757d';  // Gray for no change
                 }
@@ -297,8 +297,7 @@ class WebSocketHandler {
                 const sign = changeValue >= 0 ? '+' : '';
                 
                 spotChangeEl.textContent = `${sign}${changeValue.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)`;
-                spotChangeEl.style.color = changeValue > 0 ? '#00C851' : changeValue < 0 ? '#FF4444' : '#6c757d';
-                spotChangeEl.style.fontWeight = 'bold';
+                spotChangeEl.style.color = changeValue > 0 ? '#28a745' : changeValue < 0 ? '#dc3545' : '#6c757d';
             }
             
             // Update day open price and gap analysis
@@ -317,8 +316,7 @@ class WebSocketHandler {
                     const sign = openChange >= 0 ? '+' : '';
                     
                     gapEl.textContent = `${sign}${openChange.toFixed(2)} (${sign}${openChangePercent.toFixed(2)}%)`;
-                    gapEl.style.color = openChange > 0 ? '#00C851' : openChange < 0 ? '#FF4444' : '#6c757d';
-                    gapEl.style.fontWeight = 'bold';
+                    gapEl.style.color = openChange > 0 ? '#28a745' : openChange < 0 ? '#dc3545' : '#6c757d';
                 }
             }
             
@@ -364,12 +362,12 @@ class WebSocketHandler {
             vixElements.forEach(el => {
                 el.textContent = parseFloat(ltp).toFixed(2);
                 
-                // Color based on change (VIX is inverse - high VIX is bad/red) - CRISP BOLD COLORS
+                // Color based on change (VIX is inverse - high VIX is bad/red)
                 const change = changeData.ch || changeData.change || 0;
                 if (change > 0) {
-                    el.style.color = '#FF4444';  // Crisp red for VIX up (bad)
+                    el.style.color = '#dc3545';  // Red for VIX up (bad)
                 } else if (change < 0) {
-                    el.style.color = '#00C851';  // Crisp green for VIX down (good)
+                    el.style.color = '#28a745';  // Green for VIX down (good)
                 } else {
                     el.style.color = '#6c757d';  // Gray for no change
                 }
@@ -384,8 +382,7 @@ class WebSocketHandler {
                 const sign = changeValue >= 0 ? '+' : '';
                 
                 vixChangeEl.textContent = `${sign}${changeValue.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)`;
-                vixChangeEl.style.color = changeValue > 0 ? '#FF4444' : changeValue < 0 ? '#00C851' : '#6c757d';
-                vixChangeEl.style.fontWeight = 'bold';
+                vixChangeEl.style.color = changeValue > 0 ? '#dc3545' : changeValue < 0 ? '#28a745' : '#6c757d';
             }
         }
     }
