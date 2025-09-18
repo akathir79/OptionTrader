@@ -1019,3 +1019,19 @@ button#marketDataNextBtn {
 .atm-row {
   animation: atm-highlight 300ms ease-out;
 }
+
+/* ===== ITM CALL AND PUT HIGHLIGHTING ===== */
+/* Light yellow highlighting for In-The-Money options covering all columns */
+.itm-call-row {
+  background: linear-gradient(90deg, rgba(255, 248, 220, 0.7) 0%, rgba(255, 250, 205, 0.8) 50%, rgba(255, 248, 220, 0.7) 100%) !important;
+}
+
+.itm-put-row {
+  background: linear-gradient(90deg, rgba(255, 248, 220, 0.7) 0%, rgba(255, 250, 205, 0.8) 50%, rgba(255, 248, 220, 0.7) 100%) !important;
+}
+
+/* Ensure ITM highlighting covers all table cells */
+.itm-call-row td,
+.itm-put-row td {
+  background: inherit !important;
+}
