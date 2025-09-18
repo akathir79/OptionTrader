@@ -233,53 +233,9 @@ class WebSocketHandler {
     }
     
     startLiveDataStream() {
-        // Use AJAX polling for live market data streaming (more reliable than SSE)
-        if (this.pollingInterval) {
-            console.log('🎯 Polling already active');
-            return;
-        }
-        
-        console.log('🎯 Starting market data polling for live updates');
-        this.startMarketDataPolling();
-    }
-    
-    startMarketDataPolling() {
-        // Use reliable AJAX polling instead of problematic SSE
-        if (this.pollingInterval) {
-            clearInterval(this.pollingInterval);
-        }
-        
-        this.pollingInterval = setInterval(async () => {
-            try {
-                const response = await fetch('/websocket/live_market_data');
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success && result.data) {
-                        // Process each symbol's data
-                        Object.entries(result.data).forEach(([symbol, data]) => {
-                            console.log(`📊 POLLING RECEIVED: ${symbol} = ${data.ltp}`);
-                            this.handleLiveMarketData({
-                                symbol: symbol,
-                                ltp: data.ltp,
-                                open_price: data.open_price,
-                                change: data.change,
-                                prev_close_price: data.prev_close_price,
-                                ch: data.change,
-                                chp: ((data.change / data.prev_close_price) * 100).toFixed(2),
-                                timestamp: data.timestamp
-                            });
-                        });
-                        console.log(`📊 Polled data for ${Object.keys(result.data).length} symbols`);
-                        this.isConnected = true;
-                    }
-                }
-            } catch (error) {
-                console.error('🚨 Market data polling error:', error);
-                this.isConnected = false;
-            }
-        }, 2000); // Poll every 2 seconds
-        
-        console.log('✅ Market data polling started (2s interval)');
+        // Direct WebSocket data flow - no polling needed
+        console.log('🎯 Starting direct WebSocket data stream');
+        this.isConnected = true;
     }
     
     handleLiveMarketData(data) {
@@ -310,6 +266,18 @@ class WebSocketHandler {
             console.log(`🚀 FORCING NIFTY DISPLAY: ${symbol} = ${ltp}`);
             this.updateSpotPriceDisplay(ltp, data.open_price);
             this.updateMarketDataCarousel(symbol, data);
+        }
+
+        // Manual data injection for testing - show the backend data directly
+        if (symbol === 'NSE:NIFTY50-INDEX') {
+            console.log(`🎯 NIFTY DATA ARRIVED: ${symbol} = ${ltp}`);
+            // Force update the display elements
+            const spotPriceEl = document.getElementById('spotPrice');
+            if (spotPriceEl) {
+                spotPriceEl.textContent = ltp.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                spotPriceEl.style.color = '#28a745';  // Green to show it's updating
+                spotPriceEl.style.fontWeight = 'bold';
+            }
         }
         
         // Update VIX if received
