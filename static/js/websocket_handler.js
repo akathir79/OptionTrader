@@ -268,20 +268,45 @@ class WebSocketHandler {
     updateMarketDisplayDirect(symbol, ltp, openPrice) {
         console.log(`📊 Direct update: ${symbol} = ${ltp}`);
         
-        // Update spot price display
-        const spotPriceEl = document.getElementById('spotPrice');
-        if (spotPriceEl && (symbol === this.currentSymbol || symbol.includes('NIFTY') || symbol.includes('MIDCP'))) {
-            spotPriceEl.textContent = parseFloat(ltp).toLocaleString('en-IN', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
+        // Update spot price display for index symbols
+        if (symbol === this.currentSymbol || symbol.includes('NIFTY') || symbol.includes('MIDCP') || symbol.includes('BANK')) {
+            const spotPriceEl = document.getElementById('spotPrice');
+            if (spotPriceEl) {
+                spotPriceEl.textContent = parseFloat(ltp).toLocaleString('en-IN', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+                spotPriceEl.style.color = '#28a745';
+                spotPriceEl.style.fontWeight = 'bold';
+            }
+            
+            // Update Day Open
+            if (openPrice && openPrice > 0) {
+                const dayOpenElements = document.querySelectorAll('.day-open-value, #dayOpen');
+                dayOpenElements.forEach(el => {
+                    el.textContent = parseFloat(openPrice).toLocaleString('en-IN', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    el.style.color = '#28a745';
+                });
+            }
+            
+            // Update Future (estimate 0.2% premium)
+            const futurePrice = parseFloat(ltp) * 1.002;
+            const futureElements = document.querySelectorAll('.future-value, #futurePrice');
+            futureElements.forEach(el => {
+                el.textContent = futurePrice.toLocaleString('en-IN', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+                el.style.color = '#28a745';
             });
-            spotPriceEl.style.color = '#28a745';
-            spotPriceEl.style.fontWeight = 'bold';
         }
         
         // Update VIX display
         if (symbol === 'NSE:INDIAVIX-INDEX') {
-            const vixElements = document.querySelectorAll('.vix-display, .vix-value');
+            const vixElements = document.querySelectorAll('.vix-display, .vix-value, #vixPrice');
             vixElements.forEach(el => {
                 el.textContent = parseFloat(ltp).toFixed(2);
                 el.style.color = '#28a745';
