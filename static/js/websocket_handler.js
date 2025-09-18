@@ -277,8 +277,8 @@ class WebSocketHandler {
                     maximumFractionDigits: 2
                 });
                 
-                // Color based on change
-                const change = changeData.ch || 0;
+                // Color based on change (map API fields)
+                const change = changeData.ch || changeData.change || 0;
                 if (change > 0) {
                     spotPriceEl.style.color = '#28a745';  // Green for up
                 } else if (change < 0) {
@@ -290,11 +290,11 @@ class WebSocketHandler {
             }
             
             // Update spot price change
-            if (changeData.ch !== undefined && changeData.chp !== undefined) {
+            if ((changeData.ch !== undefined || changeData.change !== undefined)) {
                 const spotChangeElements = document.querySelectorAll('.spot-change, #spotChange');
                 spotChangeElements.forEach(el => {
-                    const changeValue = parseFloat(changeData.ch);
-                    const changePercent = parseFloat(changeData.chp);
+                    const changeValue = parseFloat(changeData.ch || changeData.change || 0);
+                    const changePercent = parseFloat(changeData.chp || ((changeValue / (changeData.prev_close_price || 1)) * 100));
                     const sign = changeValue >= 0 ? '+' : '';
                     el.textContent = `${sign}${changeValue.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)`;
                     
@@ -352,7 +352,7 @@ class WebSocketHandler {
             });
             
             // Update futures change
-            if (changeData.ch !== undefined) {
+            if ((changeData.ch !== undefined || changeData.change !== undefined)) {
                 const futureChange = (futurePrice - parseFloat(ltp));
                 const futureChangePercent = ((futureChange / parseFloat(ltp)) * 100);
                 const futureChangeEl = document.getElementById('futuresChange');
@@ -370,7 +370,7 @@ class WebSocketHandler {
                 el.textContent = parseFloat(ltp).toFixed(2);
                 
                 // Color based on change (VIX is inverse - high VIX is bad/red)
-                const change = changeData.ch || 0;
+                const change = changeData.ch || changeData.change || 0;
                 if (change > 0) {
                     el.style.color = '#dc3545';  // Red for VIX up (bad)
                 } else if (change < 0) {
@@ -382,11 +382,11 @@ class WebSocketHandler {
             });
             
             // Update VIX change
-            if (changeData.ch !== undefined && changeData.chp !== undefined) {
+            if ((changeData.ch !== undefined || changeData.change !== undefined)) {
                 const vixChangeEl = document.getElementById('vixChange');
                 if (vixChangeEl) {
-                    const changeValue = parseFloat(changeData.ch);
-                    const changePercent = parseFloat(changeData.chp);
+                    const changeValue = parseFloat(changeData.ch || changeData.change || 0);
+                    const changePercent = parseFloat(changeData.chp || ((changeValue / (changeData.prev_close_price || 1)) * 100));
                     const sign = changeValue >= 0 ? '+' : '';
                     vixChangeEl.textContent = `${sign}${changeValue.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)`;
                     
