@@ -969,23 +969,21 @@ class WebSocketHandler {
     }
     
     highlightATMStrike(atmStrike) {
-        // ATM highlighting disabled for clean professional appearance
-        return;
+        if (!this.optionChainTable) return;
         
-        // if (!this.optionChainTable) return;
-        // 
-        // // Remove existing ATM highlights
-        // const existingATM = this.optionChainTable.querySelectorAll('.atm-strike');
-        // existingATM.forEach(el => el.classList.remove('atm-strike'));
-        // 
-        // // Add ATM highlight to current strike
-        // const strikeRows = this.optionChainTable.querySelectorAll('tr[data-strike]');
-        // strikeRows.forEach(row => {
-        //     const strike = parseFloat(row.dataset.strike);
-        //     if (strike === atmStrike) {
-        //         row.classList.add('atm-strike');
-        //     }
-        // });
+        // Remove existing ATM highlights with smooth transition
+        const existingATM = this.optionChainTable.querySelectorAll('.atm-row');
+        existingATM.forEach(el => el.classList.remove('atm-row'));
+        
+        // Add ATM highlight to current strike
+        const strikeRows = this.optionChainTable.querySelectorAll('tr[data-strike]');
+        strikeRows.forEach(row => {
+            const strike = parseFloat(row.dataset.strike);
+            if (Math.abs(strike - atmStrike) < 0.01) {
+                row.classList.add('atm-row');
+                console.log(`✨ ATM row highlighted for strike: ${strike}, ATM: ${atmStrike}`);
+            }
+        });
     }
     
     async startOptionChainUpdates() {
