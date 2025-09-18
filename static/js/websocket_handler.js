@@ -642,18 +642,18 @@ class WebSocketHandler {
                 const ceOIChangePercent = this.calculateOIPercentageFromAPI(strike.ce_oich, prevCeOI);
                 const peOIChangePercent = this.calculateOIPercentageFromAPI(strike.pe_oich, prevPeOI);
                 
-                // Update existing VOL/OI/Change in OI columns (pass raw numbers, formatting happens in update functions)
-                this.updateCellValue(matchingRow, '.ce-volume', this.formatLargeNumbers(strike.ce_volume));
-                this.updateCellValue(matchingRow, '.ce-oi', this.formatLargeNumbers(strike.ce_oi));
+                // Update existing VOL/OI/Change in OI columns
+                this.updateCellValue(matchingRow, '.ce-volume', strike.ce_volume);
+                this.updateCellValue(matchingRow, '.ce-oi', strike.ce_oi);
                 this.updateCellValueWithColor(matchingRow, '.ce-oi-change', strike.ce_oich);
-                this.updateCellValue(matchingRow, '.pe-volume', this.formatLargeNumbers(strike.pe_volume));
-                this.updateCellValue(matchingRow, '.pe-oi', this.formatLargeNumbers(strike.pe_oi));
+                this.updateCellValue(matchingRow, '.pe-volume', strike.pe_volume);
+                this.updateCellValue(matchingRow, '.pe-oi', strike.pe_oi);
                 this.updateCellValueWithColor(matchingRow, '.pe-oi-change', strike.pe_oich);
                 
                 // Update new Prev OI and % Change OI columns with proper formatting
-                this.updateCellValue(matchingRow, '.ce-prev-oi', this.formatLargeNumbers(prevCeOI));
+                this.updateCellValue(matchingRow, '.ce-prev-oi', prevCeOI);
                 this.updateOIPercentageCell(matchingRow, '.ce-oichp', ceOIChangePercent);
-                this.updateCellValue(matchingRow, '.pe-prev-oi', this.formatLargeNumbers(prevPeOI));
+                this.updateCellValue(matchingRow, '.pe-prev-oi', prevPeOI);
                 this.updateOIPercentageCell(matchingRow, '.pe-oichp', peOIChangePercent);
             }
         });
@@ -703,18 +703,15 @@ class WebSocketHandler {
     updateCellValueWithColor(row, selector, value) {
         const cell = row.querySelector(selector);
         if (cell) {
-            const numValue = parseFloat(value) || 0;
+            cell.textContent = value || 0;
             
-            // Apply color based on numeric value (positive = green, negative = red)
+            // Apply color based on value (positive = green, negative = red)
             cell.classList.remove('text-success', 'text-danger');
-            if (numValue >= 0) {
+            if (value >= 0) {
                 cell.classList.add('text-success');
             } else {
                 cell.classList.add('text-danger');
             }
-            
-            // Set formatted text content
-            cell.textContent = this.formatLargeNumbers(numValue);
             
             cell.classList.add('cell-updated');
             setTimeout(() => {
@@ -937,13 +934,13 @@ class WebSocketHandler {
                     const atmStrike = this.findATMStrike();
                     
                     if (Math.abs(strike - atmStrike) < 0.01) {
-                        // This is the ATM strike - highlight in orange
+                        // This is the ATM strike - highlight in red
                         row.classList.add('atm-row');
                     } else if (this.currentSpotPrice > strike) {
-                        // Call ITM when spot > strike - light yellow highlighting
+                        // Call ITM when spot > strike
                         row.classList.add('itm-call-row');
                     } else if (this.currentSpotPrice < strike) {
-                        // Put ITM when spot < strike - light yellow highlighting
+                        // Put ITM when spot < strike
                         row.classList.add('itm-put-row');
                     }
                 }
@@ -1215,11 +1212,11 @@ class WebSocketHandler {
             `<td class="text-center ce-bid">${this.formatPrice(strike.ce_bid)}</td>`,
             `<td class="text-center ce-ask">${this.formatPrice(strike.ce_ask)}</td>`,
             `<td class="text-center ce-ask-qty">${strike.ce_ask_qty || 0}</td>`,
-            `<td class="text-center ce-oi-change ${strike.ce_oich >= 0 ? 'text-success' : 'text-danger'}">${this.formatLargeNumbers(strike.ce_oich || 0)}</td>`,
-            `<td class="text-center ce-oi">${this.formatLargeNumbers(strike.ce_oi || 0)}</td>`,
-            `<td class="text-center ce-prev-oi">${this.formatLargeNumbers(strike.ce_prev_oi || 0)}</td>`,
+            `<td class="text-center ce-oi-change ${strike.ce_oich >= 0 ? 'text-success' : 'text-danger'}">${strike.ce_oich || 0}</td>`,
+            `<td class="text-center ce-oi">${strike.ce_oi || 0}</td>`,
+            `<td class="text-center ce-prev-oi">${strike.ce_prev_oi || 0}</td>`,
             `<td class="text-center ce-oichp ${(strike.ce_oichp >= 0 ? 'text-success' : 'text-danger')}">${strike.ce_oichp || 0}</td>`,
-            `<td class="text-center ce-volume">${this.formatLargeNumbers(strike.ce_volume || 0)}</td>`,
+            `<td class="text-center ce-volume">${strike.ce_volume || 0}</td>`,
             `<td class="microchart-cell" id="ce-chart-${strike.strike}"></td>`,
             `<td class="text-center ce-ltp call-ltp ${isCallITM ? 'itm' : 'otm'}" data-symbol="${strike.ce_symbol}">${this.formatPrice(strike.ce_ltp)}</td>`,
             `<td class="text-center ce-delta">0</td>`,
@@ -1229,11 +1226,11 @@ class WebSocketHandler {
             `<td class="text-center pe-delta">0</td>`,
             `<td class="text-center pe-ltp put-ltp ${isPutITM ? 'itm' : 'otm'}" data-symbol="${strike.pe_symbol}">${this.formatPrice(strike.pe_ltp)}</td>`,
             `<td class="microchart-cell" id="pe-chart-${strike.strike}"></td>`,
-            `<td class="text-center pe-volume">${this.formatLargeNumbers(strike.pe_volume || 0)}</td>`,
-            `<td class="text-center pe-oi">${this.formatLargeNumbers(strike.pe_oi || 0)}</td>`,
-            `<td class="text-center pe-prev-oi">${this.formatLargeNumbers(strike.pe_prev_oi || 0)}</td>`,
+            `<td class="text-center pe-volume">${strike.pe_volume || 0}</td>`,
+            `<td class="text-center pe-oi">${strike.pe_oi || 0}</td>`,
+            `<td class="text-center pe-prev-oi">${strike.pe_prev_oi || 0}</td>`,
             `<td class="text-center pe-oichp ${(strike.pe_oichp >= 0 ? 'text-success' : 'text-danger')}">${strike.pe_oichp || 0}</td>`,
-            `<td class="text-center pe-oi-change ${strike.pe_oich >= 0 ? 'text-success' : 'text-danger'}">${this.formatLargeNumbers(strike.pe_oich || 0)}</td>`,
+            `<td class="text-center pe-oi-change ${strike.pe_oich >= 0 ? 'text-success' : 'text-danger'}">${strike.pe_oich || 0}</td>`,
             `<td class="text-center pe-ask-qty">${strike.pe_ask_qty || 0}</td>`,
             `<td class="text-center pe-ask">${this.formatPrice(strike.pe_ask)}</td>`,
             `<td class="text-center pe-bid">${this.formatPrice(strike.pe_bid)}</td>`,
@@ -1317,29 +1314,6 @@ class WebSocketHandler {
             return numPrice.toLocaleString('en-IN');
         }
         return numPrice.toFixed(2);
-    }
-    
-    formatLargeNumbers(value) {
-        // Convert large numbers to K (thousands) and L (lakhs) format
-        // For Indian market: 1 Lakh = 100,000, 1 Crore = 10,000,000
-        if (!value || value === 0) return '0';
-        
-        const num = parseFloat(value);
-        if (isNaN(num)) return value;
-        
-        const isNegative = num < 0;
-        const absNum = Math.abs(num);
-        const prefix = isNegative ? '-' : '';
-        
-        if (absNum >= 10000000) { // 1 Crore or more
-            return prefix + (absNum / 10000000).toFixed(1) + 'Cr';
-        } else if (absNum >= 100000) { // 1 Lakh or more
-            return prefix + (absNum / 100000).toFixed(1) + 'L';
-        } else if (absNum >= 1000) { // 1 Thousand or more
-            return prefix + (absNum / 1000).toFixed(1) + 'K';
-        } else {
-            return num.toString();
-        }
     }
     
     getTextNodes(element) {
