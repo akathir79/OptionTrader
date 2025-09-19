@@ -987,17 +987,18 @@ button#marketDataNextBtn {
   transition: background-color 0.3s ease-in-out, border-left 0.3s ease-in-out !important;
 }
 
-/* Option Chain Column Background Styling - All columns except Strike Price */
+/* Option Chain Column Background Styling - All columns pure white except Strike Price */
 #optionChainTable tbody tr td:not(:nth-child(22)) {
-  background-color: rgba(248, 249, 250, 0.7) !important;
+  background-color: white !important;
 }
 
-/* Keep Strike Price column with default background */
+/* Strike Price column - Black background with white text */
 #optionChainTable tbody tr td:nth-child(22) {
-  background-color: transparent !important;
+  background-color: black !important;
+  color: white !important;
 }
 
-/* Hover effect for non-strike columns */
+/* Hover effect for white columns */
 #optionChainTable tbody tr:hover td:not(:nth-child(22)) {
-  background-color: rgba(248, 249, 250, 0.9) !important;
+  background-color: #f8f9fa !important;
 }
