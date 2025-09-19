@@ -1007,3 +1007,16 @@ button#marketDataNextBtn {
 #optionChainTable tbody tr:hover td:not(:nth-child(22)) {
   background-color: #f8f9fa !important;
 }
+
+/* LTP Value Change Colors - Green for increase, Red for decrease */
+.value-increased {
+  color: #28a745 !important; /* Green for increased values */
+  font-weight: bold !important;
+  transition: all 0.3s ease-in-out !important;
+}
+
+.value-decreased {
+  color: #dc3545 !important; /* Red for decreased values */
+  font-weight: bold !important;
+  transition: all 0.3s ease-in-out !important;
+}
