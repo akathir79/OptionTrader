@@ -1111,16 +1111,20 @@ class WebSocketHandler {
             const previousValue = parseFloat(previousText) || 0;
             const currentValue = parseFloat(data.ltp) || 0;
             
+            console.log(`📈 CE LTP Update: ${data.symbol} - Previous: ${previousValue}, Current: ${currentValue}`);
+            
             ltpCell.textContent = this.formatPrice(data.ltp);
             
             // Apply color based on LTP change
             ltpCell.classList.remove('value-increased', 'value-decreased');
-            if (currentValue > previousValue) {
+            if (currentValue > previousValue && previousValue > 0) {
                 ltpCell.classList.add('value-increased');
-                setTimeout(() => ltpCell.classList.remove('value-increased'), 1000);
-            } else if (currentValue < previousValue) {
+                console.log(`🟢 CE LTP Increased: ${data.symbol} - ${previousValue} → ${currentValue}`);
+                setTimeout(() => ltpCell.classList.remove('value-increased'), 2000);
+            } else if (currentValue < previousValue && previousValue > 0) {
                 ltpCell.classList.add('value-decreased');
-                setTimeout(() => ltpCell.classList.remove('value-decreased'), 1000);
+                console.log(`🔴 CE LTP Decreased: ${data.symbol} - ${previousValue} → ${currentValue}`);
+                setTimeout(() => ltpCell.classList.remove('value-decreased'), 2000);
             }
         }
     }
@@ -1137,16 +1141,20 @@ class WebSocketHandler {
             const previousValue = parseFloat(previousText) || 0;
             const currentValue = parseFloat(data.ltp) || 0;
             
+            console.log(`📉 PE LTP Update: ${data.symbol} - Previous: ${previousValue}, Current: ${currentValue}`);
+            
             ltpCell.textContent = this.formatPrice(data.ltp);
             
             // Apply color based on LTP change
             ltpCell.classList.remove('value-increased', 'value-decreased');
-            if (currentValue > previousValue) {
+            if (currentValue > previousValue && previousValue > 0) {
                 ltpCell.classList.add('value-increased');
-                setTimeout(() => ltpCell.classList.remove('value-increased'), 1000);
-            } else if (currentValue < previousValue) {
+                console.log(`🟢 PE LTP Increased: ${data.symbol} - ${previousValue} → ${currentValue}`);
+                setTimeout(() => ltpCell.classList.remove('value-increased'), 2000);
+            } else if (currentValue < previousValue && previousValue > 0) {
                 ltpCell.classList.add('value-decreased');
-                setTimeout(() => ltpCell.classList.remove('value-decreased'), 1000);
+                console.log(`🔴 PE LTP Decreased: ${data.symbol} - ${previousValue} → ${currentValue}`);
+                setTimeout(() => ltpCell.classList.remove('value-decreased'), 2000);
             }
         }
     }

@@ -1010,13 +1010,19 @@ button#marketDataNextBtn {
 
 /* LTP Value Change Colors - Green for increase, Red for decrease */
 .value-increased {
-  color: #28a745 !important; /* Green for increased values */
+  color: #00ff00 !important; /* Bright green for increased values */
+  background-color: rgba(0, 255, 0, 0.1) !important; /* Light green background */
   font-weight: bold !important;
+  text-shadow: 0px 0px 3px rgba(0, 255, 0, 0.5) !important;
+  border: 1px solid rgba(0, 255, 0, 0.3) !important;
   transition: all 0.3s ease-in-out !important;
 }
 
 .value-decreased {
-  color: #dc3545 !important; /* Red for decreased values */
+  color: #ff0000 !important; /* Bright red for decreased values */
+  background-color: rgba(255, 0, 0, 0.1) !important; /* Light red background */
   font-weight: bold !important;
+  text-shadow: 0px 0px 3px rgba(255, 0, 0, 0.5) !important;
+  border: 1px solid rgba(255, 0, 0, 0.3) !important;
   transition: all 0.3s ease-in-out !important;
 }
