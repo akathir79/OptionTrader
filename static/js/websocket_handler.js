@@ -26,8 +26,7 @@ class WebSocketHandler {
         this.atmElement = document.getElementById('atmDisplay');
         this.optionChainTable = document.getElementById('optionChainTable');
         
-        // Add event listener for ATM difference toggle
-        this.setupATMDifferenceToggle();
+        // ATM difference toggle will be set up after option chain is loaded
         
         // Listen for symbol/expiry changes
         this.setupEventListeners();
@@ -1068,6 +1067,9 @@ class WebSocketHandler {
         
         // Start timer-based VOL/OI updates
         this.startVolumeOIUpdates();
+        
+        // Set up ATM difference toggle after option chain table is ready
+        this.setupATMDifferenceToggle();
     }
     
     updateLiveTableData(message) {
