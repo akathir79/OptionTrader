@@ -969,17 +969,22 @@ button#marketDataNextBtn {
   color: inherit !important;
 }
 
-/* ATM Strike Row Highlighting */
-.atm-row {
-  background-color: rgba(255, 182, 193, 0.15) !important; /* Slight pink background */
-  border-left: 3px solid rgba(255, 182, 193, 0.6) !important; /* Pink left border */
-  position: relative;
-  transition: all 0.3s ease-in-out !important; /* Smooth transitions */
+/* ATM Strike Row Highlighting - Override white backgrounds for ATM row */
+.atm-row td:not(:nth-child(22)) {
+  background-color: rgba(255, 182, 193, 0.15) !important; /* Slight pink background for all columns except strike */
 }
 
-.atm-row:hover {
+.atm-row td:nth-child(22) {
+  background-color: black !important; /* Keep strike column black */
+  color: white !important;
+}
+
+.atm-row:hover td:not(:nth-child(22)) {
   background-color: rgba(255, 182, 193, 0.25) !important; /* Slightly darker pink on hover */
-  transform: translateX(2px) !important; /* Subtle hover animation */
+}
+
+.atm-row:hover td:nth-child(22) {
+  background-color: black !important; /* Keep strike column black on hover */
 }
 
 /* Add smooth transitions to all option chain rows */
