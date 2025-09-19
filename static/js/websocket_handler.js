@@ -1361,11 +1361,14 @@ class WebSocketHandler {
         // Add event listener for the ATM difference checkbox
         const atmToggle = document.getElementById('atmDifferenceToggle');
         if (atmToggle) {
+            console.log('✅ ATM difference toggle found and event listener attached');
             atmToggle.addEventListener('change', () => {
                 console.log('📊 ATM difference toggle changed:', atmToggle.checked);
                 // Re-render all strike prices with new display format
                 this.updateAllStrikePrices();
             });
+        } else {
+            console.warn('⚠️ ATM difference toggle not found in DOM');
         }
     }
     
