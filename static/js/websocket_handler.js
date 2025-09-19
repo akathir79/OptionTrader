@@ -26,6 +26,9 @@ class WebSocketHandler {
         this.atmElement = document.getElementById('atmDisplay');
         this.optionChainTable = document.getElementById('optionChainTable');
         
+        // Add event listener for ATM difference toggle
+        this.setupATMDifferenceToggle();
+        
         // Listen for symbol/expiry changes
         this.setupEventListeners();
         
@@ -966,6 +969,9 @@ class WebSocketHandler {
         
         // Update ATM highlighting in option chain table
         this.highlightATMStrike(atmStrike);
+        
+        // Update all strike price displays with ATM differences
+        this.updateAllStrikePrices();
     }
     
     highlightATMStrike(atmStrike) {
@@ -1219,7 +1225,7 @@ class WebSocketHandler {
             `<td class="text-center ce-ltp call-ltp ${isCallITM ? 'itm' : 'otm'}" data-symbol="${strike.ce_symbol}">${this.formatPrice(strike.ce_ltp)}</td>`,
             `<td class="text-center ce-delta">0</td>`,
             // Strike
-            `<td class="text-center strike-price font-weight-bold">${strike.strike}</td>`,
+            `<td class="text-center strike-price font-weight-bold" data-strike="${strike.strike}">${this.formatStrikeDisplay(strike.strike)}</td>`,
             // PE Market Data
             `<td class="text-center pe-delta">0</td>`,
             `<td class="text-center pe-ltp put-ltp ${isPutITM ? 'itm' : 'otm'}" data-symbol="${strike.pe_symbol}">${this.formatPrice(strike.pe_ltp)}</td>`,
@@ -1312,6 +1318,55 @@ class WebSocketHandler {
             return numPrice.toLocaleString('en-IN');
         }
         return numPrice.toFixed(2);
+    }
+    
+    formatStrikeDisplay(strikePrice) {
+        const atmDifferenceToggle = document.getElementById('atmDifferenceToggle');
+        
+        // If checkbox not found or not checked, return normal strike
+        if (!atmDifferenceToggle || !atmDifferenceToggle.checked) {
+            return strikePrice;
+        }
+        
+        // Calculate ATM strike (round to nearest 50 for indices, 5 for stocks)
+        let atmStrike;
+        if (this.currentSymbol && (this.currentSymbol.includes('NIFTY') || this.currentSymbol.includes('SENSEX') || this.currentSymbol.includes('BANKNIFTY'))) {
+            atmStrike = this.currentSpotPrice ? Math.round(this.currentSpotPrice / 50) * 50 : strikePrice;
+        } else {
+            atmStrike = this.currentSpotPrice ? Math.round(this.currentSpotPrice / 5) * 5 : strikePrice;
+        }
+        
+        const difference = strikePrice - atmStrike;
+        
+        // If this is the ATM strike (within 0.01), just show the price
+        if (Math.abs(difference) < 0.01) {
+            return strikePrice;
+        }
+        
+        // Show strike with difference
+        const sign = difference > 0 ? '+' : '';
+        return `${strikePrice}<br><small style="color: #666;">(${sign}${difference})</small>`;
+    }
+    
+    updateAllStrikePrices() {
+        // Update all strike price displays when ATM changes
+        const strikeCells = document.querySelectorAll('.strike-price[data-strike]');
+        strikeCells.forEach(cell => {
+            const strikePrice = parseFloat(cell.dataset.strike);
+            cell.innerHTML = this.formatStrikeDisplay(strikePrice);
+        });
+    }
+    
+    setupATMDifferenceToggle() {
+        // Add event listener for the ATM difference checkbox
+        const atmToggle = document.getElementById('atmDifferenceToggle');
+        if (atmToggle) {
+            atmToggle.addEventListener('change', () => {
+                console.log('📊 ATM difference toggle changed:', atmToggle.checked);
+                // Re-render all strike prices with new display format
+                this.updateAllStrikePrices();
+            });
+        }
     }
     
     getTextNodes(element) {
