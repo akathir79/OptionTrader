@@ -986,3 +986,18 @@ button#marketDataNextBtn {
 #optionChainTable tbody tr {
   transition: background-color 0.3s ease-in-out, border-left 0.3s ease-in-out !important;
 }
+
+/* Option Chain Column Background Styling - All columns except Strike Price */
+#optionChainTable tbody tr td:not(:nth-child(22)) {
+  background-color: rgba(248, 249, 250, 0.7) !important;
+}
+
+/* Keep Strike Price column with default background */
+#optionChainTable tbody tr td:nth-child(22) {
+  background-color: transparent !important;
+}
+
+/* Hover effect for non-strike columns */
+#optionChainTable tbody tr:hover td:not(:nth-child(22)) {
+  background-color: rgba(248, 249, 250, 0.9) !important;
+}
