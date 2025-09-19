@@ -1347,7 +1347,7 @@ class WebSocketHandler {
         
         // Show strike with difference
         const sign = difference > 0 ? '+' : '';
-        return `${strikePrice}<br><small style="color: #666;">(${sign}${difference})</small>`;
+        return `${strikePrice}<br><small style="color: #FFD700; font-weight: bold; text-shadow: 0px 1px 2px rgba(0,0,0,0.8);">(${sign}${difference})</small>`;
     }
     
     updateAllStrikePrices() {
