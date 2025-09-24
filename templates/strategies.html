@@ -358,9 +358,11 @@
         console.log('📚 Strategies Library loaded with {{ total_count }} strategies');
     </script>
     
-    <!-- Inline Payoff Charts - Direct Implementation -->
-    <script>
-        console.log('📊 Inline payoff charts script starting...');
+    <!-- Payoff Charts Implementation -->
+    <script type="text/javascript">
+        (function() {
+            'use strict';
+            console.log('Chart script loaded');
         
         function drawSimpleChart(canvas, strategyName) {
             console.log('Drawing chart for:', strategyName);
@@ -465,5 +467,7 @@
         setTimeout(initCharts, 1000);
         
         console.log('📊 Payoff charts script setup complete');
+        
+        })(); // Close the IIFE
     </script>
 {% endblock %}
