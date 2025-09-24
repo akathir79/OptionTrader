@@ -94,6 +94,130 @@ app.config["DEBUG"] = True
 # initialize the app with the extension
 db.init_app(app)
 
+def initialize_database_if_needed():
+    """Check if database has data, if not restore from backup"""
+    import json
+    import os
+    from datetime import datetime
+    from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+    from models import OptionStrategy, BrokerSettings, PaperTradingSettings
+    
+    try:
+        # Check if option strategies exist
+        strategy_count = OptionStrategy.query.count()
+        
+        if strategy_count == 0:
+            print("📂 No strategies found, initializing database...")
+            
+            # Look for backup file
+            backup_files = [f for f in os.listdir('.') if f.startswith('trading_platform_backup_') and f.endswith('.json')]
+            
+            if backup_files:
+                latest_backup = max(backup_files)
+                print(f"📊 Restoring data from: {latest_backup}")
+                
+                try:
+                    with open(latest_backup, 'r', encoding='utf-8') as f:
+                        backup_data = json.load(f)
+                    
+                    # Validate backup structure
+                    if not isinstance(backup_data, dict) or 'tables' not in backup_data:
+                        print("⚠️ Invalid backup file structure - skipping restoration")
+                        return
+                    
+                    tables_data = backup_data['tables']
+                    
+                    # Restore option strategies with proper session management
+                    if 'option_strategies' in tables_data and isinstance(tables_data['option_strategies'], list):
+                        print("📊 Restoring option strategies...")
+                        restored_count = 0
+                        
+                        for strategy_data in tables_data['option_strategies']:
+                            try:
+                                # Clean and validate data
+                                strategy_data = strategy_data.copy()  # Don't modify original
+                                strategy_data.pop('id', None)  # Let database auto-generate
+                                
+                                # Convert datetime strings
+                                if 'created_at' in strategy_data and isinstance(strategy_data['created_at'], str):
+                                    strategy_data['created_at'] = datetime.fromisoformat(strategy_data['created_at'].replace('Z', '+00:00'))
+                                
+                                strategy = OptionStrategy(**strategy_data)
+                                db.session.add(strategy)
+                                restored_count += 1
+                                
+                            except (ValueError, TypeError, KeyError) as e:
+                                print(f"⚠️ Skipping invalid strategy data: {e}")
+                                continue
+                        
+                        # Commit strategies in single transaction
+                        try:
+                            db.session.commit()
+                            print(f"✅ Restored {restored_count} option strategies")
+                        except (IntegrityError, SQLAlchemyError) as e:
+                            print(f"❌ Failed to commit strategies: {e}")
+                            db.session.rollback()
+                    
+                    # Restore paper trading settings with proper session management
+                    if 'paper_trading_settings' in tables_data and isinstance(tables_data['paper_trading_settings'], list):
+                        print("📈 Restoring paper trading settings...")
+                        paper_count = 0
+                        
+                        for setting in tables_data['paper_trading_settings']:
+                            try:
+                                # Clean and validate data
+                                setting = setting.copy()  # Don't modify original
+                                setting.pop('id', None)
+                                
+                                # Convert datetime strings
+                                datetime_fields = ['created_at', 'updated_at']
+                                for field in datetime_fields:
+                                    if field in setting and setting[field] and isinstance(setting[field], str):
+                                        setting[field] = datetime.fromisoformat(setting[field].replace('Z', '+00:00'))
+                                
+                                paper_setting = PaperTradingSettings(**setting)
+                                db.session.add(paper_setting)
+                                paper_count += 1
+                                
+                            except (ValueError, TypeError, KeyError) as e:
+                                print(f"⚠️ Skipping invalid paper trading setting: {e}")
+                                continue
+                        
+                        # Commit paper settings in separate transaction
+                        if paper_count > 0:
+                            try:
+                                db.session.commit()
+                                print(f"✅ Restored {paper_count} paper trading settings")
+                            except (IntegrityError, SQLAlchemyError) as e:
+                                print(f"❌ Failed to commit paper trading settings: {e}")
+                                db.session.rollback()
+                    
+                    print("🚀 Database initialization complete!")
+                    
+                except (json.JSONDecodeError, FileNotFoundError) as e:
+                    print(f"❌ Error reading backup file: {e}")
+                    return
+                except Exception as e:
+                    print(f"❌ Unexpected error during restoration: {e}")
+                    # Ensure session is clean
+                    try:
+                        db.session.rollback()
+                    except:
+                        pass
+                    return
+            else:
+                print("📝 No backup file found - database will start empty")
+        else:
+            print(f"✅ Database already has {strategy_count} strategies")
+            
+    except Exception as e:
+        print(f"⚠️ Database initialization error: {e}")
+        # Ensure session is clean
+        try:
+            db.session.rollback()
+        except:
+            pass
+
 with app.app_context():
     # Make sure to import the models here or their tables won't be created
     import models  # noqa: F401
@@ -102,6 +226,10 @@ with app.app_context():
         db.create_all()
         if not is_replit:
             print("✅ Database tables created/verified successfully!")
+        
+        # Auto-initialize database with strategy data if empty
+        initialize_database_if_needed()
+        
     except Exception as e:
         print(f"⚠️ Error creating database tables: {e}")
         if not is_replit:
