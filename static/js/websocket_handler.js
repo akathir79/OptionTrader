@@ -1716,10 +1716,21 @@ class WebSocketHandler {
     }
     
     updatePayoffChartSpotPrice() {
-        // Check if payoff chart exists (global variable from live_trade.html)
-        console.log(`[PAYOFF UPDATE] Checking payoff chart update - payoffChart exists: ${typeof payoffChart !== 'undefined' && payoffChart}, currentSpotPrice: ${this.currentSpotPrice}`);
+        // Check if professional chart exists first, then fallback to legacy chart
+        const hasProfessionalChart = typeof window.professionalChart !== 'undefined' && window.professionalChart;
+        const hasLegacyChart = typeof payoffChart !== 'undefined' && payoffChart;
         
-        if (typeof payoffChart !== 'undefined' && payoffChart && this.currentSpotPrice) {
+        console.log(`[PAYOFF UPDATE] Checking chart availability - Professional: ${hasProfessionalChart}, Legacy: ${hasLegacyChart}, currentSpotPrice: ${this.currentSpotPrice}`);
+        
+        // Use professional chart if available
+        if (hasProfessionalChart && this.currentSpotPrice) {
+            console.log(`[PAYOFF UPDATE] Using professional chart to update spot price to ${this.currentSpotPrice}`);
+            window.professionalChart.updateSpotPrice(this.currentSpotPrice);
+            return;
+        }
+        
+        // Fallback to legacy chart
+        if (hasLegacyChart && this.currentSpotPrice) {
             console.log(`[PAYOFF UPDATE] Updating spot price line from ${payoffChart.xAxis[0].plotLinesAndBands.length > 0 ? 'existing' : 'new'} to ${this.currentSpotPrice}`);
             
             // Remove existing spot price line
@@ -1755,7 +1766,7 @@ class WebSocketHandler {
             
             console.log(`[PAYOFF UPDATE] Successfully updated payoff chart spot price to: ${this.currentSpotPrice}`);
         } else {
-            console.log(`[PAYOFF UPDATE] Cannot update - Missing requirements: payoffChart=${typeof payoffChart !== 'undefined' && payoffChart}, currentSpotPrice=${this.currentSpotPrice}`);
+            console.log(`[PAYOFF UPDATE] Cannot update - No charts available. Professional: ${hasProfessionalChart}, Legacy: ${hasLegacyChart}, currentSpotPrice: ${this.currentSpotPrice}`);
             
             // Try fallback global function
             if (typeof window.forcePayoffChartUpdate === 'function' && this.currentSpotPrice) {
@@ -1767,7 +1778,17 @@ class WebSocketHandler {
     
     updateBreakevenLines() {
         // Calculate and update breakeven lines based on current positions
-        if (typeof payoffChart !== 'undefined' && payoffChart && typeof window.calculateBreakevens === 'function') {
+        const hasProfessionalChart = typeof window.professionalChart !== 'undefined' && window.professionalChart;
+        const hasLegacyChart = typeof payoffChart !== 'undefined' && payoffChart;
+        
+        // Professional chart handles its own breakeven lines, no need to update manually
+        if (hasProfessionalChart) {
+            console.log(`[BREAKEVEN UPDATE] Professional chart handles breakeven lines automatically`);
+            return;
+        }
+        
+        // Update legacy chart breakeven lines
+        if (hasLegacyChart && typeof window.calculateBreakevens === 'function') {
             const breakevens = window.calculateBreakevens();
             
             // Remove existing breakeven lines
