@@ -308,6 +308,34 @@ def strategies():
         return render_template("strategies.html", strategies=[], total_count=0, error=str(e))
 
 
+@app.route('/api/strategies', methods=['GET'])
+def get_strategies():
+    """API endpoint to get all trading strategies for strategy selector"""
+    try:
+        # Get category filter if provided
+        category = request.args.get('category')
+        
+        # Query strategies
+        query = OptionStrategy.query.order_by(OptionStrategy.name)
+        if category:
+            query = query.filter(OptionStrategy.category == category)
+            
+        strategies = query.all()
+        strategies_data = [strategy.to_dict() for strategy in strategies]
+        
+        return jsonify({
+            'success': True,
+            'strategies': strategies_data,
+            'total_count': len(strategies_data)
+        })
+        
+    except Exception as e:
+        print(f"Error fetching strategies API: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/get_access_token', methods=['GET'])
 def get_access_token():
     brokername = request.args.get('brokername')
