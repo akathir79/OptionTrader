@@ -95,3 +95,4 @@ externalPort = 4200
 
 [agent]
 integrations = ["python_database==1.0.0"]
+expertMode = true
