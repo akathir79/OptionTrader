@@ -154,6 +154,50 @@
                         </div>
                         {% endif %}
 
+                        <!-- Profit/Loss and Breakeven Information -->
+                        {% if strategy.max_profit or strategy.max_loss or strategy.breakeven_points %}
+                        <div class="mb-3">
+                            <h6 class="text-success">
+                                <i class="fas fa-calculator me-1"></i>Profit/Loss Analysis:
+                            </h6>
+                            {% if strategy.max_profit %}
+                            <small class="text-dark d-block">
+                                <strong>Max Profit:</strong> {{ strategy.max_profit }}
+                            </small>
+                            {% endif %}
+                            {% if strategy.max_loss %}
+                            <small class="text-dark d-block">
+                                <strong>Max Loss:</strong> {{ strategy.max_loss }}
+                            </small>
+                            {% endif %}
+                            {% if strategy.breakeven_points %}
+                            <small class="text-dark d-block">
+                                <strong>Breakeven:</strong> {{ strategy.breakeven_points }}
+                            </small>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Adjustments Section - Critical for Trading -->
+                        {% if strategy.adjustments %}
+                        <div class="mb-3">
+                            <h6 class="text-warning">
+                                <i class="fas fa-cogs me-1"></i>Trade Adjustments:
+                            </h6>
+                            <small class="text-dark" style="white-space: pre-line; line-height: 1.4;">{{ strategy.adjustments }}</small>
+                        </div>
+                        {% endif %}
+
+                        <!-- Examples Section -->
+                        {% if strategy.examples %}
+                        <div class="mb-3">
+                            <h6 class="text-info">
+                                <i class="fas fa-lightbulb me-1"></i>Example:
+                            </h6>
+                            <small class="text-dark">{{ strategy.examples }}</small>
+                        </div>
+                        {% endif %}
+
                         <div class="mt-auto">
                             <small class="text-muted d-block">
                                 <i class="fas fa-book me-1"></i>
