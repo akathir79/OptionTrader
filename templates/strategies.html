@@ -358,116 +358,54 @@
         console.log('📚 Strategies Library loaded with {{ total_count }} strategies');
     </script>
     
-    <!-- Payoff Charts Implementation -->
-    <script type="text/javascript">
-        (function() {
-            'use strict';
-            console.log('Chart script loaded');
-        
-        function drawSimpleChart(canvas, strategyName) {
-            console.log('Drawing chart for:', strategyName);
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return;
+    <!-- FORCE CHART DISPLAY -->
+    <script>
+        function forceCharts() {
+            console.log('🚀 FORCING CHART DISPLAY');
+            var canvases = document.querySelectorAll('.payoff-thumbnail');
+            console.log('Found', canvases.length, 'canvases');
             
-            // Set explicit dimensions
-            canvas.width = 240;
-            canvas.height = 160;
-            
-            // Clear canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw background
-            ctx.fillStyle = '#f8f9fa';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw profit/loss curve based on strategy
-            const name = strategyName.toLowerCase();
-            ctx.strokeStyle = '#2563eb';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            
-            if (name.includes('call') && name.includes('long')) {
-                // Long call - hockey stick up
-                ctx.moveTo(0, canvas.height - 40);
-                ctx.lineTo(canvas.width * 0.6, canvas.height - 40);
-                ctx.lineTo(canvas.width, 20);
-            } else if (name.includes('put') && name.includes('long')) {
-                // Long put - hockey stick down
-                ctx.moveTo(0, 20);
-                ctx.lineTo(canvas.width * 0.4, canvas.height - 40);
-                ctx.lineTo(canvas.width, canvas.height - 40);
-            } else if (name.includes('iron condor')) {
-                // Iron condor - profit zone in middle
-                ctx.moveTo(0, canvas.height - 20);
-                ctx.lineTo(canvas.width * 0.25, 60);
-                ctx.lineTo(canvas.width * 0.75, 60);
-                ctx.lineTo(canvas.width, canvas.height - 20);
-            } else if (name.includes('straddle')) {
-                // Straddle - V shape
-                ctx.moveTo(0, canvas.height - 20);
-                ctx.lineTo(canvas.width * 0.5, canvas.height - 40);
-                ctx.lineTo(canvas.width, 20);
-            } else {
-                // Default pattern
-                ctx.moveTo(0, canvas.height * 0.7);
-                ctx.quadraticCurveTo(canvas.width * 0.5, 40, canvas.width, canvas.height * 0.3);
-            }
-            
-            ctx.stroke();
-            
-            // Add profit/loss labels
-            ctx.fillStyle = '#22c55e';
-            ctx.font = '12px Arial';
-            ctx.fillText('Profit', 10, 20);
-            
-            ctx.fillStyle = '#ef4444';
-            ctx.fillText('Loss', 10, canvas.height - 10);
-            
-            // Draw zero line
-            ctx.strokeStyle = '#9ca3af';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([3, 3]);
-            ctx.beginPath();
-            ctx.moveTo(0, canvas.height / 2);
-            ctx.lineTo(canvas.width, canvas.height / 2);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            
-            console.log('✅ Chart drawn for:', strategyName);
-        }
-        
-        function initCharts() {
-            console.log('🎯 Initializing charts...');
-            const canvases = document.querySelectorAll('.payoff-thumbnail');
-            console.log('Found', canvases.length, 'canvas elements');
-            
-            canvases.forEach((canvas, index) => {
-                const strategyName = canvas.getAttribute('data-strategy-name') || 'Unknown';
-                console.log(`Chart ${index + 1}:`, strategyName);
-                drawSimpleChart(canvas, strategyName);
+            for (var i = 0; i < canvases.length; i++) {
+                var canvas = canvases[i];
+                var ctx = canvas.getContext('2d');
                 
-                // Add click handler
-                canvas.style.cursor = 'pointer';
-                canvas.onclick = function() {
-                    alert(`Detailed payoff analysis for ${strategyName} would open here.`);
-                };
-            });
+                // Set dimensions
+                canvas.width = 240;
+                canvas.height = 160;
+                
+                // Fill background
+                ctx.fillStyle = '#e9ecef';
+                ctx.fillRect(0, 0, 240, 160);
+                
+                // Draw profit line
+                ctx.strokeStyle = '#28a745';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(10, 150);
+                ctx.lineTo(120, 100);
+                ctx.lineTo(230, 10);
+                ctx.stroke();
+                
+                // Add text
+                ctx.fillStyle = '#333';
+                ctx.font = '12px Arial';
+                ctx.fillText('Payoff Chart', 80, 80);
+                
+                console.log('Chart ' + (i + 1) + ' created');
+            }
         }
         
-        // Try multiple initialization methods
-        console.log('📋 Setting up chart initialization...');
+        // Try immediately
+        forceCharts();
         
+        // Try after a short delay  
+        setTimeout(forceCharts, 100);
+        
+        // Try after page load
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initCharts);
-        } else {
-            initCharts();
+            document.addEventListener('DOMContentLoaded', forceCharts);
         }
         
-        // Also try with a delay
-        setTimeout(initCharts, 1000);
-        
-        console.log('📊 Payoff charts script setup complete');
-        
-        })(); // Close the IIFE
+        console.log('Chart script loaded and executed');
     </script>
 {% endblock %}
