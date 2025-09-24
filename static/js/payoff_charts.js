@@ -10,153 +10,230 @@ class PayoffChartGenerator {
     }
 
     /**
-     * Generate payoff data using actual strategy information
+     * Generate payoff data using extracted strategy information
      */
-    generatePayoffData(strategy, currentPrice = 100) {
+    generatePayoffData(strategy, inputPrice = null) {
+        // Extract comprehensive strategy data
+        const strategyData = this.extractStrategyData(strategy);
+        const currentPrice = inputPrice || strategyData.currentPrice;
+        
         const prices = [];
         const profits = [];
-        const startPrice = currentPrice * 0.7;
-        const endPrice = currentPrice * 1.3;
+        const startPrice = currentPrice * 0.8;
+        const endPrice = currentPrice * 1.2;
         const step = (endPrice - startPrice) / 100;
-
-        // Extract real breakeven points from strategy data
-        const breakevens = this.parseBreakevenPoints(strategy);
-        const maxProfit = this.parseMaxProfit(strategy);
-        const maxLoss = this.parseMaxLoss(strategy);
 
         for (let price = startPrice; price <= endPrice; price += step) {
             prices.push(price);
-            profits.push(this.calculateEducationalProfit(strategy, price, currentPrice, breakevens, maxProfit, maxLoss));
+            profits.push(this.calculateEducationalProfit(strategy, price, strategyData));
         }
 
-        return { prices, profits, currentPrice, breakevens, maxProfit, maxLoss };
+        return { 
+            prices, 
+            profits, 
+            currentPrice,
+            breakevens: strategyData.breakevens,
+            maxProfit: strategyData.maxProfit,
+            maxLoss: strategyData.maxLoss,
+            maxProfitType: strategyData.maxProfitType,
+            maxLossType: strategyData.maxLossType
+        };
     }
 
     /**
-     * Parse breakeven points from strategy data
+     * Extract educational data from strategy for meaningful charts
      */
-    parseBreakevenPoints(strategy) {
-        if (!strategy.breakeven_points) return [100]; // Default
-        
-        const text = strategy.breakeven_points.toLowerCase();
-        const numbers = text.match(/\$?(\d+(?:\.\d+)?)/g);
-        
-        if (numbers) {
-            return numbers.map(n => parseFloat(n.replace('$', '')));
-        }
-        
-        return [100]; // Default fallback
-    }
-
-    /**
-     * Parse maximum profit from strategy data
-     */
-    parseMaxProfit(strategy) {
-        if (!strategy.max_profit) return 'Variable';
-        
-        const text = strategy.max_profit.toLowerCase();
-        if (text.includes('unlimited')) return 'Unlimited';
-        
-        const match = text.match(/\$?(\d+(?:\.\d+)?)/);
-        return match ? parseFloat(match[1]) : 'Variable';
-    }
-
-    /**
-     * Parse maximum loss from strategy data
-     */
-    parseMaxLoss(strategy) {
-        if (!strategy.max_loss) return 'Variable';
-        
-        const text = strategy.max_loss.toLowerCase();
-        if (text.includes('unlimited')) return 'Unlimited';
-        
-        const match = text.match(/\$?(\d+(?:\.\d+)?)/);
-        return match ? parseFloat(match[1]) : 'Variable';
-    }
-
-    /**
-     * Calculate educational profit/loss curve based on strategy type and real data
-     */
-    calculateEducationalProfit(strategy, stockPrice, currentPrice, breakevens, maxProfit, maxLoss) {
+    extractStrategyData(strategy) {
         const strategyName = strategy.name.toLowerCase();
         
-        // Create educational curves based on strategy patterns
-        if (strategyName.includes('long call')) {
-            return this.createLongCallCurve(stockPrice, breakevens[0], maxLoss);
-        } else if (strategyName.includes('short call')) {
-            return this.createShortCallCurve(stockPrice, breakevens[0], maxProfit);
-        } else if (strategyName.includes('long put')) {
-            return this.createLongPutCurve(stockPrice, breakevens[0], maxLoss);
-        } else if (strategyName.includes('short put')) {
-            return this.createShortPutCurve(stockPrice, breakevens[0], maxProfit);
-        } else if (strategyName.includes('straddle')) {
-            return this.createStraddleCurve(stockPrice, currentPrice, breakevens, strategyName.includes('long'));
-        } else if (strategyName.includes('iron condor') || strategyName.includes('condor')) {
-            return this.createCondorCurve(stockPrice, currentPrice, breakevens, maxProfit, maxLoss);
-        } else if (strategyName.includes('iron butterfly') || strategyName.includes('butterfly')) {
-            return this.createButterflyCurve(stockPrice, currentPrice, breakevens, maxProfit, maxLoss);
-        } else if (strategyName.includes('spread')) {
-            return this.createSpreadCurve(stockPrice, currentPrice, breakevens, maxProfit, maxLoss, strategy);
-        } else if (strategyName.includes('lizard')) {
-            return this.createLizardCurve(stockPrice, currentPrice, maxProfit, maxLoss);
-        } else if (strategyName.includes('backspread')) {
-            return this.createBackspreadCurve(stockPrice, currentPrice, breakevens, maxProfit);
+        // Create realistic current prices based on strategy type
+        let currentPrice = 100; // Default
+        if (strategyName.includes('nifty') || strategyName.includes('index')) {
+            currentPrice = 18000; // Nifty level
+        } else if (strategyName.includes('stock') || strategyName.includes('equity')) {
+            currentPrice = 500; // Stock level
         }
         
-        // Default educational curve
-        return this.createNeutralCurve(stockPrice, currentPrice, breakevens, maxProfit, maxLoss);
+        // Extract profit/loss information from strategy descriptions
+        const maxProfitInfo = this.extractProfitLossInfo(strategy.max_profit, strategy.description);
+        const maxLossInfo = this.extractProfitLossInfo(strategy.max_loss, strategy.description);
+        
+        // Create educational breakeven points based on strategy characteristics
+        const breakevens = this.generateEducationalBreakevens(strategy, currentPrice);
+        
+        return {
+            currentPrice,
+            maxProfit: maxProfitInfo.value,
+            maxProfitType: maxProfitInfo.type, // 'limited', 'unlimited', 'variable'
+            maxLoss: maxLossInfo.value,
+            maxLossType: maxLossInfo.type,
+            breakevens,
+            strategyPattern: this.getStrategyPattern(strategyName)
+        };
     }
 
-    // Educational curve generators using real strategy data
-    createLongCallCurve(stockPrice, breakeven, maxLoss) {
+    /**
+     * Extract profit/loss information with intelligent parsing
+     */
+    extractProfitLossInfo(text, description) {
+        if (!text) return { value: null, type: 'variable' };
+        
+        const lowerText = text.toLowerCase();
+        
+        if (lowerText.includes('unlimited')) {
+            return { value: null, type: 'unlimited' };
+        }
+        
+        // Try to extract numeric values
+        const match = lowerText.match(/\$?(\d+(?:\.\d+)?)/);
+        if (match) {
+            return { value: parseFloat(match[1]), type: 'limited' };
+        }
+        
+        // Check description for context clues
+        if (description) {
+            const descLower = description.toLowerCase();
+            if (descLower.includes('premium received') || descLower.includes('credit')) {
+                return { value: 5, type: 'limited' }; // Educational default
+            }
+            if (descLower.includes('premium paid') || descLower.includes('debit')) {
+                return { value: 3, type: 'limited' }; // Educational default
+            }
+        }
+        
+        return { value: null, type: 'variable' };
+    }
+
+    /**
+     * Generate educational breakeven points based on strategy type
+     */
+    generateEducationalBreakevens(strategy, currentPrice) {
+        const strategyName = strategy.name.toLowerCase();
+        
+        if (strategyName.includes('long call')) {
+            return [currentPrice + 5]; // Strike + premium
+        } else if (strategyName.includes('long put')) {
+            return [currentPrice - 5]; // Strike - premium
+        } else if (strategyName.includes('straddle')) {
+            return [currentPrice - 8, currentPrice + 8]; // ATM ± total premium
+        } else if (strategyName.includes('iron condor')) {
+            return [currentPrice - 15, currentPrice + 15]; // Wing breakevens
+        } else if (strategyName.includes('iron butterfly')) {
+            return [currentPrice - 10, currentPrice + 10]; // Wing breakevens
+        } else if (strategyName.includes('bull call spread')) {
+            return [currentPrice + 3]; // Lower strike + net debit
+        } else if (strategyName.includes('bear put spread')) {
+            return [currentPrice - 3]; // Higher strike - net debit
+        } else if (strategyName.includes('jade lizard')) {
+            return [currentPrice - 12]; // Put strike - credit
+        } else if (strategyName.includes('backspread')) {
+            return [currentPrice - 8, currentPrice + 8]; // Multiple breakevens
+        }
+        
+        // Default breakeven at current price
+        return [currentPrice];
+    }
+
+    /**
+     * Determine strategy pattern for curve generation
+     */
+    getStrategyPattern(strategyName) {
+        if (strategyName.includes('long call') || strategyName.includes('long put')) {
+            return 'long_option';
+        } else if (strategyName.includes('short call') || strategyName.includes('short put')) {
+            return 'short_option';
+        } else if (strategyName.includes('straddle') || strategyName.includes('strangle')) {
+            return 'volatility';
+        } else if (strategyName.includes('iron condor') || strategyName.includes('condor')) {
+            return 'iron_condor';
+        } else if (strategyName.includes('iron butterfly') || strategyName.includes('butterfly')) {
+            return 'butterfly';
+        } else if (strategyName.includes('spread')) {
+            return 'spread';
+        } else if (strategyName.includes('lizard')) {
+            return 'lizard';
+        } else if (strategyName.includes('backspread')) {
+            return 'backspread';
+        }
+        
+        return 'neutral';
+    }
+
+    /**
+     * Calculate educational profit/loss using comprehensive strategy data
+     */
+    calculateEducationalProfit(strategy, stockPrice, strategyData) {
+        const { currentPrice, maxProfit, maxLoss, breakevens, strategyPattern } = strategyData;
+        
+        switch (strategyPattern) {
+            case 'long_option':
+                return this.createLongOptionCurve(stockPrice, breakevens[0], maxLoss, strategy.name.includes('call'));
+            
+            case 'short_option':
+                return this.createShortOptionCurve(stockPrice, breakevens[0], maxProfit, strategy.name.includes('call'));
+            
+            case 'volatility':
+                return this.createVolatilityCurve(stockPrice, currentPrice, breakevens, strategy.name.includes('long'));
+            
+            case 'iron_condor':
+                return this.createIronCondorCurve(stockPrice, currentPrice, breakevens, maxProfit, maxLoss);
+            
+            case 'butterfly':
+                return this.createButterflyPattern(stockPrice, currentPrice, breakevens, maxProfit, maxLoss);
+            
+            case 'spread':
+                return this.createSpreadPattern(stockPrice, currentPrice, breakevens, maxProfit, maxLoss, strategy);
+            
+            case 'lizard':
+                return this.createLizardPattern(stockPrice, currentPrice, maxProfit);
+            
+            case 'backspread':
+                return this.createBackspreadPattern(stockPrice, currentPrice, breakevens);
+            
+            default:
+                return this.createNeutralPattern(stockPrice, currentPrice, maxProfit, maxLoss);
+        }
+    }
+
+    // New educational curve generators using pattern-based approach
+    createLongOptionCurve(stockPrice, breakeven, maxLoss, isCall) {
         const loss = typeof maxLoss === 'number' ? maxLoss : 5;
-        if (stockPrice <= breakeven) {
-            return -loss;
+        
+        if (isCall) {
+            // Long call: Loss until breakeven, then profit
+            return stockPrice <= breakeven ? -loss : (stockPrice - breakeven) - loss;
         } else {
-            return (stockPrice - breakeven) - loss;
+            // Long put: Loss until breakeven, then profit
+            return stockPrice >= breakeven ? -loss : (breakeven - stockPrice) - loss;
         }
     }
 
-    createShortCallCurve(stockPrice, breakeven, maxProfit) {
+    createShortOptionCurve(stockPrice, breakeven, maxProfit, isCall) {
         const profit = typeof maxProfit === 'number' ? maxProfit : 5;
-        if (stockPrice <= breakeven) {
-            return profit;
+        
+        if (isCall) {
+            // Short call: Profit until breakeven, then loss
+            return stockPrice <= breakeven ? profit : profit - (stockPrice - breakeven);
         } else {
-            return profit - (stockPrice - breakeven);
+            // Short put: Profit until breakeven, then loss
+            return stockPrice >= breakeven ? profit : profit - (breakeven - stockPrice);
         }
     }
 
-    createLongPutCurve(stockPrice, breakeven, maxLoss) {
-        const loss = typeof maxLoss === 'number' ? maxLoss : 5;
-        if (stockPrice >= breakeven) {
-            return -loss;
-        } else {
-            return (breakeven - stockPrice) - loss;
-        }
-    }
-
-    createShortPutCurve(stockPrice, breakeven, maxProfit) {
-        const profit = typeof maxProfit === 'number' ? maxProfit : 5;
-        if (stockPrice >= breakeven) {
-            return profit;
-        } else {
-            return profit - (breakeven - stockPrice);
-        }
-    }
-
-    createStraddleCurve(stockPrice, currentPrice, breakevens, isLong) {
-        const center = currentPrice;
+    createVolatilityCurve(stockPrice, currentPrice, breakevens, isLong) {
         const premium = breakevens.length > 1 ? Math.abs(breakevens[1] - breakevens[0]) / 2 : 8;
-        const distance = Math.abs(stockPrice - center);
+        const distance = Math.abs(stockPrice - currentPrice);
         
         if (isLong) {
+            // Long straddle/strangle: Loss in middle, profit on wings
             return Math.max(distance - premium, -premium);
         } else {
+            // Short straddle/strangle: Profit in middle, loss on wings
             return Math.max(premium - distance, -premium);
         }
     }
 
-    createCondorCurve(stockPrice, currentPrice, breakevens, maxProfit, maxLoss) {
+    createIronCondorCurve(stockPrice, currentPrice, breakevens, maxProfit, maxLoss) {
         const profit = typeof maxProfit === 'number' ? maxProfit : 3;
         const loss = typeof maxLoss === 'number' ? maxLoss : 2;
         
@@ -165,30 +242,26 @@ class PayoffChartGenerator {
             const upperBreakeven = Math.max(...breakevens);
             
             if (stockPrice >= lowerBreakeven && stockPrice <= upperBreakeven) {
-                return profit;
+                return profit; // Profit zone
             } else if (stockPrice < lowerBreakeven) {
-                return profit - (lowerBreakeven - stockPrice);
+                return Math.max(profit - (lowerBreakeven - stockPrice), -loss);
             } else {
-                return profit - (stockPrice - upperBreakeven);
+                return Math.max(profit - (stockPrice - upperBreakeven), -loss);
             }
         }
         
         // Default condor shape
         const range = currentPrice * 0.1;
-        if (Math.abs(stockPrice - currentPrice) <= range) {
-            return profit;
-        } else {
-            return -loss;
-        }
+        return Math.abs(stockPrice - currentPrice) <= range ? profit : -loss;
     }
 
-    createButterflyCurve(stockPrice, currentPrice, breakevens, maxProfit, maxLoss) {
+    createButterflyPattern(stockPrice, currentPrice, breakevens, maxProfit, maxLoss) {
         const profit = typeof maxProfit === 'number' ? maxProfit : 5;
         const loss = typeof maxLoss === 'number' ? maxLoss : 2;
         
         const center = currentPrice;
         const distance = Math.abs(stockPrice - center);
-        const wing = currentPrice * 0.05; // 5% wing
+        const wing = currentPrice * 0.05;
         
         if (distance <= wing) {
             return profit * (1 - distance / wing);
@@ -197,133 +270,144 @@ class PayoffChartGenerator {
         }
     }
 
-    createSpreadCurve(stockPrice, currentPrice, breakevens, maxProfit, maxLoss, strategy) {
+    createSpreadPattern(stockPrice, currentPrice, breakevens, maxProfit, maxLoss, strategy) {
         const profit = typeof maxProfit === 'number' ? maxProfit : 3;
         const loss = typeof maxLoss === 'number' ? maxLoss : 2;
+        const breakeven = breakevens[0] || currentPrice;
         
         if (strategy.name.toLowerCase().includes('bull')) {
-            // Bull spread
-            const breakeven = breakevens[0] || currentPrice;
-            if (stockPrice <= breakeven) {
-                return -loss;
-            } else {
-                return Math.min(profit, (stockPrice - breakeven));
-            }
+            return stockPrice <= breakeven ? -loss : Math.min(profit, stockPrice - breakeven);
         } else if (strategy.name.toLowerCase().includes('bear')) {
-            // Bear spread
-            const breakeven = breakevens[0] || currentPrice;
-            if (stockPrice >= breakeven) {
-                return -loss;
-            } else {
-                return Math.min(profit, (breakeven - stockPrice));
-            }
+            return stockPrice >= breakeven ? -loss : Math.min(profit, breakeven - stockPrice);
         }
         
-        // Default spread
         return stockPrice > currentPrice ? profit : -loss;
     }
 
-    createLizardCurve(stockPrice, currentPrice, maxProfit, maxLoss) {
+    createLizardPattern(stockPrice, currentPrice, maxProfit) {
         const profit = typeof maxProfit === 'number' ? maxProfit : 5;
         
-        // Jade Lizard pattern: no upside risk
+        // Jade Lizard: Limited upside risk, downside exposure
         if (stockPrice >= currentPrice) {
-            return profit;
+            return profit * 0.9; // Slight profit cap
         } else {
-            // Downside risk
-            return profit - Math.max(0, (currentPrice - stockPrice) * 0.5);
+            return profit - Math.max(0, (currentPrice - stockPrice) * 0.3);
         }
     }
 
-    createBackspreadCurve(stockPrice, currentPrice, breakevens, maxProfit) {
+    createBackspreadPattern(stockPrice, currentPrice, breakevens) {
         const center = currentPrice;
         const distance = Math.abs(stockPrice - center);
         
         if (distance < 5) {
             return -2; // Loss zone between strikes
         } else if (distance > 10) {
-            return distance - 7; // Unlimited profit zone
+            return distance - 7; // Profit zone on wings
         } else {
             return -2 + (distance - 5) * 0.4; // Transition
         }
     }
 
-    createNeutralCurve(stockPrice, currentPrice, breakevens, maxProfit, maxLoss) {
+    createNeutralPattern(stockPrice, currentPrice, maxProfit, maxLoss) {
         const profit = typeof maxProfit === 'number' ? maxProfit : 2;
-        const loss = typeof maxLoss === 'number' ? maxLoss : 1;
+        const distance = Math.abs(stockPrice - currentPrice) / currentPrice;
         
-        const distance = Math.abs(stockPrice - currentPrice);
-        
-        if (distance <= currentPrice * 0.05) {
-            return profit;
-        } else {
-            return profit - (distance / currentPrice) * 10;
-        }
+        // Neutral strategy: Profit near current price
+        return profit * Math.exp(-distance * 10);
     }
+
 
     /**
      * Calculate breakeven points for strategy using actual data
      */
     getBreakevenPoints(strategy, currentPrice) {
-        // Use actual parsed breakeven points from strategy data
-        return this.parseBreakevenPoints(strategy);
+        // Use educational breakeven points from strategy data
+        const strategyData = this.extractStrategyData(strategy);
+        return strategyData.breakevens;
     }
 
     /**
-     * Get profit/loss zones for strategy
+     * Get profit/loss zones using comprehensive strategy data
      */
     getProfitLossZones(strategy, currentPrice) {
-        // Use strategy's actual max_profit and max_loss if available
-        const maxProfit = strategy.max_profit || 'Variable';
-        const maxLoss = strategy.max_loss || 'Variable';
-        const breakevens = strategy.breakeven_points || 'See chart for details';
+        const strategyData = this.extractStrategyData(strategy);
+        const maxProfit = strategyData.maxProfitType === 'unlimited' ? 'Unlimited' : 
+                         (strategyData.maxProfit ? `$${strategyData.maxProfit.toFixed(2)}` : 'Variable');
+        const maxLoss = strategyData.maxLossType === 'unlimited' ? 'Unlimited' : 
+                       (strategyData.maxLoss ? `$${strategyData.maxLoss.toFixed(2)}` : 'Variable');
         
-        const strategyName = strategy.name.toLowerCase();
+        const breakevens = strategyData.breakevens.map(b => `$${b.toFixed(2)}`).join(', ');
         
-        if (strategyName.includes('long call')) {
-            return {
-                maxProfit: maxProfit,
-                maxLoss: maxLoss,
-                profitZone: `Above breakeven: ${breakevens}`,
-                lossZone: `Below breakeven: ${breakevens}`
-            };
-        } else if (strategyName.includes('short call')) {
-            return {
-                maxProfit: maxProfit,
-                maxLoss: maxLoss,
-                profitZone: `Below breakeven: ${breakevens}`,
-                lossZone: `Above breakeven: ${breakevens}`
-            };
-        } else if (strategyName.includes('iron condor') || strategyName.includes('iron butterfly')) {
-            return {
-                maxProfit: maxProfit,
-                maxLoss: maxLoss,
-                profitZone: strategy.market_condition || 'Range-bound movement',
-                lossZone: 'Outside profit zone'
-            };
-        } else if (strategyName.includes('jade lizard')) {
-            return {
-                maxProfit: maxProfit,
-                maxLoss: maxLoss,
-                profitZone: 'Between put strike and call spread',
-                lossZone: 'Below put strike (unlimited downside)'
-            };
-        } else if (strategyName.includes('backspread')) {
-            return {
-                maxProfit: maxProfit,
-                maxLoss: maxLoss,
-                profitZone: 'Large directional moves',
-                lossZone: 'Between strike prices'
-            };
-        }
+        // Create meaningful profit/loss zones based on strategy pattern
+        const zones = this.getPatternZones(strategyData.strategyPattern, strategy);
         
-        // Use strategy's actual data
         return {
             maxProfit: maxProfit,
             maxLoss: maxLoss,
-            profitZone: strategy.market_condition || 'See strategy details',
-            lossZone: 'Unfavorable market conditions'
+            profitZone: `Above breakeven(s): ${breakevens}`,
+            lossZone: zones.lossZone || 'Outside profit zones'
         };
+    }
+
+    /**
+     * Get pattern-specific profit/loss zones
+     */
+    getPatternZones(pattern, strategy) {
+        switch (pattern) {
+            case 'long_option':
+                return {
+                    profitZone: strategy.name.includes('call') ? 'Stock price rises above breakeven' : 'Stock price falls below breakeven',
+                    lossZone: 'Premium paid is maximum loss'
+                };
+            
+            case 'short_option':
+                return {
+                    profitZone: 'Time decay and favorable price movement',
+                    lossZone: strategy.name.includes('call') ? 'Stock price rises significantly' : 'Stock price falls significantly'
+                };
+            
+            case 'volatility':
+                return {
+                    profitZone: strategy.name.includes('long') ? 'Large price movements in either direction' : 'Stock price stays near current level',
+                    lossZone: strategy.name.includes('long') ? 'Stock price remains stable' : 'Large price movements'
+                };
+            
+            case 'iron_condor':
+                return {
+                    profitZone: 'Stock price remains between breakeven points',
+                    lossZone: 'Stock moves beyond outer strikes'
+                };
+            
+            case 'butterfly':
+                return {
+                    profitZone: 'Stock price stays near center strike',
+                    lossZone: 'Stock moves significantly from center'
+                };
+            
+            case 'spread':
+                return {
+                    profitZone: strategy.name.includes('bull') ? 'Stock price rises moderately' : 'Stock price falls moderately',
+                    lossZone: 'Unfavorable directional movement'
+                };
+            
+            case 'lizard':
+                return {
+                    profitZone: 'No upside risk, collect premium',
+                    lossZone: 'Significant downside movement'
+                };
+            
+            case 'backspread':
+                return {
+                    profitZone: 'Large directional moves beyond breakevens',
+                    lossZone: 'Stock price between strikes'
+                };
+            
+            default:
+                return {
+                    profitZone: 'Favorable market conditions',
+                    lossZone: 'Unfavorable market conditions'
+                };
+        }
     }
 
     /**
