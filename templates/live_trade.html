@@ -3707,8 +3707,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Format timestamps for active positions
             const timeDisplay = `${new Date(entry.timestamp).toLocaleDateString()} ${new Date(entry.timestamp).toLocaleTimeString()}`;
             
-            const row = document.createElement('tr');
+            // CRITICAL FIX: Declare positionKey BEFORE it's used in template literal
             const positionKey = entry.positionKey || `${entry.strike}-${entry.expiry}-${entry.optionType}-${index}`;
+            
+            const row = document.createElement('tr');
             row.dataset.positionKey = positionKey;
             
             row.innerHTML = `
