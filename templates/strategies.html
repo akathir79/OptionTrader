@@ -166,8 +166,9 @@
                             <canvas 
                                 class="payoff-thumbnail" 
                                 id="chart-{{ loop.index }}"
-                                data-strategy="{{ strategy | tojson | e }}"
-                                onclick="showPayoffModal({{ strategy | tojson | e }})"
+                                data-strategy-name="{{ strategy.name }}"
+                                data-strategy-category="{{ strategy.category or '' }}"
+                                data-strategy-id="{{ strategy.id or loop.index }}"
                                 title="Click to view detailed payoff analysis">
                             </canvas>
                             <div class="chart-overlay">
@@ -302,6 +303,11 @@
 {% endblock %}
 
 {% block scripts %}
+    <!-- Strategy Data for Payoff Charts -->
+    <script type="application/json" id="strategiesData">
+        {{ strategies | tojson }}
+    </script>
+    
     <script>
         // Search and Filter Functionality
         const searchBox = document.getElementById('searchBox');
