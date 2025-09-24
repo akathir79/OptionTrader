@@ -12,7 +12,7 @@ from decimal import Decimal
 from datetime import datetime, date
 import traceback
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import func
+from sqlalchemy import func, case
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -179,7 +179,7 @@ def get_portfolio():
                 PaperTrade.strike_price,
                 PaperTrade.expiry_date,
                 func.sum(
-                    func.case(
+                    case(
                         (PaperTrade.trade_type == 'BUY', PaperTrade.quantity),
                         else_=-PaperTrade.quantity
                     )
@@ -196,7 +196,7 @@ def get_portfolio():
                 PaperTrade.expiry_date
             ).having(
                 func.sum(
-                    func.case(
+                    case(
                         (PaperTrade.trade_type == 'BUY', PaperTrade.quantity),
                         else_=-PaperTrade.quantity
                     )
