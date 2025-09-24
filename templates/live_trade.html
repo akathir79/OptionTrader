@@ -2231,6 +2231,9 @@ window.addEventListener('DOMContentLoaded', function() {
 <script src="https://code.highcharts.com/highcharts.js"></script>
 <script src="https://code.highcharts.com/modules/stock.js"></script>
 
+<!-- Professional Payoff Chart with Profit/Loss Zones -->
+<script src="{{ url_for('static', filename='js/professional_payoff_chart.js') }}"></script>
+
 <!-- Resizable layout behaviour -->
 <script src="{{ url_for('static', filename='js/resizable.js') }}"></script>
 
@@ -2495,6 +2498,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let counters = [];
     let firstClickFlags = [];
     let payoffChart = null;
+    let professionalChart = null;
     
     // Initialize payoff chart when DOM is ready
     setTimeout(() => {
@@ -2506,6 +2510,28 @@ document.addEventListener('DOMContentLoaded', function() {
     function initPayoffChart() {
         const chartContainer = document.getElementById('chartContainer');
         if (chartContainer) {
+            // Initialize professional payoff chart with profit/loss zones
+            if (window.ProfessionalPayoffChart) {
+                professionalChart = new window.ProfessionalPayoffChart('chartContainer', {
+                    title: 'Option Strategy Payoff Analysis',
+                    height: 450,
+                    animate: true,
+                    showSpotLine: true,
+                    showBreakevenLines: true,
+                    profitColor: '#22C55E',    // Green profit zones
+                    lossColor: '#EF4444',      // Red loss zones
+                    spotLineColor: '#3B82F6',  // Blue spot line
+                    breakevenColor: '#F59E0B'  // Orange breakeven lines
+                });
+                
+                // Keep reference for compatibility with existing code
+                payoffChart = professionalChart.chart;
+                
+                console.log('✅ Professional payoff chart initialized with profit/loss zones');
+                return;
+            }
+            
+            // Fallback to basic chart if professional chart not available
             payoffChart = Highcharts.chart('chartContainer', {
                 chart: { 
                     type: 'line', 
@@ -3184,6 +3210,17 @@ document.addEventListener('DOMContentLoaded', function() {
     window.forcePayoffChartUpdate = function(spotPrice) {
         console.log(`[FORCE UPDATE] forcePayoffChartUpdate called with spot: ${spotPrice}`);
         
+        // Use professional chart if available
+        if (professionalChart) {
+            if (spotPrice && spotPrice > 0) {
+                professionalChart.updateSpotPrice(spotPrice);
+                console.log(`[FORCE UPDATE] Professional chart spot price updated to: ${spotPrice}`);
+                return true;
+            }
+            return false;
+        }
+        
+        // Fallback to legacy chart
         if (!payoffChart) {
             console.log('[FORCE UPDATE] No payoff chart available - deferring until chart is created');
             // Store the pending spot price for when chart is created
@@ -4463,8 +4500,48 @@ document.addEventListener('DOMContentLoaded', function() {
         updateMarginInfo(netCredit, maxProfit, maxLoss);
     }
     
+    // Helper function to convert activeLots to position format for professional chart
+    function convertLotsToPositions(activeLots) {
+        if (!activeLots || activeLots.length === 0) return [];
+        
+        const positionMap = new Map();
+        
+        activeLots.forEach(lot => {
+            const key = `${lot.strike}-${lot.optionType}-${lot.action}`;
+            
+            if (positionMap.has(key)) {
+                positionMap.get(key).quantity++;
+            } else {
+                positionMap.set(key, {
+                    type: lot.optionType, // 'CE' or 'PE'
+                    action: lot.action.toLowerCase(), // 'buy' or 'sell'
+                    strike: lot.strike,
+                    premium: lot.entryPrice,
+                    quantity: 1
+                });
+            }
+        });
+        
+        return Array.from(positionMap.values());
+    }
+    
     // Create multi-leg payoff chart from loaded option chain data - proper multi-leg concept
     function createPayoffChartFromOptionChain() {
+        // Use professional chart if available
+        if (professionalChart && window.activeLots) {
+            const positions = convertLotsToPositions(window.activeLots);
+            professionalChart.updatePositions(positions);
+            
+            // Update spot price if available
+            if (window.webSocketHandler && window.webSocketHandler.currentSpotPrice) {
+                professionalChart.updateSpotPrice(window.webSocketHandler.currentSpotPrice);
+            }
+            
+            console.log(`✅ Professional payoff chart updated with ${positions.length} position types from ${window.activeLots.length} lots`);
+            return;
+        }
+        
+        // Fallback to legacy chart initialization
         if (!payoffChart) {
             initPayoffChart();
         }
