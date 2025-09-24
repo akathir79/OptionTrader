@@ -326,6 +326,16 @@ class PaperTradingSystem {
                 event.preventDefault();
                 event.stopPropagation();
                 this.handlePaperTrade(target);
+                return;
+            }
+            
+            // Don't intercept position management buttons (buy/sell from option chain)
+            if (target.classList.contains('position-btn-decrease') || 
+                target.classList.contains('position-btn-increase') ||
+                target.closest('.position-btn-decrease') ||
+                target.closest('.position-btn-increase')) {
+                // Allow normal flow for position management buttons
+                return;
             }
         }, true);
     }
