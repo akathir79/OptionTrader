@@ -335,8 +335,6 @@ class PaperTradingSystem {
         const tradeData = this.extractTradeData(button);
         if (!tradeData) return;
 
-        console.log('🔄 Executing manual paper trade:', tradeData);
-
         try {
             const response = await fetch('/api/paper_trading/trade', {
                 method: 'POST',
@@ -348,17 +346,8 @@ class PaperTradingSystem {
 
             const data = await response.json();
             if (data.success) {
-                console.log('✅ Manual trade executed successfully:', data);
-                
-                // 1. Update position management
                 await this.loadPortfolio();
                 this.updateVirtualBalanceDisplay();
-                
-                // 2. Update the specific badge that was clicked
-                this.updateOptionChainBadge(button, tradeData);
-                
-                // 3. Update global position arrays and payoff chart
-                await this.updateGlobalPositionsAndChart();
                 
                 this.showNotification(
                     'Paper Trade Executed',
@@ -366,99 +355,92 @@ class PaperTradingSystem {
                     'success'
                 );
             } else {
-                console.error('❌ Manual trade failed:', data.error);
                 this.showNotification('Trade Failed', data.error, 'danger');
             }
         } catch (error) {
-            console.error('❌ Paper trade error:', error);
+            console.error('Paper trade error:', error);
             this.showNotification('Error', 'Failed to execute paper trade', 'danger');
         }
     }
 
     extractTradeData(button) {
         try {
-            console.log('🔍 Extracting trade data for button:', button);
-            
             // Get the row containing the button to extract option data
             const row = button.closest('tr');
-            if (!row) {
-                console.error('❌ No table row found for button');
-                return null;
-            }
-            
-            console.log('📋 Found table row:', row);
             
             // Get current selected symbol
             const symbolSelect = document.querySelector('#symbolSelect');
             const baseSymbol = symbolSelect ? symbolSelect.value : 'NIFTY50-INDEX';
             
-            // Determine trade type from button class/text
-            const isBuy = button.classList.contains('buy_button') ||
-                         button.textContent.toLowerCase().includes('b') ||
+            // Determine trade type from button
+            const isBuy = button.textContent.toLowerCase().includes('buy') || 
+                         button.classList.contains('buy-btn') ||
                          button.classList.contains('btn-success');
             
-            console.log('📊 Trade type determined as:', isBuy ? 'BUY' : 'SELL');
-            
-            // Extract option chain data based on actual table structure
+            // Try to extract option chain data if available
             let symbol = baseSymbol;
             let optionType = null;
             let strikePrice = null;
             let expiryDate = null;
             let price = null;
-            let quantity = 75; // Default lot size
+            let quantity = 1;
             
-            // Extract strike price from the strike column (should be column 11 based on table structure)
-            const cells = row.children;
-            if (cells && cells.length > 11) {
-                const strikeCell = cells[11]; // Strike column
-                strikePrice = parseFloat(strikeCell.textContent.replace(/[^\d.-]/g, ''));
-                console.log('🎯 Strike price extracted:', strikePrice);
-            }
-            
-            // Determine option type based on which side of the table the button is on
-            const buttonCell = button.closest('td');
-            const cellIndex = Array.from(row.children).indexOf(buttonCell);
-            
-            if (cellIndex <= 10) {
-                // Left side = PUT options
-                optionType = 'PE';
-                
-                // For PUTs, get price from appropriate column
-                if (isBuy && cells[9]) { // PE LTP column
-                    price = parseFloat(cells[9].textContent.replace(/[^\d.-]/g, ''));
-                } else if (!isBuy && cells[7]) { // PE Ask column
-                    price = parseFloat(cells[7].textContent.replace(/[^\d.-]/g, ''));
-                }
-            } else {
-                // Right side = CALL options
-                optionType = 'CE';
-                
-                // For CALLs, get price from appropriate column
-                if (isBuy && cells[13]) { // CE LTP column
-                    price = parseFloat(cells[13].textContent.replace(/[^\d.-]/g, ''));
-                } else if (!isBuy && cells[15]) { // CE Ask column
-                    price = parseFloat(cells[15].textContent.replace(/[^\d.-]/g, ''));
-                }
-            }
-            
-            console.log('🏷️ Option type determined as:', optionType);
-            console.log('💰 Price extracted:', price);
-            
-            // Fallback for price if not found
-            if (!price || price <= 0) {
-                if (optionType === 'PE' && cells[9]) {
-                    price = parseFloat(cells[9].textContent.replace(/[^\d.-]/g, ''));
-                } else if (optionType === 'CE' && cells[13]) {
-                    price = parseFloat(cells[13].textContent.replace(/[^\d.-]/g, ''));
+            if (row) {
+                // Extract strike price from row
+                const strikePriceEl = row.querySelector('.strike-price, [data-strike]');
+                if (strikePriceEl) {
+                    strikePrice = parseFloat(strikePriceEl.textContent.replace(/[^\d.-]/g, '')) || 
+                                 parseFloat(strikePriceEl.getAttribute('data-strike'));
                 }
                 
-                if (!price || price <= 0) {
-                    price = 1.0; // Minimum viable price
+                // Extract option type (CE/PE) from button context
+                const cellIndex = Array.from(row.children).indexOf(button.closest('td'));
+                const headerRow = document.querySelector('table thead tr');
+                if (headerRow && headerRow.children[cellIndex]) {
+                    const headerText = headerRow.children[cellIndex].textContent.toLowerCase();
+                    if (headerText.includes('ce') || headerText.includes('call')) {
+                        optionType = 'CE';
+                    } else if (headerText.includes('pe') || headerText.includes('put')) {
+                        optionType = 'PE';
+                    }
+                }
+                
+                // Try to get price from the specific cell
+                const priceCell = isBuy ? 
+                    row.querySelector('.ce-bid, .pe-bid, .bid-price, .ask-price') : 
+                    row.querySelector('.ce-ask, .pe-ask, .bid-price, .ask-price');
+                
+                if (priceCell) {
+                    const priceText = priceCell.textContent.replace(/[^\d.-]/g, '');
+                    price = parseFloat(priceText) || null;
+                }
+                
+                // If no specific price found, try LTP
+                if (!price) {
+                    const ltpCell = row.querySelector('.ltp, .ce-ltp, .pe-ltp');
+                    if (ltpCell) {
+                        price = parseFloat(ltpCell.textContent.replace(/[^\d.-]/g, ''));
+                    }
                 }
             }
             
-            // Get current expiry date from active expiry button
-            const currentExpiry = document.querySelector('.expiry_button.active, .expiry-selected, .btn-primary[data-expiry]');
+            // Fallback: get price from futures or spot data
+            if (!price) {
+                const futuresPrice = document.querySelector('.futures-price');
+                const spotPrice = document.querySelector('.spot-price, .nifty-price');
+                
+                if (futuresPrice) {
+                    price = parseFloat(futuresPrice.textContent.replace(/[^\d.-]/g, ''));
+                } else if (spotPrice) {
+                    price = parseFloat(spotPrice.textContent.replace(/[^\d.-]/g, ''));
+                } else {
+                    // Use current spot price from global variable if available
+                    price = window.currentSpotPrice || 25000;
+                }
+            }
+            
+            // Get current expiry date if available
+            const currentExpiry = document.querySelector('.expiry_button.active, .expiry-selected');
             if (currentExpiry) {
                 const expiryText = currentExpiry.textContent || currentExpiry.getAttribute('data-expiry');
                 if (expiryText) {
@@ -476,19 +458,14 @@ class PaperTradingSystem {
             // Build proper symbol name for options
             if (optionType && strikePrice && expiryDate) {
                 const expiryFormatted = this.formatExpiryForSymbol(expiryDate);
-                symbol = `NSE:${baseSymbol}${expiryFormatted}${strikePrice}${optionType}`;
+                symbol = `${baseSymbol}${expiryFormatted}${strikePrice}${optionType}`;
             }
             
-            console.log('🔤 Final symbol:', symbol);
-            console.log('📊 Complete trade data:', {
-                symbol, 
-                trade_type: isBuy ? 'BUY' : 'SELL',
-                quantity,
-                price,
-                option_type: optionType,
-                strike_price: strikePrice,
-                expiry_date: expiryDate
-            });
+            // Get quantity from any quantity input or use default
+            const quantityInput = document.querySelector('#quantity, .quantity-input');
+            if (quantityInput && quantityInput.value) {
+                quantity = parseInt(quantityInput.value) || 1;
+            }
             
             return {
                 symbol: symbol,
@@ -501,13 +478,13 @@ class PaperTradingSystem {
             };
             
         } catch (error) {
-            console.error('❌ Error extracting trade data:', error);
+            console.error('Error extracting trade data:', error);
             
             // Fallback to basic trade data
             return {
-                symbol: 'NSE:NIFTY50-INDEX',
+                symbol: 'NIFTY50-INDEX',
                 trade_type: 'BUY',
-                quantity: 75,
+                quantity: 1,
                 price: window.currentSpotPrice || 25000,
                 option_type: null,
                 strike_price: null,
@@ -532,161 +509,6 @@ class PaperTradingSystem {
         const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
         const year = date.getFullYear().toString().substring(2);
         return `${day}${month}${year}`;
-    }
-
-    updateOptionChainBadge(button, tradeData) {
-        try {
-            console.log('🏷️ Updating option chain badge for:', tradeData);
-            
-            const row = button.closest('tr');
-            if (!row) return;
-            
-            const cells = row.children;
-            if (!cells || cells.length < 22) return;
-            
-            const { option_type, trade_type, quantity } = tradeData;
-            
-            // Find the appropriate badge cell based on option type and trade type
-            let badgeCell = null;
-            
-            if (option_type === 'PE') {
-                // Put option badges
-                if (trade_type === 'BUY') {
-                    badgeCell = cells[8]; // PE Buy badge column
-                } else {
-                    badgeCell = cells[10]; // PE Sell badge column
-                }
-            } else if (option_type === 'CE') {
-                // Call option badges
-                if (trade_type === 'BUY') {
-                    badgeCell = cells[12]; // CE Buy badge column
-                } else {
-                    badgeCell = cells[14]; // CE Sell badge column
-                }
-            }
-            
-            if (badgeCell) {
-                // Find or create the badge
-                let badge = badgeCell.querySelector('.badge');
-                if (!badge) {
-                    badge = document.createElement('span');
-                    badge.className = `badge ${trade_type === 'BUY' ? 'bg-success' : 'bg-danger'}`;
-                    badge.textContent = '0';
-                    badgeCell.appendChild(badge);
-                }
-                
-                // Update the badge quantity
-                const currentQty = parseInt(badge.textContent) || 0;
-                const newQty = currentQty + (quantity / 75); // Convert to lots
-                badge.textContent = newQty.toString();
-                
-                console.log(`✅ Updated ${trade_type} badge for ${option_type} to ${newQty}`);
-            }
-            
-        } catch (error) {
-            console.error('❌ Error updating option chain badge:', error);
-        }
-    }
-
-    async updateGlobalPositionsAndChart() {
-        try {
-            console.log('🔄 Updating global positions and payoff chart...');
-            
-            // 1. Ensure global arrays exist
-            if (!window.globalPositions) window.globalPositions = [];
-            if (!window.activeLots) window.activeLots = [];
-            if (!window.closedTrades) window.closedTrades = [];
-            
-            // 2. Get fresh portfolio data from API
-            const response = await fetch('/api/paper_trading/portfolio');
-            const data = await response.json();
-            
-            if (data.success && data.portfolio && data.portfolio.positions) {
-                // 3. Clear and repopulate global arrays
-                window.globalPositions.length = 0;
-                window.activeLots.length = 0;
-                
-                const positions = data.portfolio.positions;
-                positions.forEach((pos, index) => {
-                    const positionData = {
-                        id: index + 1,
-                        symbol: pos.symbol,
-                        optionType: pos.option_type,
-                        strikePrice: pos.strike_price,
-                        expiryDate: pos.expiry_date,
-                        quantity: pos.quantity,
-                        avgEntryPrice: pos.avg_entry_price,
-                        pnl: pos.pnl || 0,
-                        isActive: true
-                    };
-                    
-                    window.globalPositions.push(positionData);
-                    window.activeLots.push(positionData);
-                });
-                
-                console.log(`✅ Updated global positions: ${positions.length} positions`);
-                
-                // 4. Trigger payoff chart update using multiple methods
-                await this.refreshPayoffChart();
-            }
-            
-        } catch (error) {
-            console.error('❌ Error updating global positions and chart:', error);
-        }
-    }
-
-    async refreshPayoffChart() {
-        try {
-            console.log('🔄 Refreshing payoff chart...');
-            
-            let chartUpdated = false;
-            
-            // Method 1: Try existing global functions
-            if (window.updatePayoffChart) {
-                window.updatePayoffChart();
-                chartUpdated = true;
-                console.log('✅ Payoff chart updated via window.updatePayoffChart');
-            } else if (typeof updatePayoffChart === 'function') {
-                updatePayoffChart();
-                chartUpdated = true;
-                console.log('✅ Payoff chart updated via updatePayoffChart function');
-            }
-            
-            // Method 2: Try direct Highcharts redraw
-            if (window.payoffChart && window.payoffChart.redraw) {
-                window.payoffChart.redraw();
-                chartUpdated = true;
-                console.log('✅ Payoff chart redrawn via Highcharts');
-            }
-            
-            // Method 3: Dispatch custom event
-            const chartContainer = document.getElementById('chartContainer');
-            if (chartContainer) {
-                const event = new CustomEvent('positionsUpdated', {
-                    detail: { 
-                        positions: window.globalPositions || [],
-                        activeLots: window.activeLots || []
-                    }
-                });
-                chartContainer.dispatchEvent(event);
-                console.log('✅ Dispatched positionsUpdated event');
-            }
-            
-            // Method 4: Force Highcharts redraw if available
-            if (window.Highcharts && chartContainer) {
-                const existingChart = window.Highcharts.charts.find(chart => 
-                    chart && chart.container && chart.container.parentNode === chartContainer
-                );
-                
-                if (existingChart) {
-                    existingChart.redraw();
-                    console.log('✅ Forced Highcharts redraw');
-                }
-            }
-            
-        } catch (error) {
-            console.error('❌ Error refreshing payoff chart:', error);
-        }
     }
 
     async showPortfolioModal() {

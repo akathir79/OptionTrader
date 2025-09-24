@@ -1982,39 +1982,10 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
             <!-- Strategy Tab Content -->
             <div class="tab-pane fade" id="strategy-content" role="tabpanel">
               <div class="p-3">
-                <div id="strategySelector">
-                  <!-- Strategy prerequisites check -->
-                  <div id="strategyPrerequisites" class="alert alert-warning d-none">
-                    <i class="fas fa-exclamation-triangle me-2"></i>
-                    <strong>Please select symbol and expiry first</strong>
-                    <p class="mb-0 mt-1">Strategy selection requires an active option chain. Please select an index symbol and expiry date from the left panel.</p>
-                  </div>
-                  
-                  <!-- Strategy categories filter -->
-                  <div id="strategyCategoryFilter" class="mb-3 d-none">
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                      <small class="text-muted">Filter by:</small>
-                      <button class="btn btn-sm btn-outline-primary active" data-category="all">All</button>
-                      <button class="btn btn-sm btn-outline-primary" data-category="Bullish">Bullish</button>
-                      <button class="btn btn-sm btn-outline-primary" data-category="Bearish">Bearish</button>
-                      <button class="btn btn-sm btn-outline-primary" data-category="Neutral">Neutral</button>
-                      <button class="btn btn-sm btn-outline-primary" data-category="Volatility">Volatility</button>
-                      <button class="btn btn-sm btn-outline-primary" data-category="Income">Income</button>
-                    </div>
-                  </div>
-                  
-                  <!-- Strategy cards container -->
-                  <div id="strategyCardsContainer" class="row g-2" style="max-height: 400px; overflow-y: auto;">
-                    <!-- Strategy cards will be loaded here -->
-                  </div>
-                  
-                  <!-- Loading indicator -->
-                  <div id="strategyLoading" class="text-center py-3 d-none">
-                    <div class="spinner-border spinner-border-sm text-primary" role="status">
-                      <span class="visually-hidden">Loading strategies...</span>
-                    </div>
-                    <div class="small text-muted mt-2">Loading strategies...</div>
-                  </div>
+                <div class="text-center text-muted">
+                  <i class="fas fa-chess fa-3x mb-3"></i>
+                  <h5>Strategy Builder</h5>
+                  <p>Advanced strategy creation and backtesting tools will be available here.</p>
                 </div>
               </div>
             </div>
@@ -2485,9 +2456,6 @@ function generateStrikeSelectionGuide(data) {
 
 <!-- Professional Trading Controls -->
 <script src="{{ url_for('static', filename='js/trading_controls.js') }}"></script>
-
-<!-- Strategy Selector -->
-<script src="{{ url_for('static', filename='js/strategy_selector.js') }}"></script>
 
 <script>
 // Initialize components when DOM is ready
