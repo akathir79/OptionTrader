@@ -277,15 +277,28 @@ class ProfessionalPayoffChart {
             return [];
         }
         
-        const strikes = this.currentPositions.map(p => p.strike);
-        const minStrike = Math.min(...strikes);
-        const maxStrike = Math.max(...strikes);
-        const priceRange = maxStrike - minStrike;
-        const buffer = Math.max(priceRange * 0.5, 1000);
+        // Use real underlying price as center point for price range
+        let centerPrice = this.spotPrice;
         
-        const startPrice = minStrike - buffer;
-        const endPrice = maxStrike + buffer;
+        // Fallback: If no spot price available, use strikes as reference
+        if (!centerPrice || centerPrice <= 0) {
+            const strikes = this.currentPositions.map(p => p.strike);
+            centerPrice = strikes.length > 0 ? (Math.min(...strikes) + Math.max(...strikes)) / 2 : 25000;
+            console.log('⚠️ No spot price available, using strikes center:', centerPrice);
+        }
+        
+        console.log('📊 Using underlying price for range calculation:', centerPrice);
+        
+        // Create realistic price range around current underlying price
+        // For NIFTY around 25000, this creates range like 20000-30000 (±20%)
+        const rangePercent = 0.25; // ±25% range for comprehensive analysis
+        const priceRange = centerPrice * rangePercent;
+        
+        const startPrice = centerPrice - priceRange;
+        const endPrice = centerPrice + priceRange;
         const priceStep = (endPrice - startPrice) / 200; // 200 data points for smooth curves
+        
+        console.log(`📊 Payoff chart price range: ₹${startPrice.toFixed(0)} to ₹${endPrice.toFixed(0)} (center: ₹${centerPrice.toFixed(0)})`);
         
         const payoffData = [];
         
@@ -431,14 +444,21 @@ class ProfessionalPayoffChart {
      * Add individual leg series to show each option position
      */
     addIndividualLegSeries() {
-        const strikes = this.currentPositions.map(p => p.strike);
-        const minStrike = Math.min(...strikes);
-        const maxStrike = Math.max(...strikes);
-        const priceRange = maxStrike - minStrike;
-        const buffer = Math.max(priceRange * 0.5, 1000);
+        // Use real underlying price for consistent range calculation
+        let centerPrice = this.spotPrice;
         
-        const startPrice = minStrike - buffer;
-        const endPrice = maxStrike + buffer;
+        // Fallback: If no spot price available, use strikes as reference
+        if (!centerPrice || centerPrice <= 0) {
+            const strikes = this.currentPositions.map(p => p.strike);
+            centerPrice = strikes.length > 0 ? (Math.min(...strikes) + Math.max(...strikes)) / 2 : 25000;
+        }
+        
+        // Use same range calculation as main payoff chart
+        const rangePercent = 0.25; // ±25% range
+        const priceRange = centerPrice * rangePercent;
+        
+        const startPrice = centerPrice - priceRange;
+        const endPrice = centerPrice + priceRange;
         const priceStep = (endPrice - startPrice) / 200;
         
         for (const [index, position] of this.currentPositions.entries()) {
@@ -710,8 +730,19 @@ class ProfessionalPayoffChart {
      */
     updateSpotPrice(spotPrice) {
         if (spotPrice && spotPrice > 0) {
+            console.log(`📊 Updating spot price from ${this.spotPrice} to ${spotPrice}`);
             this.spotPrice = spotPrice;
-            this.updateSpotPriceLine();
+            
+            if (this.options.showSpotLine) {
+                this.updateSpotPriceLine();
+            }
+            
+            // CRITICAL: Regenerate entire chart with new underlying price range
+            // This ensures the x-axis reflects real underlying price movements
+            if (this.currentPositions && this.currentPositions.length > 0) {
+                console.log('🔄 Regenerating chart with new underlying price range');
+                this.updateProfitLossZones();
+            }
         }
     }
     
