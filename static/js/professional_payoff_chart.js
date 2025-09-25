@@ -718,8 +718,49 @@ class ProfessionalPayoffChart {
     updateSpotPrice(spotPrice) {
         if (spotPrice && spotPrice > 0) {
             this.spotPrice = spotPrice;
-            this.updateSpotPriceLine();
+            console.log(`📈 Chart spot price updated to: ${spotPrice}`);
+            
+            // Only update spot price line if it's enabled
+            if (this.displaySettings.showSpotPriceLine) {
+                this.updateLiveSpotPriceLine();
+            }
         }
+    }
+    
+    /**
+     * Update live moving spot price line (consolidated to use single ID)
+     */
+    updateLiveSpotPriceLine() {
+        if (!this.chart || !this.spotPrice) return;
+        
+        // Remove existing spot price lines (both legacy and live)
+        this.chart.xAxis[0].removePlotLine('currentSpot');
+        this.chart.xAxis[0].removePlotLine('realtime-spot');
+        
+        // Add single unified live spot price line using consistent ID
+        this.chart.xAxis[0].addPlotLine({
+            id: 'currentSpot', // Use consistent ID to avoid duplicates
+            color: '#FF6B35', // Orange for live moving line
+            width: 3,
+            value: this.spotPrice,
+            dashStyle: 'Solid',
+            label: {
+                text: `Live: ₹${this.spotPrice.toFixed(1)}`,
+                align: 'right',
+                verticalAlign: 'top',
+                style: {
+                    color: '#FF6B35',
+                    fontWeight: 'bold',
+                    fontSize: '11px',
+                    backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                    padding: '2px 4px',
+                    borderRadius: '3px'
+                }
+            },
+            zIndex: 10 // Higher than breakeven lines so it shows on top
+        });
+        
+        console.log(`📍 Live spot price line updated to: ${this.spotPrice}`);
     }
     
     /**
@@ -824,12 +865,16 @@ class ProfessionalPayoffChart {
     }
     
     /**
-     * Hide spot price line
+     * Hide spot price line (remove all possible spot line IDs)
      */
     hideSpotPriceLine() {
         if (!this.chart) return;
         
+        // Remove both legacy and live spot price lines to ensure clean hide
         this.chart.xAxis[0].removePlotLine('currentSpot');
+        this.chart.xAxis[0].removePlotLine('realtime-spot');
+        
+        console.log('📍 All spot price lines hidden');
     }
     
     /**
@@ -842,6 +887,60 @@ class ProfessionalPayoffChart {
         for (let i = 0; i < 10; i++) {
             this.chart.xAxis[0].removePlotLine(`breakeven${i}`);
         }
+    }
+    
+    /**
+     * Get current symbol and expiry from option chain
+     */
+    getCurrentSymbolData() {
+        // Get current symbol and expiry from WebSocket handler
+        if (window.webSocketHandler) {
+            return {
+                symbol: window.webSocketHandler.currentSymbol,
+                expiry: window.webSocketHandler.currentExpiry,
+                spotPrice: window.webSocketHandler.getCurrentSpotPrice()
+            };
+        }
+        return { symbol: null, expiry: null, spotPrice: 0 };
+    }
+    
+    /**
+     * Sync chart with current symbol/expiry selection
+     */
+    syncWithSymbolSelection() {
+        const symbolData = this.getCurrentSymbolData();
+        
+        if (symbolData.spotPrice && symbolData.spotPrice !== this.spotPrice) {
+            console.log(`🔄 Syncing chart with symbol ${symbolData.symbol}, spot: ${symbolData.spotPrice}`);
+            this.updateSpotPrice(symbolData.spotPrice);
+        }
+        
+        // Update chart title with current symbol info
+        if (this.chart && symbolData.symbol) {
+            let title = 'Option Strategy Payoff Analysis';
+            if (symbolData.symbol) {
+                const symbolName = symbolData.symbol.replace('NSE:', '').replace('-INDEX', '');
+                title = `${symbolName} Options Strategy`;
+            }
+            this.chart.setTitle({ text: title });
+        }
+    }
+    
+    /**
+     * Force refresh chart with latest market data
+     */
+    refreshWithLiveData() {
+        console.log('🔄 Refreshing chart with live data...');
+        
+        // Sync with current symbol selection
+        this.syncWithSymbolSelection();
+        
+        // Update positions if they exist
+        if (this.currentPositions && this.currentPositions.length > 0) {
+            this.updateProfitLossZones();
+        }
+        
+        console.log('✅ Chart refreshed with live data');
     }
 }
 
