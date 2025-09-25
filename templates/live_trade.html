@@ -5250,14 +5250,27 @@ document.addEventListener('DOMContentLoaded', function() {
         return expiry;
     }
     
-    // **NEW: Smart Position Action Handler**
+    // **FIXED: Smart Position Action Handler - REMOVED INFINITE RECURSION**
     window.handleSmartPositionAction = function(rowIndex, strike, optionType, action, expiry = null) {
         console.log(`🎯 SMART POSITION ACTION: ${action} for ${optionType} ${strike}, expiry: ${expiry}`);
         
+        // FIXED: Removed the recursive 'add' action that was causing infinite loop
+        // if (action === 'add') {
+        //     showAddPositionDialog(rowIndex, strike, optionType);
+        //     return;
+        // }
+        
+        // Handle 'add' action by prompting directly here instead of recursive call
         if (action === 'add') {
-            // Show add position dialog
-            showAddPositionDialog(rowIndex, strike, optionType);
-            return;
+            const promptAction = prompt(`Add position for ${optionType} ${strike}\n\nEnter action (buy/sell):`, 'buy');
+            if (!promptAction) return;
+            
+            const normalizedAction = promptAction.toLowerCase();
+            if (!['buy', 'sell'].includes(normalizedAction)) {
+                alert('Invalid action. Please enter "buy" or "sell".');
+                return;
+            }
+            action = normalizedAction; // Use the prompted action
         }
         
         // Use current expiry if not specified
@@ -5281,19 +5294,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     };
     
-    // **ENHANCED: Add Position Dialog**
-    function showAddPositionDialog(rowIndex, strike, optionType) {
-        const action = prompt(`Add position for ${optionType} ${strike}\n\nEnter action (buy/sell):`, 'buy');
-        if (!action) return;
-        
-        const normalizedAction = action.toLowerCase();
-        if (!['buy', 'sell'].includes(normalizedAction)) {
-            alert('Invalid action. Please enter "buy" or "sell".');
-            return;
-        }
-        
-        // Trigger the smart position action
-        handleSmartPositionAction(rowIndex, strike, optionType, normalizedAction);
+    // **DEPRECATED: This function was causing infinite recursion - functionality moved inline**
+    function showAddPositionDialogDeprecated(rowIndex, strike, optionType) {
+        // This function is no longer used to prevent infinite recursion
+        console.warn('showAddPositionDialog is deprecated - functionality moved to handleSmartPositionAction');
     }
     
     // Show dialog for adding new position with different expiry
