@@ -304,7 +304,7 @@ class ProfessionalPayoffChart {
     }
     
     /**
-     * Add intermediate points between strikes for smoother curves
+     * Add intermediate points between strikes for smoother curves (for total strategy)
      * @param {Array} payoffData - Array of [strike, payoff] points
      * @returns {Array} Array with additional intermediate points
      */
@@ -330,6 +330,39 @@ class ProfessionalPayoffChart {
         
         // Add the last point
         smoothData.push(payoffData[payoffData.length - 1]);
+        
+        return smoothData;
+    }
+    
+    /**
+     * Add intermediate points for individual leg smoothing
+     * @param {Array} legData - Array of [strike, payoff] points for single leg
+     * @param {Object} position - Position object for single leg calculations
+     * @returns {Array} Array with additional intermediate points for the leg
+     */
+    addIntermediatePointsForLeg(legData, position) {
+        if (legData.length < 2) return legData;
+        
+        const smoothData = [];
+        
+        for (let i = 0; i < legData.length - 1; i++) {
+            const currentPoint = legData[i];
+            const nextPoint = legData[i + 1];
+            
+            smoothData.push(currentPoint);
+            
+            // Add 2 intermediate points between strikes for smoothness
+            const priceStep = (nextPoint[0] - currentPoint[0]) / 3;
+            for (let j = 1; j <= 2; j++) {
+                const intermediatePrice = currentPoint[0] + (priceStep * j);
+                // Calculate payoff for THIS SPECIFIC LEG only, not total strategy
+                const intermediateLegPayoff = this.calculateSingleLegPayoff(position, intermediatePrice) * position.quantity;
+                smoothData.push([intermediatePrice, intermediateLegPayoff]);
+            }
+        }
+        
+        // Add the last point
+        smoothData.push(legData[legData.length - 1]);
         
         return smoothData;
     }
@@ -534,9 +567,55 @@ class ProfessionalPayoffChart {
     }
     
     /**
-     * Add individual leg series to show each option position
+     * Add individual leg series to show each option position using real strikes
      */
     addIndividualLegSeries() {
+        // Get real option chain data for individual legs too
+        const optionChainData = this.getOptionChainData();
+        
+        for (const [index, position] of this.currentPositions.entries()) {
+            const legData = [];
+            const legName = this.getLegName(position);
+            const legColor = this.getLegColor(position);
+            
+            if (optionChainData && optionChainData.length > 0) {
+                // Use real option chain strikes for individual legs
+                const strikes = optionChainData.map(item => parseFloat(item.strike)).sort((a, b) => a - b);
+                
+                for (const strike of strikes) {
+                    const legPayoff = this.calculateSingleLegPayoff(position, strike) * position.quantity;
+                    legData.push([strike, legPayoff]);
+                }
+                
+                // Add intermediate points for smoother curves (leg-specific)
+                const smoothLegData = this.addIntermediatePointsForLeg(legData, position);
+                
+                this.chart.addSeries({
+                    id: `leg-${index}`, // Add ID for toggle functionality
+                    name: legName,
+                    type: 'line',
+                    data: smoothLegData,
+                    color: legColor,
+                    lineWidth: 2,
+                    dashStyle: 'Dash',
+                    marker: { enabled: false },
+                    enableMouseTracking: false,
+                    showInLegend: true,
+                    zIndex: 5,
+                    opacity: 0.7
+                }, false);
+            } else {
+                // Fallback to old method if no option chain data available
+                console.log('⚠️ No option chain data for individual legs, using fallback');
+                this.addIndividualLegSeriesFallback(index, position, legName, legColor);
+            }
+        }
+    }
+    
+    /**
+     * Fallback method for individual leg series when option chain data is not available
+     */
+    addIndividualLegSeriesFallback(index, position, legName, legColor) {
         const strikes = this.currentPositions.map(p => p.strike);
         const minStrike = Math.min(...strikes);
         const maxStrike = Math.max(...strikes);
@@ -547,30 +626,26 @@ class ProfessionalPayoffChart {
         const endPrice = maxStrike + buffer;
         const priceStep = (endPrice - startPrice) / 200;
         
-        for (const [index, position] of this.currentPositions.entries()) {
-            const legData = [];
-            const legName = this.getLegName(position);
-            const legColor = this.getLegColor(position);
-            
-            for (let price = startPrice; price <= endPrice; price += priceStep) {
-                const legPayoff = this.calculateSingleLegPayoff(position, price) * position.quantity;
-                legData.push([price, legPayoff]);
-            }
-            
-            this.chart.addSeries({
-                name: legName,
-                type: 'line',
-                data: legData,
-                color: legColor,
-                lineWidth: 2,
-                dashStyle: 'Dash',
-                marker: { enabled: false },
-                enableMouseTracking: false,
-                showInLegend: true,
-                zIndex: 5,
-                opacity: 0.7
-            }, false);
+        const legData = [];
+        for (let price = startPrice; price <= endPrice; price += priceStep) {
+            const legPayoff = this.calculateSingleLegPayoff(position, price) * position.quantity;
+            legData.push([price, legPayoff]);
         }
+        
+        this.chart.addSeries({
+            id: `leg-${index}`, // Add ID for toggle functionality
+            name: legName,
+            type: 'line',
+            data: legData,
+            color: legColor,
+            lineWidth: 2,
+            dashStyle: 'Dash',
+            marker: { enabled: false },
+            enableMouseTracking: false,
+            showInLegend: true,
+            zIndex: 5,
+            opacity: 0.7
+        }, false);
     }
     
     /**
