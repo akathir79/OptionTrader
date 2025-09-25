@@ -181,7 +181,7 @@ def get_portfolio():
                 func.sum(
                     func.case(
                         (PaperTrade.trade_type == 'BUY', PaperTrade.quantity),
-                        else_=-PaperTrade.quantity
+                        else_=PaperTrade.quantity * -1
                     )
                 ).label('net_quantity'),
                 func.avg(PaperTrade.entry_price).label('avg_entry_price'),
@@ -198,7 +198,7 @@ def get_portfolio():
                 func.sum(
                     func.case(
                         (PaperTrade.trade_type == 'BUY', PaperTrade.quantity),
-                        else_=-PaperTrade.quantity
+                        else_=PaperTrade.quantity * -1
                     )
                 ) != 0
             ).all()
