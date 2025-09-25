@@ -77,24 +77,7 @@ class ProfessionalPayoffChart {
                 }
             },
             
-            title: {
-                text: this.options.title,
-                style: {
-                    fontSize: '18px',
-                    fontWeight: 'bold',
-                    color: '#1E293B',
-                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
-                }
-            },
-            
-            subtitle: {
-                text: 'Real-time profit/loss visualization with breakeven analysis',
-                style: {
-                    fontSize: '12px',
-                    color: '#64748B',
-                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
-                }
-            },
+            // No title or subtitle to maximize chart space
             
             xAxis: {
                 title: {
