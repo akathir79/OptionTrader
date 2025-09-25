@@ -29,7 +29,17 @@ class OptionMicroChart {
     async loadData() {
         if (this.isLoading) return;
         
+        // TEMPORARY FIX: Disable API calls to prevent hanging
+        // These were causing hundreds of simultaneous requests when buttons clicked
+        console.log(`🚫 DISABLED microchart API call for ${this.symbol} to prevent hanging`);
+        
         this.isLoading = true;
+        
+        // Show a simple placeholder instead of making API calls
+        this.showNoData();
+        this.isLoading = false;
+        
+        /* ORIGINAL CODE DISABLED TO PREVENT HANGING:
         this.showLoading();
         
         try {
@@ -68,6 +78,7 @@ class OptionMicroChart {
         } finally {
             this.isLoading = false;
         }
+        */
     }
 
     renderChart() {
