@@ -259,7 +259,7 @@ class ProfessionalPayoffChart {
     }
     
     /**
-     * Generate payoff data points for charting
+     * Generate payoff data points for charting using real option chain strikes
      * @returns {Array} Array of [price, payoff] points
      */
     generatePayoffData() {
@@ -267,6 +267,78 @@ class ProfessionalPayoffChart {
             return [];
         }
         
+        // Get real option chain data
+        const optionChainData = this.getOptionChainData();
+        
+        if (optionChainData && optionChainData.length > 0) {
+            console.log(`🎯 Using real option chain data with ${optionChainData.length} strikes`);
+            return this.generateRealPayoffData(optionChainData);
+        } else {
+            console.log('⚠️ No option chain data available, using fallback method');
+            return this.generateFallbackPayoffData();
+        }
+    }
+    
+    /**
+     * Generate payoff data using real option chain strikes
+     * @param {Array} optionChainData - Array of option chain strikes
+     * @returns {Array} Array of [price, payoff] points
+     */
+    generateRealPayoffData(optionChainData) {
+        const payoffData = [];
+        
+        // Use actual strike prices from option chain
+        const strikes = optionChainData.map(item => parseFloat(item.strike)).sort((a, b) => a - b);
+        console.log(`📊 Using real strikes: ${strikes.slice(0, 5).join(', ')}...`);
+        
+        // Calculate payoff for each real strike price
+        for (const strike of strikes) {
+            const totalPayoff = this.calculateTotalPayoff(strike);
+            payoffData.push([strike, totalPayoff]);
+        }
+        
+        // Add some intermediate points for smoother curves
+        const smoothData = this.addIntermediatePoints(payoffData);
+        
+        return smoothData;
+    }
+    
+    /**
+     * Add intermediate points between strikes for smoother curves
+     * @param {Array} payoffData - Array of [strike, payoff] points
+     * @returns {Array} Array with additional intermediate points
+     */
+    addIntermediatePoints(payoffData) {
+        if (payoffData.length < 2) return payoffData;
+        
+        const smoothData = [];
+        
+        for (let i = 0; i < payoffData.length - 1; i++) {
+            const currentPoint = payoffData[i];
+            const nextPoint = payoffData[i + 1];
+            
+            smoothData.push(currentPoint);
+            
+            // Add 2 intermediate points between strikes for smoothness
+            const priceStep = (nextPoint[0] - currentPoint[0]) / 3;
+            for (let j = 1; j <= 2; j++) {
+                const intermediatePrice = currentPoint[0] + (priceStep * j);
+                const intermediatePayoff = this.calculateTotalPayoff(intermediatePrice);
+                smoothData.push([intermediatePrice, intermediatePayoff]);
+            }
+        }
+        
+        // Add the last point
+        smoothData.push(payoffData[payoffData.length - 1]);
+        
+        return smoothData;
+    }
+    
+    /**
+     * Fallback method when option chain data is not available
+     * @returns {Array} Array of [price, payoff] points
+     */
+    generateFallbackPayoffData() {
         const strikes = this.currentPositions.map(p => p.strike);
         const minStrike = Math.min(...strikes);
         const maxStrike = Math.max(...strikes);
@@ -275,7 +347,7 @@ class ProfessionalPayoffChart {
         
         const startPrice = minStrike - buffer;
         const endPrice = maxStrike + buffer;
-        const priceStep = (endPrice - startPrice) / 200; // 200 data points for smooth curves
+        const priceStep = (endPrice - startPrice) / 200;
         
         const payoffData = [];
         
@@ -285,6 +357,50 @@ class ProfessionalPayoffChart {
         }
         
         return payoffData;
+    }
+    
+    /**
+     * Get option chain data from WebSocket handler
+     * @returns {Array|null} Option chain data or null if not available
+     */
+    getOptionChainData() {
+        // Try to get data from WebSocket handler first
+        if (window.webSocketHandler && window.webSocketHandler.getOptionChainStrikes) {
+            return window.webSocketHandler.getOptionChainStrikes();
+        }
+        
+        // Try to get data from global variable if available
+        if (window.optionChainData) {
+            return window.optionChainData;
+        }
+        
+        // Try to fetch from option chain table
+        return this.extractStrikesFromTable();
+    }
+    
+    /**
+     * Extract strike prices from the option chain table
+     * @returns {Array} Array of strike data
+     */
+    extractStrikesFromTable() {
+        const optionTable = document.getElementById('optionChainTable');
+        if (!optionTable) return null;
+        
+        const strikes = [];
+        const rows = optionTable.querySelectorAll('tbody tr');
+        
+        rows.forEach(row => {
+            const strikeCell = row.querySelector('.strike-cell');
+            if (strikeCell) {
+                const strike = parseFloat(strikeCell.textContent.trim());
+                if (!isNaN(strike)) {
+                    strikes.push({ strike: strike });
+                }
+            }
+        });
+        
+        console.log(`📋 Extracted ${strikes.length} strikes from option chain table`);
+        return strikes.length > 0 ? strikes : null;
     }
     
     /**
@@ -898,14 +1014,10 @@ class ProfessionalPayoffChart {
             this.updateSpotPrice(symbolData.spotPrice);
         }
         
-        // Update chart title with current symbol info
-        if (this.chart && symbolData.symbol) {
-            let title = 'Option Strategy Payoff Analysis';
-            if (symbolData.symbol) {
-                const symbolName = symbolData.symbol.replace('NSE:', '').replace('-INDEX', '');
-                title = `${symbolName} Options Strategy`;
-            }
-            this.chart.setTitle({ text: title });
+        // Refresh chart data when symbol changes to use new option chain data
+        if (this.currentPositions && this.currentPositions.length > 0) {
+            console.log('🔄 Refreshing chart data with new symbol option chain');
+            this.updateProfitLossZones();
         }
     }
     
