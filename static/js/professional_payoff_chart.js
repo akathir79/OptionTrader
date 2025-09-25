@@ -1,7 +1,7 @@
 /**
- * Professional Option Payoff Chart with Profit/Loss Zones
- * Implements comprehensive option strategy visualization with green profit zones and red loss zones
- * Based on professional option analysis standards
+ * Professional Option Payoff Chart with Alternating Profit/Loss Zones
+ * Implements comprehensive multi-leg option strategy visualization with individual legs and alternating zones
+ * Based on professional option analysis standards and industry best practices
  */
 
 class ProfessionalPayoffChart {
@@ -10,21 +10,31 @@ class ProfessionalPayoffChart {
         this.chart = null;
         this.currentPositions = [];
         this.spotPrice = null;
+        this.breakEvenPoints = [];
+        this.maxProfit = null;
+        this.maxLoss = null;
+        
         this.options = {
-            title: options.title || 'Option Strategy Payoff Chart',
-            height: options.height || 400,
+            title: options.title || 'Option Strategy Payoff Analysis',
+            height: options.height || 500,
             animate: options.animate !== false,
             showSpotLine: options.showSpotLine !== false,
             showBreakevenLines: options.showBreakevenLines !== false,
+            showIndividualLegs: options.showIndividualLegs !== false,
             profitColor: options.profitColor || '#22C55E', // Green
             lossColor: options.lossColor || '#EF4444',     // Red
             neutralColor: options.neutralColor || '#6B7280', // Gray
             spotLineColor: options.spotLineColor || '#3B82F6', // Blue
-            breakevenColor: options.breakevenColor || '#F59E0B', // Orange
+            breakevenColor: options.breakevenColor || '#17A2B8', // Teal
+            // Individual leg colors
+            longCallColor: options.longCallColor || '#007BFF', // Blue
+            shortCallColor: options.shortCallColor || '#FD7E14', // Orange  
+            longPutColor: options.longPutColor || '#20C997', // Teal
+            shortPutColor: options.shortPutColor || '#6F42C1', // Purple
             ...options
         };
         
-        // PERFORMANCE FIX: Add throttling to prevent hanging
+        // PERFORMANCE: Add throttling to prevent hanging
         this.updatePending = false;
         this.lastUpdateTime = 0;
         this.updateDelay = 100; // 100ms throttle
@@ -49,17 +59,33 @@ class ProfessionalPayoffChart {
                 type: 'line',
                 height: this.options.height,
                 backgroundColor: '#FFFFFF',
-                plotBackgroundColor: '#FAFBFC',
-                animation: this.options.animate
-                // REMOVED: Infinite recursion redraw event that was causing hanging
+                plotBackgroundColor: '#F8F9FA',
+                animation: this.options.animate,
+                borderRadius: 8,
+                shadow: {
+                    color: 'rgba(0,0,0,0.1)',
+                    offsetX: 2,
+                    offsetY: 2,
+                    width: 3
+                }
             },
             
             title: {
                 text: this.options.title,
                 style: {
-                    fontSize: '16px',
+                    fontSize: '18px',
                     fontWeight: 'bold',
-                    color: '#1F2937'
+                    color: '#1E293B',
+                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
+                }
+            },
+            
+            subtitle: {
+                text: 'Real-time profit/loss visualization with breakeven analysis',
+                style: {
+                    fontSize: '12px',
+                    color: '#64748B',
+                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
                 }
             },
             
@@ -186,18 +212,30 @@ class ProfessionalPayoffChart {
     
     /**
      * Calculate single-leg option payoff
-     * @param {Object} option - Option details {type: 'call'|'put', action: 'buy'|'sell', strike: number, premium: number}
+     * @param {Object} option - Option details {type/option_type: 'call'|'put', action: 'buy'|'sell', strike: number, premium: number}
      * @param {number} underlyingPrice - Current underlying price
      * @returns {number} Payoff value
      */
     calculateSingleLegPayoff(option, underlyingPrice) {
-        const { type, action, strike, premium } = option;
+        // Handle both field names: 'type' and 'option_type'
+        const optionType = option.type || option.option_type;
+        const { action, strike, premium } = option;
         let intrinsicValue = 0;
         
-        if (type.toLowerCase() === 'call' || type === 'CE') {
+        if (!optionType) {
+            console.error('❌ Option type missing in:', option);
+            return 0;
+        }
+        
+        if (optionType.toLowerCase() === 'call' || optionType === 'CE') {
             intrinsicValue = Math.max(underlyingPrice - strike, 0);
-        } else if (type.toLowerCase() === 'put' || type === 'PE') {
+        } else if (optionType.toLowerCase() === 'put' || optionType === 'PE') {
             intrinsicValue = Math.max(strike - underlyingPrice, 0);
+        }
+        
+        if (!action || !strike || premium === undefined) {
+            console.error('❌ Missing required fields in option:', option);
+            return 0;
         }
         
         if (action.toLowerCase() === 'buy') {
@@ -209,60 +247,6 @@ class ProfessionalPayoffChart {
         return 0;
     }
     
-    /**
-     * Calculate breakeven points for current strategy
-     * @returns {Array} Array of breakeven prices
-     */
-    calculateBreakevenPoints() {
-        if (!this.currentPositions || this.currentPositions.length === 0) {
-            return [];
-        }
-        
-        const breakevenPoints = [];
-        const minStrike = Math.min(...this.currentPositions.map(p => p.strike));
-        const maxStrike = Math.max(...this.currentPositions.map(p => p.strike));
-        const priceRange = maxStrike - minStrike;
-        const bufferRange = Math.max(priceRange * 0.5, 1000);
-        
-        // Search for breakeven points by checking sign changes
-        for (let price = minStrike - bufferRange; price <= maxStrike + bufferRange; price += 1) {
-            const currentPnL = this.calculateTotalPayoff(price);
-            const nextPnL = this.calculateTotalPayoff(price + 1);
-            
-            // Check for sign change (breakeven point)
-            if ((currentPnL <= 0 && nextPnL > 0) || (currentPnL >= 0 && nextPnL < 0)) {
-                // Refine the breakeven point with binary search
-                let low = price;
-                let high = price + 1;
-                let iterations = 0;
-                const maxIterations = 20;
-                
-                while (high - low > 0.01 && iterations < maxIterations) {
-                    const mid = (low + high) / 2;
-                    const midPnL = this.calculateTotalPayoff(mid);
-                    
-                    if (Math.abs(midPnL) < 0.01) {
-                        breakevenPoints.push(mid);
-                        break;
-                    }
-                    
-                    if (midPnL * currentPnL > 0) {
-                        low = mid;
-                    } else {
-                        high = mid;
-                    }
-                    iterations++;
-                }
-                
-                if (iterations === maxIterations) {
-                    breakevenPoints.push((low + high) / 2);
-                }
-            }
-        }
-        
-        // Remove duplicates and sort
-        return [...new Set(breakevenPoints.map(p => Math.round(p * 100) / 100))].sort((a, b) => a - b);
-    }
     
     /**
      * Calculate total payoff for all positions at given underlying price
@@ -314,7 +298,7 @@ class ProfessionalPayoffChart {
     }
     
     /**
-     * Update chart with profit and loss zones - THROTTLED for performance
+     * Update chart with professional alternating profit/loss zones - THROTTLED for performance
      */
     updateProfitLossZones() {
         if (!this.chart || !this.currentPositions || this.currentPositions.length === 0) {
@@ -333,7 +317,7 @@ class ProfessionalPayoffChart {
         // Defer to next frame to prevent blocking UI
         requestAnimationFrame(() => {
             try {
-                this.updateProfitLossZonesImmediate();
+                this.renderProfessionalPayoffChart();
             } finally {
                 this.updatePending = false;
             }
@@ -341,23 +325,219 @@ class ProfessionalPayoffChart {
     }
     
     /**
-     * Immediate update implementation (called via requestAnimationFrame)
+     * Render professional payoff chart with alternating profit/loss zones
+     * This is the main rendering method following architect guidance
      */
-    updateProfitLossZonesImmediate() {
+    renderProfessionalPayoffChart() {
         if (!this.chart || !this.currentPositions || this.currentPositions.length === 0) {
             return;
         }
         
+        console.log('🎨 Rendering professional payoff chart with alternating zones...');
+        
+        // Clear existing series
+        while (this.chart.series.length > 0) {
+            this.chart.series[0].remove(false);
+        }
+        
+        // Generate payoff data and calculate breakeven points
         const payoffData = this.generatePayoffData();
         if (payoffData.length === 0) return;
         
-        // Separate profit and loss zones
+        this.calculateBreakevenPoints(payoffData);
+        this.calculateMaxProfitLoss(payoffData);
+        
+        // Add individual leg series if enabled
+        if (this.options.showIndividualLegs) {
+            this.addIndividualLegSeries();
+        }
+        
+        // Add alternating profit/loss zones between breakeven points
+        this.addAlternatingZones(payoffData);
+        
+        // Add main payoff line
+        this.chart.addSeries({
+            name: 'Net P&L',
+            type: 'line',
+            data: payoffData,
+            color: '#1E293B',
+            lineWidth: 4,
+            marker: { enabled: false },
+            enableMouseTracking: true,
+            showInLegend: true,
+            zIndex: 15,
+            shadow: {
+                color: 'rgba(30, 41, 59, 0.3)',
+                offsetX: 1,
+                offsetY: 1,
+                width: 2
+            }
+        }, false);
+        
+        // Safe redraw to prevent infinite recursion
+        this.chart.redraw(false);
+        
+        // Update visual elements
+        this.updateBreakevenLines();
+        if (this.options.showSpotLine && this.spotPrice) {
+            this.updateSpotPriceLine();
+        }
+        
+        console.log('✅ Professional payoff chart rendered successfully');
+    }
+    
+    /**
+     * Calculate breakeven points from payoff data
+     * Finds where the payoff line crosses zero
+     */
+    calculateBreakevenPoints(payoffData) {
+        this.breakEvenPoints = [];
+        
+        for (let i = 1; i < payoffData.length; i++) {
+            const [prevPrice, prevPnl] = payoffData[i - 1];
+            const [currPrice, currPnl] = payoffData[i];
+            
+            // Check for zero crossing
+            if ((prevPnl <= 0 && currPnl >= 0) || (prevPnl >= 0 && currPnl <= 0)) {
+                // Linear interpolation to find exact breakeven point
+                const ratio = Math.abs(prevPnl) / (Math.abs(prevPnl) + Math.abs(currPnl));
+                const breakevenPrice = prevPrice + ratio * (currPrice - prevPrice);
+                this.breakEvenPoints.push(breakevenPrice);
+            }
+        }
+        
+        console.log('📊 Calculated breakeven points:', this.breakEvenPoints);
+    }
+    
+    /**
+     * Calculate maximum profit and loss from payoff data
+     */
+    calculateMaxProfitLoss(payoffData) {
+        let maxProfit = -Infinity;
+        let maxLoss = Infinity;
+        
+        for (const [price, pnl] of payoffData) {
+            maxProfit = Math.max(maxProfit, pnl);
+            maxLoss = Math.min(maxLoss, pnl);
+        }
+        
+        this.maxProfit = maxProfit > 0 ? maxProfit : null;
+        this.maxLoss = maxLoss < 0 ? maxLoss : null;
+        
+        console.log('📈 Max Profit:', this.maxProfit, 'Max Loss:', this.maxLoss);
+    }
+    
+    /**
+     * Add individual leg series to show each option position
+     */
+    addIndividualLegSeries() {
+        const strikes = this.currentPositions.map(p => p.strike);
+        const minStrike = Math.min(...strikes);
+        const maxStrike = Math.max(...strikes);
+        const priceRange = maxStrike - minStrike;
+        const buffer = Math.max(priceRange * 0.5, 1000);
+        
+        const startPrice = minStrike - buffer;
+        const endPrice = maxStrike + buffer;
+        const priceStep = (endPrice - startPrice) / 200;
+        
+        for (const [index, position] of this.currentPositions.entries()) {
+            const legData = [];
+            const legName = this.getLegName(position);
+            const legColor = this.getLegColor(position);
+            
+            for (let price = startPrice; price <= endPrice; price += priceStep) {
+                const legPayoff = this.calculateSingleLegPayoff(position, price) * position.quantity;
+                legData.push([price, legPayoff]);
+            }
+            
+            this.chart.addSeries({
+                name: legName,
+                type: 'line',
+                data: legData,
+                color: legColor,
+                lineWidth: 2,
+                dashStyle: 'Dash',
+                marker: { enabled: false },
+                enableMouseTracking: false,
+                showInLegend: true,
+                zIndex: 5,
+                opacity: 0.7
+            }, false);
+        }
+    }
+    
+    /**
+     * Get descriptive name for individual leg
+     */
+    getLegName(position) {
+        // Use position.action instead of quantity sign for proper Long/Short determination
+        const action = position.action.toLowerCase() === 'buy' ? 'Long' : 'Short';
+        const optionType = (position.option_type || position.type).toLowerCase();
+        const type = (optionType === 'call' || optionType === 'ce') ? 'Call' : 'Put';
+        return `${action} ${type} (${position.strike})`;
+    }
+    
+    /**
+     * Get color for individual leg based on type
+     */
+    getLegColor(position) {
+        // Use position.action instead of quantity sign for proper Long/Short determination
+        const isLong = position.action.toLowerCase() === 'buy';
+        const optionType = (position.option_type || position.type).toLowerCase();
+        const isCall = (optionType === 'call' || optionType === 'ce');
+        
+        if (isCall && isLong) return this.options.longCallColor;
+        if (isCall && !isLong) return this.options.shortCallColor;
+        if (!isCall && isLong) return this.options.longPutColor;
+        return this.options.shortPutColor;
+    }
+    
+    /**
+     * Add alternating profit/loss zones between breakeven points
+     * This creates the professional alternating green/red zones
+     */
+    addAlternatingZones(payoffData) {
+        if (this.breakEvenPoints.length === 0) {
+            // No breakeven points - simple profit/loss zones
+            this.addSimpleProfitLossZones(payoffData);
+            return;
+        }
+        
+        // Create boundaries including min/max prices
+        const prices = payoffData.map(([price]) => price);
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        
+        const boundaries = [minPrice, ...this.breakEvenPoints.sort((a, b) => a - b), maxPrice];
+        
+        // Create alternating zones between boundaries
+        for (let i = 0; i < boundaries.length - 1; i++) {
+            const startPrice = boundaries[i];
+            const endPrice = boundaries[i + 1];
+            const midPrice = (startPrice + endPrice) / 2;
+            
+            // Find P&L at midpoint to determine if zone is profit or loss
+            const midPnl = this.calculateTotalPayoff(midPrice);
+            const isProfit = midPnl > 0;
+            
+            // Create zone data
+            const zoneData = payoffData.filter(([price]) => price >= startPrice && price <= endPrice);
+            
+            if (zoneData.length > 0) {
+                this.addProfitLossZone(zoneData, isProfit, i);
+            }
+        }
+    }
+    
+    /**
+     * Add simple profit/loss zones when no breakeven points exist
+     */
+    addSimpleProfitLossZones(payoffData) {
         const profitZones = [];
         const lossZones = [];
         
-        for (let i = 0; i < payoffData.length; i++) {
-            const [price, pnl] = payoffData[i];
-            
+        for (const [price, pnl] of payoffData) {
             if (pnl >= 0) {
                 profitZones.push([price, pnl]);
                 lossZones.push([price, 0]);
@@ -367,76 +547,78 @@ class ProfessionalPayoffChart {
             }
         }
         
-        // Remove existing series
-        while (this.chart.series.length > 0) {
-            this.chart.series[0].remove(false);
-        }
-        
-        // Add profit zone (green area above zero line)
+        // Add profit zone
         this.chart.addSeries({
             name: 'Profit Zone',
             type: 'area',
             data: profitZones,
             color: this.options.profitColor,
-            fillColor: {
-                linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-                stops: [
-                    [0, Highcharts.color(this.options.profitColor).setOpacity(0.4).get('rgba')],
-                    [1, Highcharts.color(this.options.profitColor).setOpacity(0.1).get('rgba')]
-                ]
-            },
+            fillColor: this.createGradientFill(this.options.profitColor, true),
             lineWidth: 0,
             threshold: 0,
             marker: { enabled: false },
             enableMouseTracking: false,
-            showInLegend: true
+            showInLegend: false,
+            zIndex: 1
         }, false);
         
-        // Add loss zone (red area below zero line)
+        // Add loss zone
         this.chart.addSeries({
             name: 'Loss Zone',
             type: 'area',
             data: lossZones,
             color: this.options.lossColor,
-            fillColor: {
-                linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
-                stops: [
-                    [0, Highcharts.color(this.options.lossColor).setOpacity(0.1).get('rgba')],
-                    [1, Highcharts.color(this.options.lossColor).setOpacity(0.4).get('rgba')]
-                ]
-            },
+            fillColor: this.createGradientFill(this.options.lossColor, false),
             lineWidth: 0,
             threshold: 0,
             marker: { enabled: false },
             enableMouseTracking: false,
-            showInLegend: true
+            showInLegend: false,
+            zIndex: 1
         }, false);
+    }
+    
+    /**
+     * Add individual profit or loss zone
+     */
+    addProfitLossZone(zoneData, isProfit, zoneIndex) {
+        const color = isProfit ? this.options.profitColor : this.options.lossColor;
+        const zoneName = isProfit ? `Profit Zone ${zoneIndex + 1}` : `Loss Zone ${zoneIndex + 1}`;
         
-        // Add main payoff line
+        // Create area data that goes from payoff line to zero
+        const areaData = zoneData.map(([price, pnl]) => {
+            return isProfit ? [price, Math.max(0, pnl)] : [price, Math.min(0, pnl)];
+        });
+        
         this.chart.addSeries({
-            name: 'Net P&L',
-            type: 'line',
-            data: payoffData,
-            color: '#1F2937',
-            lineWidth: 3,
+            name: zoneName,
+            type: 'area',
+            data: areaData,
+            color: color,
+            fillColor: this.createGradientFill(color, isProfit),
+            lineWidth: 0,
+            threshold: 0,
             marker: { enabled: false },
-            enableMouseTracking: true,
-            showInLegend: true,
-            zIndex: 10
+            enableMouseTracking: false,
+            showInLegend: false,
+            zIndex: isProfit ? 2 : 1
         }, false);
+    }
+    
+    /**
+     * Create gradient fill for zones
+     */
+    createGradientFill(color, isProfit) {
+        const opacity1 = isProfit ? 0.4 : 0.3;
+        const opacity2 = isProfit ? 0.1 : 0.1;
         
-        // FIXED: Use redraw(false) to prevent infinite recursion
-        this.chart.redraw(false);
-        
-        // Update breakeven lines
-        if (this.options.showBreakevenLines) {
-            this.updateBreakevenLines();
-        }
-        
-        // Update spot price line
-        if (this.options.showSpotLine && this.spotPrice) {
-            this.updateSpotPriceLine();
-        }
+        return {
+            linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1 },
+            stops: [
+                [0, Highcharts.color(color).setOpacity(opacity1).get('rgba')],
+                [1, Highcharts.color(color).setOpacity(opacity2).get('rgba')]
+            ]
+        };
     }
     
     /**
@@ -445,30 +627,36 @@ class ProfessionalPayoffChart {
     updateBreakevenLines() {
         if (!this.chart) return;
         
-        // Remove existing breakeven lines
+        // Always remove existing breakeven lines first (even if no new ones to add)
         for (let i = 0; i < 10; i++) {
             this.chart.xAxis[0].removePlotLine(`breakeven${i}`);
         }
         
-        const breakevenPoints = this.calculateBreakevenPoints();
+        // Exit early if no breakeven points to add
+        if (!this.breakEvenPoints || this.breakEvenPoints.length === 0) return;
+        
+        const breakevenPoints = this.breakEvenPoints;
         
         breakevenPoints.forEach((point, index) => {
             this.chart.xAxis[0].addPlotLine({
                 id: `breakeven${index}`,
                 value: point,
                 color: this.options.breakevenColor,
-                width: 2,
-                dashStyle: 'Dash',
-                zIndex: 6,
+                width: 3,
+                dashStyle: 'Dot',
+                zIndex: 12,
                 label: {
-                    text: `BE: ₹${point.toFixed(0)}`,
+                    text: `Break-even: ₹${point.toFixed(2)}`,
                     align: 'center',
                     style: {
                         color: this.options.breakevenColor,
                         fontWeight: 'bold',
-                        fontSize: '11px'
+                        fontSize: '12px',
+                        backgroundColor: 'rgba(255,255,255,0.9)',
+                        borderRadius: '3px',
+                        padding: '2px 4px'
                     },
-                    y: -5
+                    y: -8
                 }
             });
         });
@@ -528,7 +716,7 @@ class ProfessionalPayoffChart {
     }
     
     /**
-     * Get chart statistics
+     * Get chart statistics with fresh calculations
      * @returns {Object} Chart statistics
      */
     getChartStats() {
@@ -536,14 +724,19 @@ class ProfessionalPayoffChart {
             return { maxProfit: 0, maxLoss: 0, breakevenPoints: [] };
         }
         
+        // Generate fresh payoff data
         const payoffData = this.generatePayoffData();
         const pnlValues = payoffData.map(point => point[1]);
         
+        // Calculate fresh breakeven points and profit/loss values
+        this.calculateBreakevenPoints(payoffData);
+        this.calculateMaxProfitLoss(payoffData);
+        
         return {
-            maxProfit: Math.max(...pnlValues),
-            maxLoss: Math.min(...pnlValues),
-            breakevenPoints: this.calculateBreakevenPoints(),
-            netCredit: this.currentPositions.reduce((sum, pos) => sum + (pos.premium * pos.quantity * (pos.action === 'sell' ? 1 : -1)), 0)
+            maxProfit: this.maxProfit || Math.max(...pnlValues),
+            maxLoss: this.maxLoss || Math.min(...pnlValues),
+            breakevenPoints: this.breakEvenPoints || [],
+            netCredit: this.currentPositions.reduce((sum, pos) => sum + (pos.premium * pos.quantity * (pos.action.toLowerCase() === 'sell' ? 1 : -1)), 0)
         };
     }
     
