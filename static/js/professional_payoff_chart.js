@@ -39,6 +39,13 @@ class ProfessionalPayoffChart {
         this.lastUpdateTime = 0;
         this.updateDelay = 100; // 100ms throttle
         
+        // Display toggles - all visible by default
+        this.displaySettings = {
+            showIndividualLegs: true,
+            showSpotPriceLine: true,
+            showBreakevenLines: true
+        };
+        
         this.init();
     }
     
@@ -756,6 +763,84 @@ class ProfessionalPayoffChart {
         if (this.chart) {
             this.chart.destroy();
             this.chart = null;
+        }
+    }
+    
+    /**
+     * Toggle display settings for chart elements
+     */
+    toggleIndividualLegs() {
+        this.displaySettings.showIndividualLegs = !this.displaySettings.showIndividualLegs;
+        
+        if (this.displaySettings.showIndividualLegs) {
+            this.updateIndividualLegs();
+        } else {
+            this.hideIndividualLegs();
+        }
+        
+        console.log(`Individual legs: ${this.displaySettings.showIndividualLegs ? 'shown' : 'hidden'}`);
+        return this.displaySettings.showIndividualLegs;
+    }
+    
+    toggleSpotPriceLine() {
+        this.displaySettings.showSpotPriceLine = !this.displaySettings.showSpotPriceLine;
+        
+        if (this.displaySettings.showSpotPriceLine) {
+            this.updateCurrentSpotPrice();
+        } else {
+            this.hideSpotPriceLine();
+        }
+        
+        console.log(`Spot price line: ${this.displaySettings.showSpotPriceLine ? 'shown' : 'hidden'}`);
+        return this.displaySettings.showSpotPriceLine;
+    }
+    
+    toggleBreakevenLines() {
+        this.displaySettings.showBreakevenLines = !this.displaySettings.showBreakevenLines;
+        
+        if (this.displaySettings.showBreakevenLines) {
+            this.updateBreakevenLines();
+        } else {
+            this.hideBreakevenLines();
+        }
+        
+        console.log(`Breakeven lines: ${this.displaySettings.showBreakevenLines ? 'shown' : 'hidden'}`);
+        return this.displaySettings.showBreakevenLines;
+    }
+    
+    /**
+     * Hide individual leg lines
+     */
+    hideIndividualLegs() {
+        if (!this.chart) return;
+        
+        // Remove all individual leg series
+        const seriesToRemove = this.chart.series.filter(series => 
+            series.options.id && series.options.id.startsWith('leg-')
+        );
+        
+        seriesToRemove.forEach(series => series.remove(false));
+        this.chart.redraw();
+    }
+    
+    /**
+     * Hide spot price line
+     */
+    hideSpotPriceLine() {
+        if (!this.chart) return;
+        
+        this.chart.xAxis[0].removePlotLine('currentSpot');
+    }
+    
+    /**
+     * Hide breakeven lines
+     */
+    hideBreakevenLines() {
+        if (!this.chart) return;
+        
+        // Remove all breakeven plot lines
+        for (let i = 0; i < 10; i++) {
+            this.chart.xAxis[0].removePlotLine(`breakeven${i}`);
         }
     }
 }

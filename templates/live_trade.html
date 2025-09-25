@@ -1734,6 +1734,19 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
               Rolling Straddle
             </button>
             <div class="ms-auto d-flex align-items-center gap-2">
+              <!-- Chart Display Controls -->
+              <div class="btn-group" role="group">
+                <button id="toggleIndividualLegs" class="btn btn-outline-primary btn-sm active" title="Show/Hide Individual Leg Lines">
+                  <i class="fas fa-chart-line"></i>
+                </button>
+                <button id="toggleSpotPriceLine" class="btn btn-outline-warning btn-sm active" title="Show/Hide Live Spot Price Line">
+                  <i class="fas fa-crosshairs"></i>
+                </button>
+                <button id="toggleBreakevenLines" class="btn btn-outline-info btn-sm active" title="Show/Hide Breakeven Lines">
+                  <i class="fas fa-equals"></i>
+                </button>
+              </div>
+              
               <button id="payoffSettings" class="btn btn-outline-secondary btn-sm" title="Payoff Settings">
                 <i class="fas fa-cog"></i>
               </button>
@@ -2527,6 +2540,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Keep reference for compatibility with existing code
                 payoffChart = professionalChart.chart;
                 
+                // Initialize toggle button event handlers
+                initToggleButtonHandlers();
+                
                 console.log('✅ Professional payoff chart initialized with profit/loss zones');
                 return;
             }
@@ -2725,6 +2741,46 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Error getting LTP:', error);
         }
         return 0;
+    }
+    
+    // Initialize toggle button handlers for chart display controls
+    function initToggleButtonHandlers() {
+        console.log('🎮 Initializing chart toggle button handlers...');
+        
+        // Individual Legs Toggle
+        const toggleIndividualLegs = document.getElementById('toggleIndividualLegs');
+        if (toggleIndividualLegs && professionalChart) {
+            toggleIndividualLegs.addEventListener('click', function() {
+                const isVisible = professionalChart.toggleIndividualLegs();
+                this.classList.toggle('active', isVisible);
+                console.log(`Individual legs toggled: ${isVisible ? 'shown' : 'hidden'}`);
+            });
+            console.log('✅ Individual legs toggle handler added');
+        }
+        
+        // Spot Price Line Toggle
+        const toggleSpotPriceLine = document.getElementById('toggleSpotPriceLine');
+        if (toggleSpotPriceLine && professionalChart) {
+            toggleSpotPriceLine.addEventListener('click', function() {
+                const isVisible = professionalChart.toggleSpotPriceLine();
+                this.classList.toggle('active', isVisible);
+                console.log(`Spot price line toggled: ${isVisible ? 'shown' : 'hidden'}`);
+            });
+            console.log('✅ Spot price line toggle handler added');
+        }
+        
+        // Breakeven Lines Toggle
+        const toggleBreakevenLines = document.getElementById('toggleBreakevenLines');
+        if (toggleBreakevenLines && professionalChart) {
+            toggleBreakevenLines.addEventListener('click', function() {
+                const isVisible = professionalChart.toggleBreakevenLines();
+                this.classList.toggle('active', isVisible);
+                console.log(`Breakeven lines toggled: ${isVisible ? 'shown' : 'hidden'}`);
+            });
+            console.log('✅ Breakeven lines toggle handler added');
+        }
+        
+        console.log('🎮 Chart toggle button handlers initialized');
     }
     
     // Create Buy/Sell button with position management card - using attached code approach
