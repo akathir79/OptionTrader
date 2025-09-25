@@ -1,0 +1,111 @@
+Making request to: /api/option_history/NSE%3ANIFTY25SEP23150CE option_microchart.js:37:21
+Making request to: /api/option_history/NSE%3ANIFTY25SEP23150PE option_microchart.js:37:21
+Making request to: /api/option_history/NSE%3ANIFTY25SEP23200CE option_microchart.js:37:21
+Making request to: /api/option_history/NSE%3ANIFTY25SEP23200PE option_microchart.js:37:21
+Making request to: /api/option_history/NSE%3ANIFTY25SEP23250CE option_microchart.js:37:21
+Making request to: /api/option_history/NSE%3ANIFTY25SEP23250PE option_microchart.js:37:21
+XHRGET
+https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/api/option_history/NSE:NIFTY25SEP23050CE
+[HTTP/1.1 500 Internal Server Error 143ms]
+
+	
+GET
+	https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/api/option_history/NSE%3ANIFTY25SEP23050CE
+Status
+500
+Internal Server Error
+VersionHTTP/1.1
+Transferred372 B (45 B size)
+Referrer Policystrict-origin-when-cross-origin
+DNS ResolutionSystem
+
+	
+Content-Length
+	45
+Content-Type
+	application/json
+Date
+	Thu, 25 Sep 2025 00:31:53 GMT
+Replit-Cluster
+	picard
+Server
+	gunicorn
+X-Robots-Tag
+	none, noindex, noarchive, nofollow, nositelinkssearchbox, noimageindex
+X-Robots-Tag
+	none, noindex, noarchive, nofollow, nositelinkssearchbox, noimageindex
+	
+Accept
+	*/*
+Accept-Encoding
+	gzip, deflate, br, zstd
+Accept-Language
+	en-US,en;q=0.5
+Connection
+	keep-alive
+Host
+	39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev
+Priority
+	u=4
+Referer
+	https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/
+Sec-Fetch-Dest
+	empty
+Sec-Fetch-Mode
+	cors
+Sec-Fetch-Site
+	same-origin
+User-Agent
+	Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:143.0) Gecko/20100101 Firefox/143.0
+XHRGET
+https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/api/option_history/NSE:NIFTY25SEP23050PE
+[HTTP/1.1 500 Internal Server Error 220ms]
+
+XHRGET
+https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/api/option_history/NSE:NIFTY25SEP23100PE
+[HTTP/1.1 500 Internal Server Error 554ms]
+
+XHRGET
+https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/api/option_history/NSE:NIFTY25SEP23100CE
+[HTTP/1.1 500 Internal Server Error 300ms]
+
+XHRGET
+https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/api/option_history/NSE:NIFTY25SEP23150CE
+[HTTP/1.1 500 Internal Server Error 464ms]
+
+XHRGET
+https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/api/option_history/NSE:NIFTY25SEP23150PE
+[HTTP/1.1 500 Internal Server Error 640ms]
+
+XHRGET
+https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/api/option_history/NSE:NIFTY25SEP23200CE
+[HTTP/1.1 500 Internal Server Error 380ms]
+
+XHRGET
+https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/api/option_history/NSE:NIFTY25SEP23200PE
+[HTTP/1.1 500 Internal Server Error 720ms]
+
+XHRGET
+https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/api/option_history/NSE:NIFTY25SEP23250CE
+[HTTP/1.1 500 Internal Server Error 805ms]
+
+XHRGET
+https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/api/option_history/NSE:NIFTY25SEP23250PE
+[HTTP/1.1 500 Internal Server Error 895ms]
+
+Response for NSE:NIFTY25SEP23050CE: 
+Object { error: "No FYERS access token found" }
+option_microchart.js:42:21
+Error loading data for NSE:NIFTY25SEP23050CE: No FYERS access token found option_microchart.js:60:25
+Response for NSE:NIFTY25SEP23050PE: 
+Object { error: "No FYERS access token found" }
+option_microchart.js:42:21
+Error loading data for NSE:NIFTY25SEP23050PE: No FYERS access token found option_microchart.js:60:25
+Response for NSE:NIFTY25SEP23100CE: 
+Object { error: "No FYERS access token found" }
+option_microchart.js:42:21
+Error loading data for NSE:NIFTY25SEP23100CE: No FYERS access token found option_microchart.js:60:25
+Response for NSE:NIFTY25SEP23200CE: 
+Object { error: "No FYERS access token found" }
+option_microchart.js:42:21
+Error loading data for NSE:NIFTY25SEP23200CE: No FYERS access token found option_microchart.js:60:25

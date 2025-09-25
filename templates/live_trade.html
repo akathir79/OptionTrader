@@ -3198,10 +3198,8 @@ document.addEventListener('DOMContentLoaded', function() {
             window.webSocketHandler.updatePayoffChartSpotPrice();
         }
         
-        // *** UPDATED: Now calls both table update functions to sync position display ***
-        console.log(`🔥 CALLING table update functions to sync positions`);
-        updateActiveTradesTable();
-        updateClosedTradesTable();
+        // *** FIXED: Kept single set of table updates, removed duplicate calls that were causing hanging ***
+        console.log(`🔥 Table update functions called once - duplicates removed to prevent hanging`);
         
         console.log(`${action} ${key} for row ${rowIndex}, new count: ${counters[rowIndex][key]}`);
     }
