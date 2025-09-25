@@ -2679,34 +2679,46 @@ document.addEventListener('DOMContentLoaded', function() {
         closedTrades: window.closedTrades.length
     });
     
-    // Function to get current LTP for a specific strike and option type
+    // PERFORMANCE OPTIMIZED: Cache LTP values instead of DOM searches
+    window.ltpCache = window.ltpCache || {};
+    
     function getCurrentLTP(strike, optionType, expiry) {
+        const cacheKey = `${strike}-${optionType}-${expiry}`;
+        
+        // Return cached value if available (updated by WebSocket)
+        if (window.ltpCache[cacheKey]) {
+            return window.ltpCache[cacheKey];
+        }
+        
+        // Fallback to DOM search only if cache miss (rare)
         try {
             const table = document.getElementById('optionChainTable');
             if (!table) return 0;
             
-            // Find the row for this strike
             const rows = table.getElementsByTagName('tbody')[0]?.getElementsByTagName('tr');
             if (!rows) return 0;
             
             for (let row of rows) {
-                const strikeCell = row.children[19]; // Strike column index
+                const strikeCell = row.children[19];
                 if (strikeCell && parseFloat(strikeCell.textContent) === strike) {
-                    // Found the right row, now get the LTP for the option type
+                    let ltp = 0;
                     if (optionType === 'CE') {
                         const ceLtpCell = row.querySelector('.ce-ltp');
                         if (ceLtpCell) {
                             const ltpText = ceLtpCell.textContent.replace(/[₹,]/g, '');
-                            return parseFloat(ltpText) || 0;
+                            ltp = parseFloat(ltpText) || 0;
                         }
                     } else if (optionType === 'PE') {
                         const peLtpCell = row.querySelector('.pe-ltp');
                         if (peLtpCell) {
                             const ltpText = peLtpCell.textContent.replace(/[₹,]/g, '');
-                            return parseFloat(ltpText) || 0;
+                            ltp = parseFloat(ltpText) || 0;
                         }
                     }
-                    break;
+                    
+                    // Cache the value for future use
+                    window.ltpCache[cacheKey] = ltp;
+                    return ltp;
                 }
             }
         } catch (error) {
@@ -3556,16 +3568,28 @@ document.addEventListener('DOMContentLoaded', function() {
         updateClosedTradesTable();
     }
 
-    // Update Active Trades Table only - ATTACH TO WINDOW FOR DEBUGGING
+    // PERFORMANCE OPTIMIZED: Defer table updates to prevent hanging
+    let updateTablePending = false;
+    
     window.updateActiveTradesTable = function updateActiveTradesTable() {
+        // Prevent multiple simultaneous updates
+        if (updateTablePending) return;
+        updateTablePending = true;
+        
+        // Defer to next frame to prevent hanging
+        requestAnimationFrame(() => {
+            try {
+                updateActiveTradesTableImmediate();
+            } finally {
+                updateTablePending = false;
+            }
+        });
+    };
+    
+    function updateActiveTradesTableImmediate() {
         console.log(`🔥 updateActiveTradesTable() called`);
-        console.log(`🔥 Current window.globalPositions:`, window.globalPositions);
-        console.log(`🔥 GlobalPositions keys:`, Object.keys(window.globalPositions || {}));
         console.log(`🔥 GlobalPositions count:`, Object.keys(window.globalPositions || {}).length);
         console.log(`🔥 Active lots LENGTH:`, (window.activeLots || []).length);
-        console.log(`🔥 Closed trades LENGTH:`, (window.closedTrades || []).length);
-        console.log(`🔥 Active lots CONTENT:`, window.activeLots);
-        console.log(`🔥 Closed trades CONTENT:`, window.closedTrades);
         
         const tableBody = document.getElementById('activeTradesTableBody');
         if (!tableBody) {
