@@ -329,12 +329,16 @@ class PaperTradingSystem {
                 return;
             }
             
-            // Don't intercept position management buttons (buy/sell from option chain)
+            // Don't intercept real money trading buttons (option chain buy/sell)
             if (target.classList.contains('position-btn-decrease') || 
                 target.classList.contains('position-btn-increase') ||
+                target.classList.contains('position-add-btn') ||
+                target.classList.contains('smart-btn') ||
                 target.closest('.position-btn-decrease') ||
-                target.closest('.position-btn-increase')) {
-                // Allow normal flow for position management buttons
+                target.closest('.position-btn-increase') ||
+                target.closest('.position-add-btn') ||
+                target.closest('.smart-btn')) {
+                // Allow normal flow for real money trading buttons
                 return;
             }
         }, true);
