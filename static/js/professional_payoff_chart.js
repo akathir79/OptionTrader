@@ -24,6 +24,11 @@ class ProfessionalPayoffChart {
             ...options
         };
         
+        // PERFORMANCE FIX: Add throttling to prevent hanging
+        this.updatePending = false;
+        this.lastUpdateTime = 0;
+        this.updateDelay = 100; // 100ms throttle
+        
         this.init();
     }
     
@@ -45,12 +50,8 @@ class ProfessionalPayoffChart {
                 height: this.options.height,
                 backgroundColor: '#FFFFFF',
                 plotBackgroundColor: '#FAFBFC',
-                animation: this.options.animate,
-                events: {
-                    redraw: () => {
-                        this.updateProfitLossZones();
-                    }
-                }
+                animation: this.options.animate
+                // REMOVED: Infinite recursion redraw event that was causing hanging
             },
             
             title: {
@@ -313,9 +314,36 @@ class ProfessionalPayoffChart {
     }
     
     /**
-     * Update chart with profit and loss zones
+     * Update chart with profit and loss zones - THROTTLED for performance
      */
     updateProfitLossZones() {
+        if (!this.chart || !this.currentPositions || this.currentPositions.length === 0) {
+            return;
+        }
+        
+        // PERFORMANCE FIX: Throttle updates to prevent hanging
+        const now = Date.now();
+        if (this.updatePending || (now - this.lastUpdateTime) < this.updateDelay) {
+            return;
+        }
+        
+        this.updatePending = true;
+        this.lastUpdateTime = now;
+        
+        // Defer to next frame to prevent blocking UI
+        requestAnimationFrame(() => {
+            try {
+                this.updateProfitLossZonesImmediate();
+            } finally {
+                this.updatePending = false;
+            }
+        });
+    }
+    
+    /**
+     * Immediate update implementation (called via requestAnimationFrame)
+     */
+    updateProfitLossZonesImmediate() {
         if (!this.chart || !this.currentPositions || this.currentPositions.length === 0) {
             return;
         }
@@ -397,7 +425,8 @@ class ProfessionalPayoffChart {
             zIndex: 10
         }, false);
         
-        this.chart.redraw();
+        // FIXED: Use redraw(false) to prevent infinite recursion
+        this.chart.redraw(false);
         
         // Update breakeven lines
         if (this.options.showBreakevenLines) {
