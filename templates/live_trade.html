@@ -4562,18 +4562,28 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Create multi-leg payoff chart from loaded option chain data - proper multi-leg concept
     function createPayoffChartFromOptionChain() {
+        console.log('🔥 createPayoffChartFromOptionChain called');
+        console.log('🔍 professionalChart exists:', !!professionalChart);
+        console.log('🔍 window.activeLots:', window.activeLots);
+        console.log('🔍 window.activeLots length:', window.activeLots ? window.activeLots.length : 0);
+        
         // Use professional chart if available
         if (professionalChart && window.activeLots) {
+            console.log('✅ Using professional chart, converting lots...');
             const positions = convertLotsToPositions(window.activeLots);
+            console.log('✅ Calling professionalChart.updatePositions with:', positions);
             professionalChart.updatePositions(positions);
             
             // Update spot price if available
             if (window.webSocketHandler && window.webSocketHandler.currentSpotPrice) {
+                console.log('✅ Updating spot price:', window.webSocketHandler.currentSpotPrice);
                 professionalChart.updateSpotPrice(window.webSocketHandler.currentSpotPrice);
             }
             
             console.log(`✅ Professional payoff chart updated with ${positions.length} position types from ${window.activeLots.length} lots`);
             return;
+        } else {
+            console.log('⚠️ Professional chart not available or no activeLots, falling back to legacy chart');
         }
         
         // Fallback to legacy chart initialization
