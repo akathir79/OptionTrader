@@ -33,6 +33,19 @@ Preferred communication style: Simple, everyday language.
 - **Symbol Selection**: Fetches expiry dates for index symbols (NIFTY, BANKNIFTY) and provides lookup/filtering, integrating with external CSV data.
 - **Live Trading Interface**: Displays real-time options chain with ATM (At-the-Money) strike highlighting and ITM/OTM color coding.
 - **Position Tracking Synchronization**: Critical logic ensures three primary arrays are always in sync: `window.activeLots` (individual lots), `window.globalPositions` (aggregated positions), and `window.closedTrades` (closed trade records). All position modifications must update these three arrays and trigger UI updates for tables and payoff charts. Netting logic for positions is precisely managed across these arrays.
+- **Real-Time Order Execution** (October 2025):
+  - **Position Table**: Enhanced with Order Type dropdown, Stop Loss input, Trailing SL checkbox, and Execute button (▶️) for each position
+  - **Order Confirmation Modal**: Interactive modal allows editing all order parameters before execution (symbol, quantity, order type, limit/stop prices, stop loss %, product type, validity)
+  - **Backend API**: `/api/place_real_order` endpoint with comprehensive validation:
+    - Input validation: Symbol (non-empty string), quantity (positive integer), order type (1-4), action (1/-1), product type (INTRADAY/MARGIN/CNC/CO/BO/MTF)
+    - Enum conversion: Converts string values ("BUY" → 1, "MARKET" → 2) to numeric codes expected by Fyers API
+    - Stop loss calculation: Automatically calculates stop loss price from percentage and entry price (BUY: SL = entry × (1 - SL%/100), SELL: SL = entry × (1 + SL%/100))
+    - Broker credential management: Retrieves stored access token and client ID from database
+    - Error handling: Clear error messages for validation failures and broker-side rejections
+  - **Data Flow**: Play button → Modal (editable) → Backend validation → Fyers API → Order confirmation/rejection
+  - **Security**: Broker credentials retrieved from database, no exposure in frontend code
+  - **Limitations**: Trailing stop loss requires separate monitoring system (not directly supported by Fyers place_order API)
+- **Payoff Chart**: Dynamic strike range adaptation - automatically extracts min/max strikes from loaded option chain table with buffer, works with any symbol/expiry combination
 - **Data Flow**: User authentication, symbol selection triggering API calls, real-time market data fetching via broker APIs, live options data display, and payoff chart visualization.
 - **Deployment**: Uses environment variables for configuration (`DATABASE_URL`, `DEBUG`), modular file structure (blueprints, static, templates), and SQLAlchemy for database management.
 
