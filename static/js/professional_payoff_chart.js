@@ -277,32 +277,17 @@ class ProfessionalPayoffChart {
             return [];
         }
         
-        // Use real underlying price as center point for price range
-        let centerPrice = this.spotPrice;
+        // Use strike-based range calculation (matching user's working example)
+        const strikes = this.currentPositions.map(p => p.strike);
+        const minStrike = Math.min(...strikes) - 1000;
+        const maxStrike = Math.max(...strikes) + 1000;
+        const step = Math.max(1, Math.floor((maxStrike - minStrike) / 100));
         
-        // Fallback: If no spot price available, use strikes as reference
-        if (!centerPrice || centerPrice <= 0) {
-            const strikes = this.currentPositions.map(p => p.strike);
-            centerPrice = strikes.length > 0 ? (Math.min(...strikes) + Math.max(...strikes)) / 2 : 25000;
-            console.log('⚠️ No spot price available, using strikes center:', centerPrice);
-        }
-        
-        console.log('📊 Using underlying price for range calculation:', centerPrice);
-        
-        // Create realistic price range around current underlying price
-        // For NIFTY around 25000, this creates range like 20000-30000 (±20%)
-        const rangePercent = 0.25; // ±25% range for comprehensive analysis
-        const priceRange = centerPrice * rangePercent;
-        
-        const startPrice = centerPrice - priceRange;
-        const endPrice = centerPrice + priceRange;
-        const priceStep = (endPrice - startPrice) / 200; // 200 data points for smooth curves
-        
-        console.log(`📊 Payoff chart price range: ₹${startPrice.toFixed(0)} to ₹${endPrice.toFixed(0)} (center: ₹${centerPrice.toFixed(0)})`);
+        console.log(`📊 Payoff chart strike-based range: ₹${minStrike.toFixed(0)} to ₹${maxStrike.toFixed(0)} (step: ${step})`);
         
         const payoffData = [];
         
-        for (let price = startPrice; price <= endPrice; price += priceStep) {
+        for (let price = minStrike; price <= maxStrike; price += step) {
             const totalPayoff = this.calculateTotalPayoff(price);
             payoffData.push([price, totalPayoff]);
         }
@@ -444,22 +429,11 @@ class ProfessionalPayoffChart {
      * Add individual leg series to show each option position
      */
     addIndividualLegSeries() {
-        // Use real underlying price for consistent range calculation
-        let centerPrice = this.spotPrice;
-        
-        // Fallback: If no spot price available, use strikes as reference
-        if (!centerPrice || centerPrice <= 0) {
-            const strikes = this.currentPositions.map(p => p.strike);
-            centerPrice = strikes.length > 0 ? (Math.min(...strikes) + Math.max(...strikes)) / 2 : 25000;
-        }
-        
-        // Use same range calculation as main payoff chart
-        const rangePercent = 0.25; // ±25% range
-        const priceRange = centerPrice * rangePercent;
-        
-        const startPrice = centerPrice - priceRange;
-        const endPrice = centerPrice + priceRange;
-        const priceStep = (endPrice - startPrice) / 200;
+        // Use same strike-based range as main payoff chart
+        const strikes = this.currentPositions.map(p => p.strike);
+        const startPrice = Math.min(...strikes) - 1000;
+        const endPrice = Math.max(...strikes) + 1000;
+        const priceStep = Math.max(1, Math.floor((endPrice - startPrice) / 100));
         
         for (const [index, position] of this.currentPositions.entries()) {
             const legData = [];
@@ -516,36 +490,44 @@ class ProfessionalPayoffChart {
     /**
      * Add alternating profit/loss zones between breakeven points
      * This creates the professional alternating green/red zones
+     * Following user's working example: start with first payoff color, then alternate
      */
     addAlternatingZones(payoffData) {
+        if (payoffData.length === 0) return;
+        
         if (this.breakEvenPoints.length === 0) {
             // No breakeven points - simple profit/loss zones
             this.addSimpleProfitLossZones(payoffData);
             return;
         }
         
+        // Start with color based on first payoff value (matching user's working example)
+        const firstPayoff = payoffData[0][1];
+        let currentColor = firstPayoff >= 0 ? '#28A745' : '#FF4C4C'; // Green for profit, Red for loss
+        
         // Create boundaries including min/max prices
         const prices = payoffData.map(([price]) => price);
         const minPrice = Math.min(...prices);
         const maxPrice = Math.max(...prices);
         
-        const boundaries = [minPrice, ...this.breakEvenPoints.sort((a, b) => a - b), maxPrice];
+        const sortedBreakevens = [...this.breakEvenPoints].sort((a, b) => a - b);
+        const boundaries = [minPrice, ...sortedBreakevens, maxPrice];
         
         // Create alternating zones between boundaries
         for (let i = 0; i < boundaries.length - 1; i++) {
             const startPrice = boundaries[i];
             const endPrice = boundaries[i + 1];
-            const midPrice = (startPrice + endPrice) / 2;
             
-            // Find P&L at midpoint to determine if zone is profit or loss
-            const midPnl = this.calculateTotalPayoff(midPrice);
-            const isProfit = midPnl > 0;
-            
-            // Create zone data
+            // Create zone data for this segment
             const zoneData = payoffData.filter(([price]) => price >= startPrice && price <= endPrice);
             
             if (zoneData.length > 0) {
+                // Determine if profit or loss zone based on current color
+                const isProfit = currentColor === '#28A745';
                 this.addProfitLossZone(zoneData, isProfit, i);
+                
+                // Alternate color for next zone
+                currentColor = currentColor === '#28A745' ? '#FF4C4C' : '#28A745';
             }
         }
     }

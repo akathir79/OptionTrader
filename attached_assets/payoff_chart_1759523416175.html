@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Option Chain + Multi-Leg Payoff (Bootstrap 5 Layout)</title>
+
+  <!-- Bootstrap 5 CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+
+  <!-- Highcharts -->
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+
+  <style>
+    body {
+      padding: 1rem;
+    }
+
+    /* "Buy" (green) and "Sell" (red) buttons with badges */
+    .option_button {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 0 10px;
+      height: 28px;
+      font-size: 12px;
+      border: 1px solid;
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+      margin: 0 5px;
+      transition: 0.3s;
+    }
+    .option_button:hover {
+      box-shadow: 0 0 5px -1px rgba(0, 0, 0, 0.5);
+    }
+    .option_button.active {
+      display: inline-flex !important;
+    }
+
+    .buy_sell_cell {
+      position: relative;
+      vertical-align: middle !important;
+      padding: 0.5rem !important;
+    }
+    .buy_sell_cell:hover .option_button {
+      display: inline-flex;
+    }
+
+    .buy_button {
+      color: #03b760;
+      border-color: #03b760;
+    }
+    .sell_button {
+      color: #ef6161;
+      border-color: #ef6161;
+    }
+
+    .count_badge {
+      display: none;
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 18px;
+      height: 18px;
+      line-height: 18px;
+      text-align: center;
+      font-size: 11px;
+      color: #fff;
+      border-radius: 50%;
+    }
+    .buy_button .count_badge {
+      background: #03b760;
+    }
+    .sell_button .count_badge {
+      background: #ef6161;
+    }
+
+    .dropdown_menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      min-width: 80px;
+      z-index: 9999;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    }
+    .dropdown_menu button {
+      display: block;
+      width: 100%;
+      padding: 6px 12px;
+      background: none;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .dropdown_menu button:hover {
+      background: #f2f2f2;
+    }
+
+    /* Payoff Chart Container */
+    #chartContainer {
+      width: 100%;
+      height: 400px;
+      margin-bottom: 1rem;
+    }
+
+    /* Margin Info area */
+    #marginInfo {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 1rem;
+    }
+    .metric {
+      margin: 0.5rem;
+      text-align: center;
+    }
+    .metric-label {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 4px;
+    }
+    .metric-value {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    /* Fixed "Clone Page" button in top-right corner */
+    #clonePageBtn {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      padding: 10px 20px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      z-index: 999;
+    }
+
+    /* For the Log Table: Scrollable container */
+    #logTableContainer {
+      max-height: 200px; /* Adjust as needed */
+      overflow-y: auto;
+    }
+
+    /* For the Option Chain Table on the left side */
+    #optionChainContainer {
+      max-height: 75vh; /* Adjust as needed to fill left-side vertical space */
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Clone Page Button -->
+<button id="clonePageBtn" onclick="clonePage()">
+  Clone Page
+</button>
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Left Column: Option Chain Only -->
+    <div class="col-md-4 mb-4">
+      <h4>Option Chain</h4>
+      <!-- Scrollable wrapper for left side table -->
+      <div id="optionChainContainer">
+        <table class="table table-bordered text-center" id="optionChainTable">
+          <thead class="table-light">
+            <tr>
+              <th>Call (B/S)</th>
+              <th>Call LTP(Δ)</th>
+              <th>Strike</th>
+              <th>Put LTP(Δ)</th>
+              <th>Put (B/S)</th>
+            </tr>
+          </thead>
+          <tbody id="optionTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Right Column: Margin Info -> Payoff Chart -> Saved Table Controls -> Log Table -->
+    <div class="col-md-8">
+      <!-- 1) Margin Info on top -->
+      <h4>Margin Info</h4>
+      <div id="marginInfo"></div>
+
+      <!-- 2) Payoff Chart -->
+      <h4>Payoff Chart</h4>
+      <div id="chartContainer"></div>
+
+      <!-- 3) Saved Tables Control Panel -->
+      <div class="mb-3">
+        <h4>Saved Tables Control</h4>
+        <div class="d-flex flex-wrap align-items-center justify-content-center gap-2">
+          <label for="savedTablesSelect" class="form-label mb-0">Saved Tables:</label>
+          <select id="savedTablesSelect" class="form-select w-auto">
+            <option value="">-- Select Saved Table --</option>
+          </select>
+          <button id="addNewBtn" class="btn btn-primary">Add New</button>
+          <button id="saveBtn" class="btn btn-success">Save</button>
+          <button id="editBtn" class="btn btn-warning">Edit</button>
+          <button id="deleteBtn" class="btn btn-danger">Delete</button>
+          <button id="clearBtn" class="btn btn-secondary">Clear</button>
+          <button
+            id="newTabBtn"
+            class="btn btn-info"
+            onclick="openNewTab()"
+          >
+            New Tab (Open Selected)
+          </button>
+        </div>
+      </div>
+
+      <!-- 4) Log Table with vertical scroll -->
+      <h4>Log Table</h4>
+      <div class="table-responsive" id="logTableContainer">
+        <table class="table table-striped text-center align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Row #</th>
+              <th>Action</th>
+              <th>Date</th>
+              <th>Strike</th>
+              <th>Expiry</th>
+              <th>Entry</th>
+              <th>LTP</th>
+              <th>Delta</th>
+              <th>P&L</th>
+              <th>Lot Size</th>
+              <th>Lot</th>
+              <th>Qty</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody id="countsTableBody"></tbody>
+        </table>
+      </div>
+    </div><!-- end right column -->
+  </div>
+</div>
+
+<script>
+/***************************************************************
+ * Constants and global data structures
+ ***************************************************************/
+const defaultLotSize = 75;
+const defaultLot = 1;
+
+// Demo row data (strikes). Replace or fetch from a server:
+const rowData = [
+  { date: "24 Jan, 09:16", strike: 22100, callLtp: "855.1", putLtp: "3.9",  expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22150, callLtp: "",      putLtp: "4.7",  expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22200, callLtp: "",      putLtp: "5.7",  expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22250, callLtp: "",      putLtp: "7",    expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22300, callLtp: "661.8", putLtp: "8.8",  expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22350, callLtp: "607.3", putLtp: "11.2", expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22400, callLtp: "560",   putLtp: "14.4", expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22450, callLtp: "514.5", putLtp: "17.4", expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22500, callLtp: "471",   putLtp: "21.9", expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22550, callLtp: "426.9", putLtp: "27.7", expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22600, callLtp: "382.7", putLtp: "34.5", expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22650, callLtp: "340.8", putLtp: "43.4", expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22700, callLtp: "299.1", putLtp: "52.9", expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22750, callLtp: "263.4", putLtp: "65.3", expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22800, callLtp: "228.7", putLtp: "79.3", expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22850, callLtp: "195.8", putLtp: "97.7", expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22900, callLtp: "165.8", putLtp: "117.5",expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 22950, callLtp: "139.4", putLtp: "140.1",expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23000, callLtp: "114.2", putLtp: "168.1",expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23050, callLtp: "94.2",  putLtp: "194.5",expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23100, callLtp: "76.5",  putLtp: "227.2",expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23150, callLtp: "61.7",  putLtp: "261.9",expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23200, callLtp: "50",    putLtp: "300.5",expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23250, callLtp: "40.5",  putLtp: "343.2",expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23300, callLtp: "31.9",  putLtp: "386.4",expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23350, callLtp: "25.8",  putLtp: "427.4",expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23400, callLtp: "20.8",  putLtp: "472.4",expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23450, callLtp: "16.6",  putLtp: "519.6",expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23500, callLtp: "13.2",  putLtp: "565",  expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23550, callLtp: "10.6",  putLtp: "613.5",expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23600, callLtp: "8.5",   putLtp: "660",  expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23650, callLtp: "6.7",   putLtp: "716.3",expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23700, callLtp: "5.4",   putLtp: "755.9",expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23750, callLtp: "4.7",   putLtp: "804.2",expiry: "27 Jan" },
+  { date: "24 Jan, 09:16", strike: 23800, callLtp: "3.7",   putLtp: "856.1",expiry: "27 Jan" },
+];
+
+// For storing how many times each button (CE/PE Buy/Sell) is clicked per row:
+let counters = [];
+// For controlling “first click = immediate add” logic:
+let firstClickFlags = [];
+
+document.addEventListener("DOMContentLoaded", () => {
+  buildOptionChainTable();
+  initPayoffChart();
+  updateSavedTablesCombobox();
+
+  // If ?table=<name> is on the URL, auto-load that saved table
+  const urlParams = new URLSearchParams(window.location.search);
+  const tableParam = urlParams.get("table");
+  if (tableParam) {
+    loadSavedTable(tableParam);
+    document.getElementById("savedTablesSelect").value = tableParam;
+  }
+});
+
+/***************************************************************
+ * BUILD THE OPTION CHAIN TABLE
+ ***************************************************************/
+function buildOptionChainTable() {
+  const tableBody = document.getElementById("optionTableBody");
+  rowData.forEach((row, rowIndex) => {
+    counters[rowIndex] = { ceBuy: 0, ceSell: 0, peBuy: 0, peSell: 0 };
+    firstClickFlags[rowIndex] = { ceBuy: true, ceSell: true, peBuy: true, peSell: true };
+
+    const tr = document.createElement("tr");
+
+    // 1) Call (B/S)
+    const callCell = document.createElement("td");
+    callCell.className = "buy_sell_cell";
+    callCell.appendChild(createButton(rowIndex, "ceBuy", "B", "buy_button"));
+    callCell.appendChild(createButton(rowIndex, "ceSell", "S", "sell_button"));
+
+    // 2) Call LTP(Δ)
+    const callLtpCell = document.createElement("td");
+    callLtpCell.textContent = row.callLtp || "";
+
+    // 3) Strike
+    const strikeCell = document.createElement("td");
+    strikeCell.textContent = row.strike;
+
+    // 4) Put LTP(Δ)
+    const putLtpCell = document.createElement("td");
+    putLtpCell.textContent = row.putLtp || "";
+
+    // 5) Put (B/S)
+    const putCell = document.createElement("td");
+    putCell.className = "buy_sell_cell";
+    putCell.appendChild(createButton(rowIndex, "peBuy", "B", "buy_button"));
+    putCell.appendChild(createButton(rowIndex, "peSell", "S", "sell_button"));
+
+    tr.appendChild(callCell);
+    tr.appendChild(callLtpCell);
+    tr.appendChild(strikeCell);
+    tr.appendChild(putLtpCell);
+    tr.appendChild(putCell);
+
+    tableBody.appendChild(tr);
+  });
+}
+
+// Utility to build each Buy/Sell button
+function createButton(rowIndex, key, label, extraClass) {
+  const div = document.createElement("div");
+  div.className = `option_button ${extraClass}`;
+  div.id = `${key}Btn_${rowIndex}`;
+  div.textContent = label + " ";
+
+  // The numeric badge that shows how many lots
+  const badge = document.createElement("span");
+  badge.className = "count_badge";
+  badge.id = `${key}Badge_${rowIndex}`;
+  badge.textContent = "0";
+  div.appendChild(badge);
+
+  // The “+ Add” / “X Remove” dropdown
+  const dropdown = document.createElement("div");
+  dropdown.className = "dropdown_menu";
+  dropdown.id = `${key}Menu_${rowIndex}`;
+  const addBtn = document.createElement("button");
+  addBtn.textContent = "+ Add";
+  addBtn.onclick = (e) => increment(rowIndex, key, e);
+  const removeBtn = document.createElement("button");
+  removeBtn.textContent = "X Remove";
+  removeBtn.onclick = (e) => removeCount(rowIndex, key, e);
+
+  dropdown.appendChild(addBtn);
+  dropdown.appendChild(removeBtn);
+  div.appendChild(dropdown);
+
+  // Main click handler
+  div.onclick = (e) => onButtonClick(e, rowIndex, key);
+  return div;
+}
+
+// If it’s the first click on that button → immediately add 1 lot
+// Otherwise, toggle the little dropdown
+function onButtonClick(e, rowIndex, key) {
+  e.stopPropagation();
+  if (firstClickFlags[rowIndex][key]) {
+    increment(rowIndex, key, e);
+    firstClickFlags[rowIndex][key] = false;
+  } else {
+    toggleDropdown(rowIndex, key);
+  }
+}
+
+// + Add
+function increment(rowIndex, key, e) {
+  e.stopPropagation();
+  counters[rowIndex][key]++;
+  updateUI(rowIndex, key);
+  hideDropdown(rowIndex, key);
+  logAction(rowIndex, key, true);
+  updatePayoffChartAndMargin();
+}
+
+// X Remove
+function removeCount(rowIndex, key, e) {
+  e.stopPropagation();
+  if (counters[rowIndex][key] > 0) {
+    counters[rowIndex][key]--;
+    updateUI(rowIndex, key);
+    if (counters[rowIndex][key] === 0) {
+      firstClickFlags[rowIndex][key] = true;
+    }
+    hideDropdown(rowIndex, key);
+    logAction(rowIndex, key, false);
+    updatePayoffChartAndMargin();
+  }
+}
+
+// Reflect new counts in the UI (the numeric badge)
+function updateUI(rowIndex, key) {
+  const badgeEl = document.getElementById(`${key}Badge_${rowIndex}`);
+  const val = counters[rowIndex][key];
+  badgeEl.textContent = val;
+  badgeEl.style.display = val > 0 ? "block" : "none";
+
+  const btnEl = document.getElementById(`${key}Btn_${rowIndex}`);
+  if (val > 0) btnEl.classList.add("active");
+  else btnEl.classList.remove("active");
+}
+
+// Record each action in the “Log Table”
+function logAction(rowIndex, key, isAdd) {
+  const logsBody = document.getElementById("countsTableBody");
+  const rowObj = rowData[rowIndex];
+  const countVal = counters[rowIndex][key];
+
+  // Figure out the entry price
+  let entryPrice = key.startsWith("ce") ? rowObj.callLtp : rowObj.putLtp;
+  let numericEntry = parseFloat(entryPrice) || 0;
+
+  if (isAdd) {
+    // If no row in the log table for this rowIndex+key, create it
+    if (!document.getElementById(`row_${rowIndex}_${key}`)) {
+      const newRow = document.createElement("tr");
+      newRow.id = `row_${rowIndex}_${key}`;
+
+      newRow.innerHTML = `
+        <td>${rowIndex + 1}</td>
+        <td>${key === "ceBuy" ? "CE Buy"
+             : key === "ceSell" ? "CE Sell"
+             : key === "peBuy" ? "PE Buy"
+             : "PE Sell"}</td>
+        <td>${rowObj.date || ""}</td>
+        <td>${rowObj.strike || ""}</td>
+        <td>${rowObj.expiry || ""}</td>
+        <td>${numericEntry.toFixed(2)}</td>
+        <td>${rowObj.ltp || ""}</td>
+        <td>${rowObj.delta || ""}</td>
+        <td>${rowObj.pnl || ""}</td>
+        <td>${defaultLotSize}</td>
+        <td>${defaultLot}</td>
+        <td>${countVal * defaultLotSize * defaultLot}</td>
+        <td id="countCell_${rowIndex}_${key}">${countVal}</td>
+      `;
+      logsBody.appendChild(newRow);
+    } else {
+      // Update the existing row’s count/qty/entry price
+      const existingRow = document.getElementById(`row_${rowIndex}_${key}`);
+      const countCell = document.getElementById(`countCell_${rowIndex}_${key}`);
+      if (countCell) countCell.textContent = countVal;
+
+      const entryCell = existingRow.children[5]; // 6th TD is "Entry"
+      if (entryCell) entryCell.textContent = numericEntry.toFixed(2);
+
+      const qtyCell = existingRow.children[11];
+      if (qtyCell) qtyCell.textContent = countVal * defaultLotSize * defaultLot;
+    }
+  } else {
+    // On remove
+    const existingRow = document.getElementById(`row_${rowIndex}_${key}`);
+    if (existingRow) {
+      const countCell = document.getElementById(`countCell_${rowIndex}_${key}`);
+      if (countCell) countCell.textContent = countVal;
+
+      const qtyCell = existingRow.children[11];
+      if (qtyCell) qtyCell.textContent = countVal * defaultLotSize * defaultLot;
+
+      // If count now zero, remove row
+      if (countVal === 0) {
+        logsBody.removeChild(existingRow);
+      }
+    }
+  }
+}
+
+/***************************************************************
+ * SHOW/HIDE the dropdown menus (+Add / X Remove)
+ ***************************************************************/
+function toggleDropdown(rowIndex, key) {
+  closeAllDropdowns();
+  const menu = document.getElementById(`${key}Menu_${rowIndex}`);
+  if (menu) menu.style.display = (menu.style.display === "block") ? "none" : "block";
+}
+function hideDropdown(rowIndex, key) {
+  const menu = document.getElementById(`${key}Menu_${rowIndex}`);
+  if (menu) menu.style.display = "none";
+}
+function closeAllDropdowns() {
+  document.querySelectorAll(".dropdown_menu").forEach((m) => {
+    m.style.display = "none";
+  });
+}
+document.addEventListener("click", closeAllDropdowns);
+
+/***************************************************************
+ * PAYOFF CHART
+ ***************************************************************/
+let payoffChart = null;
+
+function initPayoffChart() {
+  payoffChart = Highcharts.chart("chartContainer", {
+    chart: { type: "area" },
+    title: { text: "Multi-Leg Payoff" },
+    xAxis: { title: { text: "Underlying Price" }, crosshair: true },
+    yAxis: { title: { text: "Net P&L" } },
+    tooltip: { valuePrefix: "₹" },
+    plotOptions: {
+      area: {
+        marker: { enabled: false },
+        zoneAxis: "x",
+        zones: []
+      }
+    },
+    series: [
+      {
+        name: "Payoff",
+        data: []
+      }
+    ]
+  });
+}
+
+// Helper to compute single‐leg payoff
+function singleOptionPayoff(action, K, premium, count, S) {
+  let payoff = 0;
+  switch (action) {
+    case "CE Buy":
+      payoff = Math.max(S - K, 0) - premium;
+      break;
+    case "CE Sell":
+      payoff = premium - Math.max(S - K, 0);
+      break;
+    case "PE Buy":
+      payoff = Math.max(K - S, 0) - premium;
+      break;
+    case "PE Sell":
+      payoff = premium - Math.max(K - S, 0);
+      break;
+  }
+  return payoff * count * defaultLotSize * defaultLot;
+}
+
+// Recompute the payoff series and update the chart
+function updatePayoffChart() {
+  if (!payoffChart) return;
+
+  // Gather user “legs” from the log table
+  let legs = [];
+  document.querySelectorAll("#countsTableBody tr").forEach((row) => {
+    let tds = row.querySelectorAll("td");
+    const action = tds[1].textContent.trim();
+    const strike = parseFloat(tds[3].textContent.trim());
+    const premium = parseFloat(tds[5].textContent.trim()) || 0;
+    const countVal = parseInt(tds[12].textContent.trim(), 10) || 0;
+    if (countVal > 0) {
+      legs.push({ action, strike, premium, count: countVal });
+    }
+  });
+
+  // If no legs, clear the chart
+  if (legs.length === 0) {
+    payoffChart.series[0].setData([], true);
+    payoffChart.series[0].update({ zones: [] }, true);
+    return;
+  }
+
+  // Build payoffData across a range from minStrike - 1000 to maxStrike + 1000
+  let allStrikes = legs.map((leg) => leg.strike);
+  let minStrike = Math.min(...allStrikes) - 1000;
+  let maxStrike = Math.max(...allStrikes) + 1000;
+  let step = Math.max(1, Math.floor((maxStrike - minStrike) / 100));
+
+  let payoffData = [];
+  for (let S = minStrike; S <= maxStrike; S += step) {
+    let total = 0;
+    legs.forEach((leg) => {
+      total += singleOptionPayoff(leg.action, leg.strike, leg.premium, leg.count, S);
+    });
+    payoffData.push([S, total]);
+  }
+  payoffData.sort((a, b) => a[0] - b[0]);
+
+  payoffChart.series[0].setData(payoffData, true);
+
+  // Compute break-even points
+  let breakevenPoints = [];
+  for (let i = 1; i < payoffData.length; i++) {
+    let [x1, y1] = payoffData[i - 1];
+    let [x2, y2] = payoffData[i];
+    if ((y1 < 0 && y2 >= 0) || (y1 > 0 && y2 <= 0)) {
+      const slope = (y2 - y1) / (x2 - x1);
+      const intercept = y1 - slope * x1;
+      const be = -intercept / slope;
+      breakevenPoints.push(be);
+    }
+  }
+  breakevenPoints.sort((a, b) => a - b);
+
+  // Dynamic Red-Green zone coloring
+  let zones = [];
+  const firstPayoff = payoffData[0][1];
+  let currentColor = firstPayoff >= 0 ? "#28A745" : "#FF4C4C";
+
+  breakevenPoints.forEach((be) => {
+    zones.push({ value: be, color: currentColor });
+    currentColor = currentColor === "#FF4C4C" ? "#28A745" : "#FF4C4C";
+  });
+  zones.push({ value: maxStrike, color: currentColor });
+
+  payoffChart.series[0].update({ zones: zones }, true);
+}
+
+function updatePayoffChartAndMargin() {
+  updatePayoffChart();
+  updateMarginInfo();
+}
+
+/***************************************************************
+ * MARGIN & P&L INFO
+ ***************************************************************/
+function updateMarginInfo() {
+  let legs = [];
+  document.querySelectorAll("#countsTableBody tr").forEach((row) => {
+    let tds = row.querySelectorAll("td");
+    const action = tds[1].textContent.trim();
+    const strike = parseFloat(tds[3].textContent.trim());
+    const premium = parseFloat(tds[5].textContent.trim()) || 0;
+    const countVal = parseInt(tds[12].textContent.trim(), 10) || 0;
+    if (countVal > 0) {
+      legs.push({ action, strike, premium, count: countVal });
+    }
+  });
+  const underlyingPrice = 22950; // For demo
+  let totalMargin = 0;
+  let netCredit = 0;
+
+  // Simplistic margin calc
+  legs.forEach((leg) => {
+    const countSize = leg.count * defaultLotSize;
+    if (leg.action.endsWith("Buy")) {
+      let buyMargin = leg.premium * countSize;
+      totalMargin += buyMargin;
+      netCredit -= buyMargin;
+    } else {
+      // Sell
+      let optionProceeds = leg.premium * countSize;
+      let underlyingValue = underlyingPrice * countSize * 0.2;
+      totalMargin += optionProceeds + underlyingValue;
+      netCredit += optionProceeds;
+    }
+  });
+
+  // Compute payoff array for max profit/loss
+  let payoffData = [];
+  if (legs.length > 0) {
+    let allStrikes = legs.map((leg) => leg.strike);
+    let minStrike = Math.min(...allStrikes) - 1000;
+    let maxStrike = Math.max(...allStrikes) + 1000;
+    let step = Math.max(1, Math.floor((maxStrike - minStrike) / 100));
+    for (let S = minStrike; S <= maxStrike; S += step) {
+      let sumPayoff = 0;
+      legs.forEach((leg) => {
+        sumPayoff += singleOptionPayoff(
+          leg.action,
+          leg.strike,
+          leg.premium,
+          leg.count,
+          S
+        );
+      });
+      payoffData.push([S, sumPayoff]);
+    }
+  }
+  let payoffVals = payoffData.map((pt) => pt[1]);
+  let maxProfit = payoffVals.length ? Math.max(...payoffVals) : 0;
+  let maxLoss = payoffVals.length ? Math.min(...payoffVals) : 0;
+
+  // Probability of Profit
+  let countPositive = payoffVals.filter((val) => val >= 0).length;
+  let pop = payoffVals.length ? (countPositive / payoffVals.length) * 100 : 0;
+
+  // Current P&L at “ATM” price
+  let currentPL = 0;
+  legs.forEach((leg) => {
+    currentPL += singleOptionPayoff(
+      leg.action,
+      leg.strike,
+      leg.premium,
+      leg.count,
+      underlyingPrice
+    );
+  });
+
+  // Recompute break-evens for display
+  let breakevens = [];
+  for (let i = 1; i < payoffData.length; i++) {
+    let [x1, y1] = payoffData[i - 1];
+    let [x2, y2] = payoffData[i];
+    if ((y1 < 0 && y2 >= 0) || (y1 > 0 && y2 <= 0)) {
+      const slope = (y2 - y1) / (x2 - x1);
+      const intercept = y1 - slope * x1;
+      breakevens.push((-intercept / slope).toFixed(2));
+    }
+  }
+
+  const marginInfoDiv = document.getElementById("marginInfo");
+  marginInfoDiv.innerHTML = `
+    <div class="metric">
+      <div class="metric-label">Estimated Margin</div>
+      <div class="metric-value" style="color: ${getColor(totalMargin)};">
+        ₹${totalMargin.toFixed(2)}
+      </div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Current P&L (ATM = ${underlyingPrice})</div>
+      <div class="metric-value" style="color: ${getColor(currentPL)};">
+        ₹${currentPL.toFixed(2)}
+      </div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Max Profit</div>
+      <div class="metric-value" style="color: ${getColor(maxProfit)};">
+        ₹${maxProfit.toFixed(2)}
+      </div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Max Loss</div>
+      <div class="metric-value" style="color: ${getColor(maxLoss)};">
+        ₹${maxLoss.toFixed(2)}
+      </div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">POP</div>
+      <div class="metric-value" style="color: ${getColor(pop)};">
+        ${pop.toFixed(2)}%
+      </div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Net Credit</div>
+      <div class="metric-value" style="color: ${getColor(netCredit)};">
+        ₹${netCredit.toFixed(2)}
+      </div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Breakeven</div>
+      <div class="metric-value" style="color: black;">
+        ${breakevens.join(", ")}
+      </div>
+    </div>
+  `;
+}
+
+function getColor(val) {
+  if (val < 0) return "red";
+  if (val > 0) return "green";
+  return "black";
+}
+
+/***************************************************************
+ * SIMPLE STORAGE & LOADING (SAVED TABLES)
+ ***************************************************************/
+function getSavedTables() {
+  let saved = localStorage.getItem("savedLogTables");
+  if (!saved) return {};
+  try {
+    return JSON.parse(saved);
+  } catch (e) {
+    return {};
+  }
+}
+
+function setSavedTables(savedTables) {
+  localStorage.setItem("savedLogTables", JSON.stringify(savedTables));
+}
+
+function updateSavedTablesCombobox() {
+  const select = document.getElementById("savedTablesSelect");
+  select.innerHTML = '<option value="">-- Select Saved Table --</option>';
+  const savedTables = getSavedTables();
+  for (let tableName in savedTables) {
+    const option = document.createElement("option");
+    option.value = tableName;
+    option.textContent = tableName;
+    select.appendChild(option);
+  }
+}
+
+function loadSavedTable(tableName) {
+  const savedTables = getSavedTables();
+  if (!(tableName in savedTables)) return;
+  document.getElementById("countsTableBody").innerHTML = savedTables[tableName];
+  syncOptionChainFromLogTable();
+  updatePayoffChartAndMargin();
+}
+
+function syncOptionChainFromLogTable() {
+  for (let i = 0; i < rowData.length; i++) {
+    counters[i] = { ceBuy: 0, ceSell: 0, peBuy: 0, peSell: 0 };
+    firstClickFlags[i] = { ceBuy: true, ceSell: true, peBuy: true, peSell: true };
+    updateUI(i, "ceBuy");
+    updateUI(i, "ceSell");
+    updateUI(i, "peBuy");
+    updateUI(i, "peSell");
+  }
+  const rows = document.querySelectorAll("#countsTableBody tr");
+  rows.forEach((row) => {
+    const rowId = row.id; // e.g. "row_1_ceBuy"
+    const parts = rowId.split("_");
+    if (parts.length === 3) {
+      const rowIndex = parseInt(parts[1], 10);
+      const key = parts[2]; // ceBuy, ceSell, peBuy, peSell
+      const countCell = document.getElementById(`countCell_${rowIndex}_${key}`);
+      if (countCell) {
+        const countVal = parseInt(countCell.textContent, 10) || 0;
+        counters[rowIndex][key] = countVal;
+        firstClickFlags[rowIndex][key] = countVal === 0;
+        updateUI(rowIndex, key);
+      }
+    }
+  });
+}
+
+function saveCurrentTable(tableName) {
+  const tableBody = document.getElementById("countsTableBody");
+  const tableHTML = tableBody.innerHTML;
+  let savedTables = getSavedTables();
+  savedTables[tableName] = tableHTML;
+  setSavedTables(savedTables);
+  updateSavedTablesCombobox();
+  alert("Table saved as '" + tableName + "'");
+}
+
+function addNewTable() {
+  const tableName = prompt("Enter a new table name:");
+  if (!tableName) {
+    alert("Table name cannot be empty.");
+    return;
+  }
+  let savedTables = getSavedTables();
+  if (tableName in savedTables) {
+    const overwrite = confirm("A table with this name already exists. Overwrite?");
+    if (!overwrite) return;
+  }
+  saveCurrentTable(tableName);
+  clearStrategy();
+}
+
+function saveTable() {
+  const select = document.getElementById("savedTablesSelect");
+  const tableName = select.value;
+  if (!tableName) {
+    alert("Please select a saved table to update.");
+    return;
+  }
+  saveCurrentTable(tableName);
+}
+
+function editTable() {
+  const select = document.getElementById("savedTablesSelect");
+  const oldName = select.value;
+  if (!oldName) {
+    alert("Please select a saved table to rename.");
+    return;
+  }
+  const newName = prompt("Enter a new name for the table:", oldName);
+  if (!newName || newName === oldName) return;
+  let savedTables = getSavedTables();
+  if (newName in savedTables) {
+    alert("A table with the new name already exists.");
+    return;
+  }
+  savedTables[newName] = savedTables[oldName];
+  delete savedTables[oldName];
+  setSavedTables(savedTables);
+  updateSavedTablesCombobox();
+  document.getElementById("savedTablesSelect").value = newName;
+}
+
+function deleteTable() {
+  const select = document.getElementById("savedTablesSelect");
+  const tableName = select.value;
+  if (!tableName) {
+    alert("Please select a saved table to delete.");
+    return;
+  }
+  if (!confirm("Are you sure you want to delete '" + tableName + "'?")) return;
+  let savedTables = getSavedTables();
+  delete savedTables[tableName];
+  setSavedTables(savedTables);
+  updateSavedTablesCombobox();
+  clearStrategy();
+}
+
+function clearStrategy() {
+  document.getElementById("countsTableBody").innerHTML = "";
+  for (let i = 0; i < rowData.length; i++) {
+    counters[i] = { ceBuy: 0, ceSell: 0, peBuy: 0, peSell: 0 };
+    firstClickFlags[i] = { ceBuy: true, ceSell: true, peBuy: true, peSell: true };
+    updateUI(i, "ceBuy");
+    updateUI(i, "ceSell");
+    updateUI(i, "peBuy");
+    updateUI(i, "peSell");
+  }
+  updatePayoffChartAndMargin();
+}
+
+document.getElementById("addNewBtn").addEventListener("click", addNewTable);
+document.getElementById("saveBtn").addEventListener("click", saveTable);
+document.getElementById("editBtn").addEventListener("click", editTable);
+document.getElementById("deleteBtn").addEventListener("click", deleteTable);
+document.getElementById("clearBtn").addEventListener("click", clearStrategy);
+document.getElementById("savedTablesSelect").addEventListener("change", function () {
+  const tableName = this.value;
+  if (tableName) loadSavedTable(tableName);
+});
+
+// Open selected table in new tab
+function openNewTab() {
+  const select = document.getElementById("savedTablesSelect");
+  const tableName = select.value;
+  if (!tableName) {
+    alert("Please select a saved table first.");
+    return;
+  }
+  const newUrl =
+    window.location.origin +
+    window.location.pathname +
+    "?table=" +
+    encodeURIComponent(tableName);
+  window.open(newUrl, "_blank");
+}
+
+// Clone the current page in a new tab
+function clonePage() {
+  window.open(location.href, "_blank");
+}
+</script>
+
+<!-- Bootstrap 5 JS (optional; needed for advanced components) -->
+<script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+></script>
+</body>
+</html>
