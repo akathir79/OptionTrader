@@ -1894,6 +1894,9 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
                   <th style="padding: 4px 2px; border-right: 1px solid #dee2e6; width: 70px; text-align: center; background: #e8f5e8;">
                     <div style="font-size: 10px; font-weight: 600; color: #2e7d32;">Trailing SL</div>
                   </th>
+                  <th style="padding: 4px 2px; border-right: 1px solid #dee2e6; width: 70px; text-align: center; background: #fff3cd;">
+                    <div style="font-size: 10px; font-weight: 600; color: #f57c00;">Execute</div>
+                  </th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 50px; text-align: center;">Delta</th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 50px; text-align: center;">P&L</th>
                   <th style="padding: 8px 6px; border-right: 1px solid #dee2e6; width: 70px; text-align: center;">Lots Exit</th>
@@ -1906,7 +1909,7 @@ body.fullscreen-active .left-panel .d-flex.align-items-center.mb-1,
               
               <tbody id="activeTradesTableBody">
                 <tr>
-                  <td colspan="19" class="text-center text-muted py-3">
+                  <td colspan="20" class="text-center text-muted py-3">
                     <i class="fas fa-plus-circle me-2"></i>No active trades yet. Start trading!
                   </td>
                 </tr>
@@ -3648,7 +3651,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show empty state
             const emptyRow = document.createElement('tr');
             emptyRow.innerHTML = `
-                <td colspan="19" class="text-center text-muted py-3">
+                <td colspan="20" class="text-center text-muted py-3">
                     <i class="fas fa-plus-circle me-2"></i>No active trades yet. Start trading!
                 </td>
             `;
@@ -3786,6 +3789,20 @@ document.addEventListener('DOMContentLoaded', function() {
                                style="transform: scale(1.1); border: 2px solid #2e7d32; border-radius: 3px; width: 16px; height: 16px;" 
                                data-position-key="${entry.positionKey}" title="Enable Trailing Stop Loss">
                     </div>
+                </td>
+                <td style="padding: 4px 2px; text-align: center;">
+                    <button class="btn btn-warning btn-sm play-order-btn" 
+                            style="padding: 4px 10px; font-size: 11px; border-radius: 4px; font-weight: 600;" 
+                            data-position-key="${entry.positionKey}"
+                            data-symbol="${symbol}"
+                            data-strike="${entry.strike}"
+                            data-option-type="${entry.optionType}"
+                            data-action="${entry.action}"
+                            data-lots="${entry.lots}"
+                            data-entry-price="${entry.entryPrice || 0}"
+                            title="Execute Real Order with Fyers">
+                        <i class="fas fa-play me-1"></i>Execute
+                    </button>
                 </td>
                 <td style="padding: 8px 6px; text-align: center;">₹0.00</td>
                 <td style="padding: 8px 6px; text-align: center; font-weight: 600;" class="${pnlColor}">
@@ -5936,6 +5953,122 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 </div>
 
+<!-- Order Confirmation Modal -->
+<div class="modal fade" id="orderConfirmationModal" tabindex="-1" aria-labelledby="orderConfirmationModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-warning bg-opacity-10">
+        <h5 class="modal-title" id="orderConfirmationModalLabel">
+          <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+          Confirm Order Execution with Fyers
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-warning mb-3">
+          <i class="fas fa-info-circle me-2"></i>
+          <strong>Real Order Execution:</strong> This will place a real order with your Fyers account using your selected broker credentials.
+        </div>
+        
+        <!-- Order Details Form -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Symbol</label>
+            <input type="text" class="form-control" id="modalSymbol" readonly>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold">Strike</label>
+            <input type="text" class="form-control" id="modalStrike" readonly>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-bold">Option Type</label>
+            <input type="text" class="form-control" id="modalOptionType" readonly>
+          </div>
+          
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Action</label>
+            <select class="form-select" id="modalAction">
+              <option value="1">Buy</option>
+              <option value="-1">Sell</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Quantity (Lots)</label>
+            <input type="number" class="form-control" id="modalLots" min="1" value="1">
+            <small class="text-muted">Total Qty: <span id="modalTotalQty">75</span></small>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Product Type</label>
+            <select class="form-select" id="modalProductType">
+              <option value="INTRADAY">INTRADAY</option>
+              <option value="MARGIN">MARGIN</option>
+              <option value="CNC">CNC</option>
+            </select>
+          </div>
+          
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Order Type</label>
+            <select class="form-select" id="modalOrderType">
+              <option value="2">Market</option>
+              <option value="1">Limit</option>
+              <option value="3">Stop Loss (SL-M)</option>
+              <option value="4">Stop Limit (SL-L)</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Limit Price</label>
+            <input type="number" class="form-control" id="modalLimitPrice" step="0.05" value="0">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-bold">Stop Price</label>
+            <input type="number" class="form-control" id="modalStopPrice" step="0.05" value="0">
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Stop Loss %</label>
+            <input type="number" class="form-control" id="modalStopLoss" step="0.1" min="0" max="50" value="0">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Trailing Stop Loss</label>
+            <div class="form-check form-switch mt-2">
+              <input class="form-check-input" type="checkbox" id="modalTrailingStopLoss">
+              <label class="form-check-label" for="modalTrailingStopLoss">Enable Trailing SL</label>
+            </div>
+          </div>
+          
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Validity</label>
+            <select class="form-select" id="modalValidity">
+              <option value="DAY">DAY</option>
+              <option value="IOC">IOC (Immediate or Cancel)</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Broker</label>
+            <input type="text" class="form-control" id="modalBroker" readonly value="FYERS">
+          </div>
+        </div>
+        
+        <!-- Broker Credentials Info -->
+        <div class="mt-3 p-2 bg-light rounded">
+          <small class="text-muted">
+            <i class="fas fa-user me-1"></i>
+            <strong>Broker User ID:</strong> <span id="modalBrokerUserId">-</span>
+          </small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <i class="fas fa-times me-1"></i>Cancel
+        </button>
+        <button type="button" class="btn btn-success" id="confirmOrderBtn">
+          <i class="fas fa-check me-1"></i>Confirm & Execute Order
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
     <!-- Token Expiry Monitor -->
     <script src="{{ url_for('static', filename='js/token_monitor.js') }}"></script>
     
@@ -6789,4 +6922,144 @@ html, body {
   overflow: auto;
 }
 </style>
+
+<script>
+// Order Confirmation Modal Handler
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔥 Order Confirmation Modal Initializing...');
+    
+    // Attach event listeners to play buttons using event delegation
+    document.body.addEventListener('click', function(e) {
+        if (e.target.closest('.play-order-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const btn = e.target.closest('.play-order-btn');
+            console.log('🎬 Play button clicked!', btn.dataset);
+            
+            // Get data from button
+            const symbol = btn.dataset.symbol;
+            const strike = btn.dataset.strike;
+            const optionType = btn.dataset.optionType;
+            const action = btn.dataset.action;
+            const lots = parseInt(btn.dataset.lots) || 1;
+            const entryPrice = parseFloat(btn.dataset.entryPrice) || 0;
+            const positionKey = btn.dataset.positionKey;
+            
+            // Get order type and stop loss from the position row
+            const row = btn.closest('tr');
+            const orderTypeSelect = row.querySelector('.order-type-select');
+            const stopLossInput = row.querySelector('.stop-loss-input');
+            const trailingSlCheckbox = row.querySelector('.trailing-sl-checkbox');
+            
+            const orderType = orderTypeSelect ? orderTypeSelect.value : '2'; // Default to Market
+            const stopLoss = stopLossInput ? parseFloat(stopLossInput.value) : 0;
+            const trailingSl = trailingSlCheckbox ? trailingSlCheckbox.checked : false;
+            
+            // Populate modal fields
+            document.getElementById('modalSymbol').value = symbol;
+            document.getElementById('modalStrike').value = strike;
+            document.getElementById('modalOptionType').value = optionType;
+            document.getElementById('modalAction').value = action === 'Buy' ? '1' : '-1';
+            document.getElementById('modalLots').value = lots;
+            document.getElementById('modalTotalQty').textContent = lots * 75;
+            document.getElementById('modalOrderType').value = orderType;
+            document.getElementById('modalStopLoss').value = stopLoss;
+            document.getElementById('modalTrailingStopLoss').checked = trailingSl;
+            
+            // Get broker details from page
+            const brokerDropdown = document.getElementById('brokerSelect');
+            const brokerSettings = window.brokerSettings || [];
+            const selectedBroker = brokerSettings[0] || {}; // Get first broker
+            
+            document.getElementById('modalBrokerUserId').textContent = selectedBroker.broker_user_id || 'Not configured';
+            
+            // Store position key for later use
+            document.getElementById('orderConfirmationModal').dataset.positionKey = positionKey;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('orderConfirmationModal'));
+            modal.show();
+            
+            console.log('✅ Order Confirmation Modal opened with data:', {
+                symbol, strike, optionType, action, lots, orderType, stopLoss, trailingSl
+            });
+        }
+    });
+    
+    // Update total quantity when lots change
+    document.getElementById('modalLots').addEventListener('input', function() {
+        const lots = parseInt(this.value) || 1;
+        document.getElementById('modalTotalQty').textContent = lots * 75;
+    });
+    
+    // Confirm Order Button Handler
+    document.getElementById('confirmOrderBtn').addEventListener('click', function() {
+        console.log('🚀 Confirming order execution...');
+        
+        // Get all modal values
+        const orderData = {
+            symbol: document.getElementById('modalSymbol').value,
+            strike: document.getElementById('modalStrike').value,
+            optionType: document.getElementById('modalOptionType').value,
+            action: parseInt(document.getElementById('modalAction').value),
+            lots: parseInt(document.getElementById('modalLots').value),
+            qty: parseInt(document.getElementById('modalLots').value) * 75,
+            productType: document.getElementById('modalProductType').value,
+            orderType: parseInt(document.getElementById('modalOrderType').value),
+            limitPrice: parseFloat(document.getElementById('modalLimitPrice').value) || 0,
+            stopPrice: parseFloat(document.getElementById('modalStopPrice').value) || 0,
+            stopLoss: parseFloat(document.getElementById('modalStopLoss').value) || 0,
+            trailingStopLoss: document.getElementById('modalTrailingStopLoss').checked,
+            validity: document.getElementById('modalValidity').value
+        };
+        
+        console.log('📋 Order Data:', orderData);
+        
+        // Disable button to prevent double-click
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Executing...';
+        
+        // Send order to backend
+        fetch('/api/place_real_order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(orderData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('✅ Order API Response:', data);
+            
+            if (data.status === 'success') {
+                // Success - show notification
+                alert(`✅ Order Executed Successfully!\n\nOrder ID: ${data.orderId}\n${data.message}`);
+                
+                // Close modal
+                bootstrap.Modal.getInstance(document.getElementById('orderConfirmationModal')).hide();
+                
+                // Optionally refresh positions
+                if (typeof updateCurrentPositionsTable === 'function') {
+                    updateCurrentPositionsTable();
+                }
+            } else {
+                // Error - show error message
+                alert(`❌ Order Execution Failed!\n\n${data.message || 'Unknown error occurred'}`);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Order execution error:', error);
+            alert(`❌ Order Execution Failed!\n\n${error.message || 'Network error occurred'}`);
+        })
+        .finally(() => {
+            // Re-enable button
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-check me-1"></i>Confirm & Execute Order';
+        });
+    });
+    
+    console.log('✅ Order Confirmation Modal initialized');
+});
+</script>
 
