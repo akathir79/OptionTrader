@@ -4525,27 +4525,39 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Helper function to convert activeLots to position format for professional chart
     function convertLotsToPositions(activeLots) {
-        if (!activeLots || activeLots.length === 0) return [];
+        console.log('🔄 convertLotsToPositions called with activeLots:', activeLots);
+        if (!activeLots || activeLots.length === 0) {
+            console.log('⚠️ No activeLots to convert');
+            return [];
+        }
         
         const positionMap = new Map();
         
-        activeLots.forEach(lot => {
+        activeLots.forEach((lot, index) => {
+            console.log(`🔍 Processing lot ${index}:`, lot);
+            console.log(`🔍 Lot strike: ${lot.strike}, optionType: ${lot.optionType}, action: ${lot.action}`);
+            
             const key = `${lot.strike}-${lot.optionType}-${lot.action}`;
             
             if (positionMap.has(key)) {
                 positionMap.get(key).quantity++;
             } else {
-                positionMap.set(key, {
+                const position = {
                     type: lot.optionType, // 'CE' or 'PE'
+                    option_type: lot.optionType, // Also set option_type for compatibility
                     action: lot.action.toLowerCase(), // 'buy' or 'sell'
                     strike: lot.strike,
                     premium: lot.entryPrice,
                     quantity: 1
-                });
+                };
+                console.log(`✅ Created position:`, position);
+                positionMap.set(key, position);
             }
         });
         
-        return Array.from(positionMap.values());
+        const positions = Array.from(positionMap.values());
+        console.log(`📊 Converted ${activeLots.length} lots to ${positions.length} unique positions:`, positions);
+        return positions;
     }
     
     // Create multi-leg payoff chart from loaded option chain data - proper multi-leg concept
