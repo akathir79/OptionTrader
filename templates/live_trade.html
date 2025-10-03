@@ -2908,7 +2908,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         action: actionType,
                         entryPrice: currentPosition.entryPrice || 0,
                         timestamp: new Date(),
-                        actionLabel: actionType === 'Buy' ? 'Buy to Open' : 'Sell to Open'
+                        actionLabel: actionType === 'Buy' ? 'Buy to Open' : 'Sell to Open',
+                        stopLoss: 0,
+                        trailingStopLoss: 0
                     };
                     window.activeLots.push(newLot);
                 }
@@ -3105,7 +3107,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     timestamp: new Date(),
                     rowIndex: rowIndex,
                     key: key,
-                    actionLabel: isCurrentBuy ? 'Buy to Open' : 'Sell to Open'
+                    actionLabel: isCurrentBuy ? 'Buy to Open' : 'Sell to Open',
+                    stopLoss: 0,
+                    trailingStopLoss: 0
                 };
                 
                 window.activeLots.push(newLot);
@@ -4274,7 +4278,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     action: action,
                     entryPrice: position.price,
                     timestamp: new Date(),
-                    actionLabel: action === 'Buy' ? 'Buy to Open' : 'Sell to Open'
+                    actionLabel: action === 'Buy' ? 'Buy to Open' : 'Sell to Open',
+                    stopLoss: 0,
+                    trailingStopLoss: 0
                 };
                 window.activeLots.push(newLot);
             }
