@@ -203,6 +203,51 @@ fyers_ws.subscribe(symbols=['NSE:SBIN-EQ'], data_type="SymbolUpdate")
 - **Cancel Order**: `/api/v3/orders/{order_id}` (DELETE)
 - **Order Book**: `/api/v3/orders` (GET)
 
+#### Place Order Parameters (2025 Update)
+Single order placement via `fyers.place_order(data)`:
+
+| Parameter | Type | Required | Values | Description |
+|-----------|------|----------|--------|-------------|
+| `symbol` | string | ✅ Yes | e.g., `NSE:NIFTY25O0724950CE` | Exchange:Symbol format |
+| `qty` | integer | ✅ Yes | > 0 | Order quantity (must be multiple of lot size) |
+| `type` | integer | ✅ Yes | `1`, `2`, `3`, `4` | 1=Limit, 2=Market, 3=Stop, 4=StopLimit |
+| `side` | integer | ✅ Yes | `1`, `-1` | 1=Buy, -1=Sell |
+| `productType` | string | ✅ Yes | `CNC`, `INTRADAY`, `MARGIN`, `CO`, `BO`, `MTF` | Product type |
+| `limitPrice` | float | Conditional | > 0 | Required for type 1 (Limit) or 4 (StopLimit) |
+| `stopPrice` | float | Conditional | > 0 | Required for type 3 (Stop) or 4 (StopLimit) |
+| `validity` | string | ✅ Yes | `DAY`, `IOC` | Order validity (GTT not supported via API) |
+| `disclosedQty` | integer | No | ≥ 0 | Disclosed qty for iceberg orders (default: 0) |
+| `offlineOrder` | boolean | ✅ Yes | `true`, `false` | AMO (After Market Order) flag |
+| `stopLoss` | float | Conditional | > 0 | Stop-loss price for CO/BO orders |
+| `takeProfit` | float | Conditional | > 0 | Take-profit/target price for BO orders |
+| `orderTag` | string | No | Custom string | Tag for order identification (optional) |
+
+**Example Request:**
+```python
+data = {
+    "symbol": "NSE:NIFTY25O0724950CE",
+    "qty": 75,
+    "type": 2,  # Market order
+    "side": 1,  # Buy
+    "productType": "INTRADAY",
+    "limitPrice": 0,
+    "stopPrice": 0,
+    "validity": "DAY",
+    "disclosedQty": 0,
+    "offlineOrder": False,
+    "stopLoss": 0,
+    "takeProfit": 0
+}
+response = fyers.place_order(data)
+```
+
+**Important Notes:**
+- Boolean values must be Python `True`/`False` (not strings)
+- For market orders (type=2), set `limitPrice` and `stopPrice` to 0
+- For limit orders (type=1), `limitPrice` is required
+- Stop-loss and trailing stop-loss require separate monitoring system (not directly in place_order)
+- API endpoint: `https://api-t1.fyers.in/api/v3/orders` (paper) or `https://api.fyers.in/api/v3/orders` (live)
+
 #### Portfolio & Positions
 - **Positions**: `/api/v3/positions` - Current positions
 - **Holdings**: `/api/v3/holdings` - Long-term holdings

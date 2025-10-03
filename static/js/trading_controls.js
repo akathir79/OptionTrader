@@ -196,22 +196,69 @@ function handleExecutePosition(button) {
     const positionKey = button.dataset.positionKey;
     console.log(`🚀 Execute position clicked for: ${positionKey}`);
     
+    // Get all data from button attributes
+    const symbol = button.dataset.symbol;
+    const strike = button.dataset.strike;
+    const optionType = button.dataset.optionType;
+    const action = button.dataset.action;
+    const lots = button.dataset.lots;
+    const entryPrice = button.dataset.entryPrice;
+    
     // Get trading parameters for this position
     const tradingParams = getTradingParams(positionKey);
     console.log('📊 Trading params for execution:', tradingParams);
     
-    // Visual feedback
-    button.style.backgroundColor = '#198754';
-    button.style.color = 'white';
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    // Populate modal with order details
+    document.getElementById('modalSymbol').value = symbol || '';
+    document.getElementById('modalStrike').value = strike || '';
+    document.getElementById('modalOptionType').value = optionType || '';
+    document.getElementById('modalAction').value = action || '1';
+    document.getElementById('modalLots').value = lots || '1';
+    document.getElementById('modalProductType').value = 'INTRADAY';
+    document.getElementById('modalOrderType').value = tradingParams.orderType || '2'; // Default to Market
+    document.getElementById('modalLimitPrice').value = '';
+    document.getElementById('modalStopPrice').value = '';
+    document.getElementById('modalStopLoss').value = tradingParams.stopLossPercent || '0';
+    document.getElementById('modalTrailingStopLoss').checked = tradingParams.trailingEnabled || false;
+    document.getElementById('modalValidity').value = 'DAY';
     
-    // TODO: Integrate with actual order execution API
-    setTimeout(() => {
-        button.style.backgroundColor = '';
-        button.style.color = '';
-        button.innerHTML = '<i class="fas fa-play"></i>';
-        console.log('✅ Position execution completed');
-    }, 2000);
+    // Update quantity display (lots * lot size)
+    const lotSize = 75; // Default for NIFTY
+    const quantity = (parseInt(lots) || 1) * lotSize;
+    document.getElementById('modalQty').textContent = quantity;
+    
+    // Update action display
+    const actionText = action === '1' ? 'BUY' : 'SELL';
+    const actionBadge = document.querySelector('#orderConfirmationModal .modal-body .badge');
+    if (actionBadge) {
+        actionBadge.textContent = actionText;
+        actionBadge.className = action === '1' ? 'badge bg-success' : 'badge bg-danger';
+    }
+    
+    // Get selected broker information
+    const brokerSelect = document.getElementById('positionBrokerSelect');
+    const userIdSelect = document.getElementById('positionUserIdSelect');
+    const selectedBroker = window.brokerSettings?.find(b => 
+        b.brokername === brokerSelect?.value && b.broker_user_id === userIdSelect?.value
+    );
+    
+    if (!selectedBroker) {
+        selectedBroker = window.brokerSettings?.[0] || {};
+    }
+    
+    document.getElementById('modalBrokerUserId').textContent = selectedBroker.broker_user_id || 'Not configured';
+    
+    // Store position key, entry price, and broker ID for later use
+    document.getElementById('orderConfirmationModal').dataset.positionKey = positionKey;
+    document.getElementById('orderConfirmationModal').dataset.entryPrice = entryPrice || '0';
+    document.getElementById('orderConfirmationModal').dataset.brokerId = selectedBroker.id || '';
+    document.getElementById('orderConfirmationModal').dataset.brokerUserId = selectedBroker.broker_user_id || '';
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('orderConfirmationModal'));
+    modal.show();
+    
+    console.log('✅ Order confirmation modal opened');
 }
 
 function handleExitPosition(button) {
