@@ -3371,44 +3371,43 @@ document.addEventListener('DOMContentLoaded', function() {
             const rows = table.querySelectorAll('tbody tr');
             rows.forEach((row, rowIndex) => {
                 const strikeTd = row.children[19]; // Strike column
-                const rowStrike = parseFloat(strikeTd?.textContent || 0);
+                // FIX: Use data-strike attribute instead of textContent to avoid HTML parsing issues
+                const rowStrike = parseFloat(strikeTd?.getAttribute('data-strike') || strikeTd?.textContent || 0);
                 
+                // FIX: Only update the specific button that matches this position's optionType AND action
                 if (rowStrike === strike) {
-                    // Determine all keys (option types and actions) for this strike
-                    const keys = ['ceBuy', 'ceSell', 'peBuy', 'peSell'];
+                    // Build the key that matches this position
+                    const positionKey = `${optionType.toLowerCase() === 'ce' ? 'ce' : 'pe'}${action}`;
                     
-                    keys.forEach(key => {
-                        if (window.counters[rowIndex] && window.counters[rowIndex][key] !== undefined) {
-                            const keyOptionType = key.includes('ce') ? 'CE' : 'PE';
-                            const keyAction = key.includes('Buy') ? 'Buy' : 'Sell';
-                            
-                            // Calculate total lots for current expiry for this specific key
-                            const currentExpiryLots = Object.values(window.globalPositions)
-                                .filter(pos => pos.strike === strike && pos.optionType === keyOptionType && 
-                                       pos.action === keyAction && pos.expiry === currentExpiry)
-                                .reduce((sum, pos) => sum + pos.lots, 0);
-                            
-                            // Calculate total lots across all expiries to check if any positions exist
-                            const totalPositionLots = Object.values(window.globalPositions || {})
-                                .filter(pos => pos.strike === strike && pos.optionType === keyOptionType && 
-                                       pos.action === keyAction && pos.lots > 0)
-                                .reduce((sum, pos) => sum + pos.lots, 0);
-                            
-                            // Set the counter based on current expiry lots only
-                            if (currentExpiryLots > 0) {
-                                // Show actual current expiry lots
-                                window.counters[rowIndex][key] = currentExpiryLots;
-                            } else if (totalPositionLots > 0) {
-                                // Show cross-expiry indicator only if there are actually positions in other expiries
-                                window.counters[rowIndex][key] = 1; 
-                            } else {
-                                // No positions anywhere - clear the button completely
-                                window.counters[rowIndex][key] = 0;
-                            }
-                            
-                            updateButtonDisplay(rowIndex, key);
+                    // Only update the button that matches this specific position
+                    if (window.counters[rowIndex] && window.counters[rowIndex][positionKey] !== undefined) {
+                        // Calculate total lots for current expiry for this specific position
+                        const currentExpiryLots = Object.values(window.globalPositions)
+                            .filter(pos => pos.strike === strike && pos.optionType === optionType && 
+                                   pos.action === action && pos.expiry === currentExpiry)
+                            .reduce((sum, pos) => sum + pos.lots, 0);
+                        
+                        // Calculate total lots across all expiries to check if any positions exist
+                        const totalPositionLots = Object.values(window.globalPositions || {})
+                            .filter(pos => pos.strike === strike && pos.optionType === optionType && 
+                                   pos.action === action && pos.lots > 0)
+                            .reduce((sum, pos) => sum + pos.lots, 0);
+                        
+                        // Set the counter based on current expiry lots only
+                        if (currentExpiryLots > 0) {
+                            // Show actual current expiry lots
+                            window.counters[rowIndex][positionKey] = currentExpiryLots;
+                        } else if (totalPositionLots > 0) {
+                            // Show cross-expiry indicator only if there are actually positions in other expiries
+                            window.counters[rowIndex][positionKey] = 1; 
+                        } else {
+                            // No positions anywhere - clear the button completely
+                            window.counters[rowIndex][positionKey] = 0;
                         }
-                    });
+                        
+                        updateButtonDisplay(rowIndex, positionKey);
+                        console.log(`[RESTORE BADGE] Strike ${strike} ${optionType} ${action}: Set badge to ${window.counters[rowIndex][positionKey]}`);
+                    }
                 }
             });
         });
