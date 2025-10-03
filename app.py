@@ -8,6 +8,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 import psycopg2
 from psycopg2 import sql
 from sqlalchemy import create_engine, text
+from fyers_apiv3 import fyersModel
 
 # Paper trading blueprint will be imported after db initialization
 
@@ -561,6 +562,173 @@ def populate_strategies():
         }), 500
 
 # Paper trading blueprint already registered above
+
+@app.route('/api/place_real_order', methods=['POST'])
+def place_real_order():
+    """
+    Place a real order with Fyers broker using stored credentials
+    """
+    try:
+        # Get order data from request
+        data = request.get_json()
+        print(f"📋 Received order data: {data}")
+        
+        # ===== INPUT VALIDATION =====
+        # Validate required fields
+        if not data:
+            return jsonify({
+                'status': 'error',
+                'message': 'No order data provided'
+            }), 400
+        
+        # Validate symbol
+        symbol = data.get('symbol')
+        if not symbol or not isinstance(symbol, str) or len(symbol.strip()) == 0:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid symbol. Symbol is required and must be a non-empty string.'
+            }), 400
+        
+        # Validate quantity
+        qty = data.get('qty')
+        if not qty or not isinstance(qty, int) or qty <= 0:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid quantity. Quantity must be a positive integer.'
+            }), 400
+        
+        # Validate and convert order type (must be int: 1=Limit, 2=Market, 3=SL-M, 4=SL-L)
+        order_type = data.get('orderType')
+        if isinstance(order_type, str):
+            order_type_map = {'MARKET': 2, 'LIMIT': 1, 'SL-M': 3, 'SL-L': 4}
+            order_type = order_type_map.get(order_type.upper())
+        if not isinstance(order_type, int) or order_type not in [1, 2, 3, 4]:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid order type. Must be 1 (Limit), 2 (Market), 3 (SL-M), or 4 (SL-L).'
+            }), 400
+        
+        # Validate and convert action/side (must be int: 1=Buy, -1=Sell)
+        action = data.get('action')
+        if isinstance(action, str):
+            action_map = {'BUY': 1, 'SELL': -1}
+            action = action_map.get(action.upper())
+        if not isinstance(action, int) or action not in [1, -1]:
+            return jsonify({
+                'status': 'error',
+                'message': 'Invalid action. Must be 1 (Buy) or -1 (Sell).'
+            }), 400
+        
+        # Validate product type
+        product_type = data.get('productType', 'INTRADAY')
+        valid_products = ['INTRADAY', 'MARGIN', 'CNC', 'CO', 'BO', 'MTF']
+        if product_type not in valid_products:
+            return jsonify({
+                'status': 'error',
+                'message': f'Invalid product type. Must be one of: {", ".join(valid_products)}.'
+            }), 400
+        
+        # Import BrokerSettings model
+        from models import BrokerSettings
+        
+        # Get broker credentials from database (first Fyers broker)
+        broker = BrokerSettings.query.filter_by(brokername='FYERS').first()
+        
+        if not broker:
+            return jsonify({
+                'status': 'error',
+                'message': 'No Fyers broker credentials found. Please configure broker settings first.'
+            }), 400
+        
+        if not broker.access_token or not broker.clientid:
+            return jsonify({
+                'status': 'error',
+                'message': 'Incomplete broker credentials. Please configure access token and client ID.'
+            }), 400
+        
+        print(f"🔐 Using broker credentials: Client ID = {broker.clientid}")
+        
+        # Initialize Fyers API client
+        fyers = fyersModel.FyersModel(
+            client_id=broker.clientid,
+            token=broker.access_token,
+            is_async=False,
+            log_path=""
+        )
+        
+        # ===== CALCULATE STOP LOSS PRICE FROM PERCENTAGE =====
+        entry_price = float(data.get('entryPrice', 0))
+        stop_loss_percent = float(data.get('stopLoss', 0))
+        stop_loss_price = 0
+        
+        if stop_loss_percent > 0 and entry_price > 0:
+            # Calculate stop loss price based on action
+            if action == 1:  # Buy order - stop loss is below entry
+                stop_loss_price = entry_price * (1 - stop_loss_percent / 100)
+            else:  # Sell order - stop loss is above entry
+                stop_loss_price = entry_price * (1 + stop_loss_percent / 100)
+            print(f"📊 Calculated Stop Loss Price: ₹{stop_loss_price:.2f} ({stop_loss_percent}% from ₹{entry_price})")
+        
+        # ===== PREPARE ORDER DATA ACCORDING TO FYERS API FORMAT =====
+        order_data = {
+            "symbol": symbol.strip(),
+            "qty": qty,
+            "type": order_type,  # Already validated as int
+            "side": action,  # Already validated as int
+            "productType": product_type,
+            "limitPrice": float(data.get('limitPrice', 0)),
+            "stopPrice": float(data.get('stopPrice', 0)) if stop_loss_price == 0 else stop_loss_price,
+            "validity": data.get('validity', 'DAY'),  # DAY or IOC
+            "disclosedQty": 0,  # For equity only
+            "offlineOrder": False,  # False for market open
+            "stopLoss": 0,  # Not used for regular orders (only CO/BO)
+            "takeProfit": 0  # Not used for regular orders (only BO)
+        }
+        
+        # Note: Trailing Stop Loss is not directly supported by Fyers API in place_order
+        # It would need to be implemented as a separate monitoring system
+        trailing_sl = data.get('trailingStopLoss', False)
+        if trailing_sl:
+            print(f"⚠️ Note: Trailing Stop Loss requested but not supported in Fyers place_order API. Would require separate monitoring.")
+        
+        print(f"📤 Placing order with Fyers: {order_data}")
+        
+        # Place order with Fyers
+        response = fyers.place_order(data=order_data)
+        
+        print(f"📥 Fyers API Response: {response}")
+        
+        # Check response status
+        if response.get('s') == 'ok':
+            # Success
+            return jsonify({
+                'status': 'success',
+                'message': response.get('message', 'Order placed successfully'),
+                'orderId': response.get('id'),
+                'code': response.get('code'),
+                'fyersResponse': response,
+                'stopLossApplied': stop_loss_price > 0,
+                'stopLossPrice': stop_loss_price if stop_loss_price > 0 else None,
+                'trailingSlNote': 'Trailing SL requires separate monitoring (not supported in Fyers place_order)' if trailing_sl else None
+            })
+        else:
+            # Error from Fyers
+            return jsonify({
+                'status': 'error',
+                'message': response.get('message', 'Order placement failed'),
+                'code': response.get('code'),
+                'fyersResponse': response
+            }), 400
+            
+    except Exception as e:
+        print(f"❌ Error placing order: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
+        return jsonify({
+            'status': 'error',
+            'message': f'Server error: {str(e)}'
+        }), 500
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

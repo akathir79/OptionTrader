@@ -6974,8 +6974,9 @@ document.addEventListener('DOMContentLoaded', function() {
             
             document.getElementById('modalBrokerUserId').textContent = selectedBroker.broker_user_id || 'Not configured';
             
-            // Store position key for later use
+            // Store position key and entry price for later use
             document.getElementById('orderConfirmationModal').dataset.positionKey = positionKey;
+            document.getElementById('orderConfirmationModal').dataset.entryPrice = entryPrice;
             
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('orderConfirmationModal'));
@@ -7011,7 +7012,8 @@ document.addEventListener('DOMContentLoaded', function() {
             stopPrice: parseFloat(document.getElementById('modalStopPrice').value) || 0,
             stopLoss: parseFloat(document.getElementById('modalStopLoss').value) || 0,
             trailingStopLoss: document.getElementById('modalTrailingStopLoss').checked,
-            validity: document.getElementById('modalValidity').value
+            validity: document.getElementById('modalValidity').value,
+            entryPrice: parseFloat(document.getElementById('orderConfirmationModal').dataset.entryPrice) || 0
         };
         
         console.log('📋 Order Data:', orderData);
