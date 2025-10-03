@@ -4560,6 +4560,39 @@ document.addEventListener('DOMContentLoaded', function() {
         return positions;
     }
     
+    // Extract strike range from loaded option chain table
+    // This is called automatically when option chain is loaded (dynamic per symbol/expiry)
+    window.updatePayoffChartStrikeRangeFromTable = function() {
+        if (!professionalChart) {
+            console.log('⚠️ Professional chart not available');
+            return;
+        }
+        
+        const tableRows = document.querySelectorAll('#optionChainTable tbody tr[data-strike]');
+        if (tableRows.length === 0) {
+            console.log('⚠️ No option chain data loaded in table');
+            return;
+        }
+        
+        const strikes = [];
+        tableRows.forEach(row => {
+            const strike = parseFloat(row.dataset.strike);
+            if (!isNaN(strike) && strike > 0) {
+                strikes.push(strike);
+            }
+        });
+        
+        if (strikes.length > 0) {
+            const minStrike = Math.min(...strikes);
+            const maxStrike = Math.max(...strikes);
+            console.log(`🎯 Extracted ${strikes.length} strikes from option chain table`);
+            console.log(`📊 Strike range: ₹${minStrike} to ₹${maxStrike}`);
+            
+            // Update professional payoff chart with option chain strike range
+            professionalChart.setStrikeRange(minStrike, maxStrike);
+        }
+    };
+    
     // Create multi-leg payoff chart from loaded option chain data - proper multi-leg concept
     function createPayoffChartFromOptionChain() {
         console.log('🔥 createPayoffChartFromOptionChain called');

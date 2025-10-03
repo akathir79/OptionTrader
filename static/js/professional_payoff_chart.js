@@ -14,6 +14,10 @@ class ProfessionalPayoffChart {
         this.maxProfit = null;
         this.maxLoss = null;
         
+        // Strike range from loaded option chain (dynamic per symbol/expiry)
+        this.optionChainMinStrike = null;
+        this.optionChainMaxStrike = null;
+        
         this.options = {
             title: options.title || 'Option Strategy Payoff Analysis',
             height: options.height || 500,
@@ -269,6 +273,23 @@ class ProfessionalPayoffChart {
     }
     
     /**
+     * Set strike range from loaded option chain
+     * @param {number} minStrike - Minimum strike from option chain
+     * @param {number} maxStrike - Maximum strike from option chain
+     */
+    setStrikeRange(minStrike, maxStrike) {
+        console.log(`📊 Setting strike range from option chain: ₹${minStrike} to ₹${maxStrike}`);
+        this.optionChainMinStrike = minStrike;
+        this.optionChainMaxStrike = maxStrike;
+        
+        // Update chart if we have positions
+        if (this.currentPositions && this.currentPositions.length > 0) {
+            console.log('🔄 Regenerating chart with new strike range');
+            this.updateProfitLossZones();
+        }
+    }
+    
+    /**
      * Generate payoff data points for charting
      * @returns {Array} Array of [price, payoff] points
      */
@@ -278,21 +299,32 @@ class ProfessionalPayoffChart {
             return [];
         }
         
-        // Use strike-based range calculation (matching user's working example)
-        const strikes = this.currentPositions.map(p => p.strike);
-        console.log('📊 Extracted strikes from positions:', strikes);
+        // PRIORITY 1: Use option chain strike range (from loaded table)
+        // This ensures chart dynamically adapts to any symbol/expiry
+        let minStrike, maxStrike;
         
-        if (strikes.length === 0 || strikes.some(s => !s || isNaN(s))) {
-            console.error('❌ Invalid strikes detected:', strikes);
-            return [];
+        if (this.optionChainMinStrike !== null && this.optionChainMaxStrike !== null) {
+            // Use strikes from loaded option chain table
+            minStrike = this.optionChainMinStrike - 1000; // Buffer
+            maxStrike = this.optionChainMaxStrike + 1000; // Buffer
+            console.log(`📊 Using option chain range: ₹${minStrike.toFixed(0)} to ₹${maxStrike.toFixed(0)}`);
+        } else {
+            // Fallback: Use position strikes if option chain not loaded
+            const strikes = this.currentPositions.map(p => p.strike);
+            console.log('📊 Fallback: Extracted strikes from positions:', strikes);
+            
+            if (strikes.length === 0 || strikes.some(s => !s || isNaN(s))) {
+                console.error('❌ Invalid strikes detected:', strikes);
+                return [];
+            }
+            
+            minStrike = Math.min(...strikes) - 1000;
+            maxStrike = Math.max(...strikes) + 1000;
+            console.log(`📊 Using position-based range: ₹${minStrike.toFixed(0)} to ₹${maxStrike.toFixed(0)}`);
         }
         
-        const minStrike = Math.min(...strikes) - 1000;
-        const maxStrike = Math.max(...strikes) + 1000;
         const step = Math.max(1, Math.floor((maxStrike - minStrike) / 100));
-        
-        console.log(`📊 Payoff chart strike-based range: ₹${minStrike.toFixed(0)} to ₹${maxStrike.toFixed(0)} (step: ${step})`);
-        console.log(`📊 Strikes: min=${Math.min(...strikes)}, max=${Math.max(...strikes)}`);
+        console.log(`📊 Payoff chart range: ₹${minStrike.toFixed(0)} to ₹${maxStrike.toFixed(0)} (step: ${step})`);
         
         const payoffData = [];
         

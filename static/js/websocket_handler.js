@@ -1070,6 +1070,14 @@ class WebSocketHandler {
         
         // Set up ATM difference toggle after option chain table is ready
         this.setupATMDifferenceToggle();
+        
+        // Update professional payoff chart with strike range from loaded option chain
+        if (typeof window.updatePayoffChartStrikeRangeFromTable === 'function') {
+            setTimeout(() => {
+                window.updatePayoffChartStrikeRangeFromTable();
+                console.log('✅ Payoff chart strike range updated from option chain table');
+            }, 150);
+        }
     }
     
     updateLiveTableData(message) {
