@@ -274,22 +274,36 @@ class ProfessionalPayoffChart {
      */
     generatePayoffData() {
         if (!this.currentPositions || this.currentPositions.length === 0) {
+            console.log('⚠️ generatePayoffData called with no positions');
             return [];
         }
         
         // Use strike-based range calculation (matching user's working example)
         const strikes = this.currentPositions.map(p => p.strike);
+        console.log('📊 Extracted strikes from positions:', strikes);
+        
+        if (strikes.length === 0 || strikes.some(s => !s || isNaN(s))) {
+            console.error('❌ Invalid strikes detected:', strikes);
+            return [];
+        }
+        
         const minStrike = Math.min(...strikes) - 1000;
         const maxStrike = Math.max(...strikes) + 1000;
         const step = Math.max(1, Math.floor((maxStrike - minStrike) / 100));
         
         console.log(`📊 Payoff chart strike-based range: ₹${minStrike.toFixed(0)} to ₹${maxStrike.toFixed(0)} (step: ${step})`);
+        console.log(`📊 Strikes: min=${Math.min(...strikes)}, max=${Math.max(...strikes)}`);
         
         const payoffData = [];
         
         for (let price = minStrike; price <= maxStrike; price += step) {
             const totalPayoff = this.calculateTotalPayoff(price);
             payoffData.push([price, totalPayoff]);
+        }
+        
+        console.log(`📊 Generated ${payoffData.length} payoff data points`);
+        if (payoffData.length > 0) {
+            console.log(`📊 First point: [${payoffData[0][0]}, ${payoffData[0][1]}], Last point: [${payoffData[payoffData.length-1][0]}, ${payoffData[payoffData.length-1][1]}]`);
         }
         
         return payoffData;
@@ -702,6 +716,11 @@ class ProfessionalPayoffChart {
      */
     updatePositions(positions) {
         console.log('🎯 Updating payoff chart positions:', positions);
+        console.log('🔍 Position count:', positions ? positions.length : 0);
+        if (positions && positions.length > 0) {
+            console.log('🔍 First position:', positions[0]);
+            console.log('🔍 Position strikes:', positions.map(p => p.strike));
+        }
         this.currentPositions = positions || [];
         this.updateProfitLossZones();
     }
