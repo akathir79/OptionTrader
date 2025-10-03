@@ -6964,16 +6964,34 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('modalStopLoss').value = stopLoss;
             document.getElementById('modalTrailingStopLoss').checked = trailingSl;
             
-            // Get broker details from page
-            const brokerDropdown = document.getElementById('brokerSelect');
+            // Get broker details from selected broker dropdown
+            const brokerDropdown = document.getElementById('positionBrokerSelect');
+            const userIdDropdown = document.getElementById('positionUserIdSelect');
             const brokerSettings = window.brokerSettings || [];
-            const selectedBroker = brokerSettings[0] || {}; // Get first broker
+            
+            // Get selected broker and user ID
+            const selectedBrokerName = brokerDropdown ? brokerDropdown.value : '';
+            const selectedUserId = userIdDropdown ? userIdDropdown.value : '';
+            
+            // Find the matching broker setting
+            let selectedBroker = null;
+            if (selectedBrokerName && selectedUserId) {
+                selectedBroker = brokerSettings.find(b => 
+                    b.brokername === selectedBrokerName && b.broker_user_id === selectedUserId
+                );
+            }
+            // Fallback to first broker if no selection
+            if (!selectedBroker) {
+                selectedBroker = brokerSettings[0] || {};
+            }
             
             document.getElementById('modalBrokerUserId').textContent = selectedBroker.broker_user_id || 'Not configured';
             
-            // Store position key and entry price for later use
+            // Store position key, entry price, and broker ID for later use
             document.getElementById('orderConfirmationModal').dataset.positionKey = positionKey;
             document.getElementById('orderConfirmationModal').dataset.entryPrice = entryPrice;
+            document.getElementById('orderConfirmationModal').dataset.brokerId = selectedBroker.id || '';
+            document.getElementById('orderConfirmationModal').dataset.brokerUserId = selectedBroker.broker_user_id || '';
             
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('orderConfirmationModal'));
@@ -7010,7 +7028,9 @@ document.addEventListener('DOMContentLoaded', function() {
             stopLoss: parseFloat(document.getElementById('modalStopLoss').value) || 0,
             trailingStopLoss: document.getElementById('modalTrailingStopLoss').checked,
             validity: document.getElementById('modalValidity').value,
-            entryPrice: parseFloat(document.getElementById('orderConfirmationModal').dataset.entryPrice) || 0
+            entryPrice: parseFloat(document.getElementById('orderConfirmationModal').dataset.entryPrice) || 0,
+            brokerId: document.getElementById('orderConfirmationModal').dataset.brokerId || '',
+            brokerUserId: document.getElementById('orderConfirmationModal').dataset.brokerUserId || ''
         };
         
         console.log('📋 Order Data:', orderData);

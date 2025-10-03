@@ -631,8 +631,22 @@ def place_real_order():
         # Import BrokerSettings model
         from models import BrokerSettings
         
-        # Get broker credentials from database (first Fyers broker)
-        broker = BrokerSettings.query.filter_by(brokername='FYERS').first()
+        # Get broker credentials from database
+        broker_id = data.get('brokerId')
+        broker_user_id = data.get('brokerUserId')
+        
+        # Try to get specific broker by ID first
+        if broker_id:
+            broker = BrokerSettings.query.filter_by(id=broker_id).first()
+        elif broker_user_id:
+            # Fallback: try to find by user ID and broker name
+            broker = BrokerSettings.query.filter_by(
+                brokername='FYERS', 
+                broker_user_id=broker_user_id
+            ).first()
+        else:
+            # Last resort: get first Fyers broker
+            broker = BrokerSettings.query.filter_by(brokername='FYERS').first()
         
         if not broker:
             return jsonify({
