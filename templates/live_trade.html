@@ -6614,14 +6614,18 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedBrokerName = brokerDropdown ? brokerDropdown.value : '';
             const selectedUserId = userIdDropdown ? userIdDropdown.value : '';
             
+            console.log('🔍 DEBUG: Broker dropdown value:', selectedBrokerName);
+            console.log('🔍 DEBUG: User ID dropdown value:', selectedUserId);
+            console.log('🔍 DEBUG: Available broker settings:', brokerSettings);
+            
             // ===== VALIDATION: Ensure broker and user ID are selected =====
-            if (!selectedBrokerName || selectedBrokerName === 'Select Broker') {
+            if (!selectedBrokerName || selectedBrokerName === 'Select Broker' || selectedBrokerName === '') {
                 alert('⚠️ Please select a broker from the dropdown before placing an order.');
                 console.warn('❌ Order execution cancelled: No broker selected');
                 return;
             }
             
-            if (!selectedUserId || selectedUserId === 'Select User ID') {
+            if (!selectedUserId || selectedUserId === 'Select User ID' || selectedUserId === '') {
                 alert('⚠️ Please select a User ID from the dropdown before placing an order.');
                 console.warn('❌ Order execution cancelled: No user ID selected');
                 return;
@@ -6635,10 +6639,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 );
             }
             
+            console.log('🔍 DEBUG: Found broker:', selectedBroker);
+            
             // Validate broker configuration exists
             if (!selectedBroker) {
                 alert('⚠️ Broker configuration not found. Please configure broker settings first.');
-                console.error('❌ No broker found for:', {broker: selectedBrokerName, userId: selectedUserId});
+                console.error('❌ No broker found for:', {
+                    broker: selectedBrokerName, 
+                    userId: selectedUserId,
+                    availableBrokers: brokerSettings.map(b => ({ name: b.brokername, userId: b.broker_user_id }))
+                });
                 return;
             }
             
