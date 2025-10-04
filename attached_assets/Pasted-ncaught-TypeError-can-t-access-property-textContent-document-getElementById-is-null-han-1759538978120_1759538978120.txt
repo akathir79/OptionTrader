@@ -1,0 +1,37 @@
+ncaught TypeError: can't access property "textContent", document.getElementById(...) is null
+    handleExecutePosition https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/static/js/trading_controls.js:228
+    initTradingControls https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/static/js/trading_controls.js:54
+    initTradingControls https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/static/js/trading_controls.js:52
+    <anonymous> https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/static/js/trading_controls.js:11
+    EventListener.handleEvent* https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/static/js/trading_controls.js:7
+trading_controls.js:228:14
+❌ No broker found for: 
+Object { broker: "FYERS", userId: "XK00637", availableBrokers: [] }
+39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev:6859:25
+Live data fetch error: TypeError: NetworkError when attempting to fetch resource.
+    initializeOrderModal https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/:6858
+    initializeOrderModal https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/:6782
+    EventListener.handleEvent* https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/:6974
+    <anonymous> https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/:6978
+websocket_handler.js:265:25
+Uncaught TypeError: can't access property "textContent", document.getElementById(...) is null
+    handleExecutePosition https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/static/js/trading_controls.js:228
+    initTradingControls https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/static/js/trading_controls.js:54
+    initTradingControls https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/static/js/trading_controls.js:52
+    <anonymous> https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/static/js/trading_controls.js:11
+    EventListener.handleEvent* https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/static/js/trading_controls.js:7
+trading_controls.js:228:14
+❌ No broker found for: 
+Object { broker: "FYERS", userId: "XK00637", availableBrokers: [] }
+39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev:6859:25
+Uncaught TypeError: can't access property "textContent", document.getElementById(...) is null
+    handleExecutePosition https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/static/js/trading_controls.js:228
+    initTradingControls https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/static/js/trading_controls.js:54
+    initTradingControls https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/static/js/trading_controls.js:52
+    <anonymous> https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/static/js/trading_controls.js:11
+    EventListener.handleEvent* https://39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev/static/js/trading_controls.js:7
+trading_controls.js:228:14
+❌ No broker found for: 
+Object { broker: "FYERS", userId: "XK00637", availableBrokers: [] }
+39ef6eb3-d280-461a-87b0-d0b42c4e0e60-00-a5tcbcre9v3a.picard.replit.dev:6859:25
+Live data fetch error: TypeError: NetworkError when attempting to fetch resource.

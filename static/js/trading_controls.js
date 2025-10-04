@@ -225,7 +225,10 @@ function handleExecutePosition(button) {
     // Update quantity display (lots * lot size)
     const lotSize = 75; // Default for NIFTY
     const quantity = (parseInt(lots) || 1) * lotSize;
-    document.getElementById('modalQty').textContent = quantity;
+    const qtyElement = document.getElementById('modalTotalQty');
+    if (qtyElement) {
+        qtyElement.textContent = quantity;
+    }
     
     // Update action display
     const actionText = action === '1' ? 'BUY' : 'SELL';
@@ -235,24 +238,64 @@ function handleExecutePosition(button) {
         actionBadge.className = action === '1' ? 'badge bg-success' : 'badge bg-danger';
     }
     
-    // Get selected broker information
+    // ===== GET AND VALIDATE BROKER SELECTION =====
     const brokerSelect = document.getElementById('positionBrokerSelect');
     const userIdSelect = document.getElementById('positionUserIdSelect');
-    const selectedBroker = window.brokerSettings?.find(b => 
-        b.brokername === brokerSelect?.value && b.broker_user_id === userIdSelect?.value
+    const brokerSettings = window.brokerSettings || [];
+    
+    const selectedBrokerName = brokerSelect ? brokerSelect.value : '';
+    const selectedUserId = userIdSelect ? userIdSelect.value : '';
+    
+    console.log('🔍 DEBUG: Broker dropdown value:', selectedBrokerName);
+    console.log('🔍 DEBUG: User ID dropdown value:', selectedUserId);
+    console.log('🔍 DEBUG: Available broker settings:', brokerSettings);
+    
+    // Validate broker selection
+    if (!selectedBrokerName || selectedBrokerName === 'Select Broker' || selectedBrokerName === '') {
+        alert('⚠️ Please select a broker from the dropdown before placing an order.');
+        console.warn('❌ Order execution cancelled: No broker selected');
+        return;
+    }
+    
+    if (!selectedUserId || selectedUserId === 'Select User ID' || selectedUserId === '') {
+        alert('⚠️ Please select a User ID from the dropdown before placing an order.');
+        console.warn('❌ Order execution cancelled: No user ID selected');
+        return;
+    }
+    
+    // Find matching broker
+    let selectedBroker = brokerSettings.find(b => 
+        b.brokername === selectedBrokerName && b.broker_user_id === selectedUserId
     );
     
+    console.log('🔍 DEBUG: Found broker:', selectedBroker);
+    
+    // Validate broker found
     if (!selectedBroker) {
-        selectedBroker = window.brokerSettings?.[0] || {};
+        alert('⚠️ Broker configuration not found. Please configure broker settings first.');
+        console.error('❌ No broker found for:', {
+            broker: selectedBrokerName,
+            userId: selectedUserId,
+            availableBrokers: brokerSettings.map(b => ({ name: b.brokername, userId: b.broker_user_id }))
+        });
+        return;
+    }
+    
+    // Validate broker credentials
+    if (!selectedBroker.id || !selectedBroker.access_token) {
+        alert('⚠️ Broker credentials incomplete. Please reconfigure broker settings.');
+        console.error('❌ Invalid broker credentials:', selectedBroker);
+        return;
     }
     
     document.getElementById('modalBrokerUserId').textContent = selectedBroker.broker_user_id || 'Not configured';
     
-    // Store position key, entry price, and broker ID for later use
+    // Store position key, entry price, and broker info for later use
     document.getElementById('orderConfirmationModal').dataset.positionKey = positionKey;
     document.getElementById('orderConfirmationModal').dataset.entryPrice = entryPrice || '0';
     document.getElementById('orderConfirmationModal').dataset.brokerId = selectedBroker.id || '';
     document.getElementById('orderConfirmationModal').dataset.brokerUserId = selectedBroker.broker_user_id || '';
+    document.getElementById('orderConfirmationModal').dataset.brokerName = selectedBroker.brokername || '';
     
     // Show modal
     const modal = new bootstrap.Modal(document.getElementById('orderConfirmationModal'));
