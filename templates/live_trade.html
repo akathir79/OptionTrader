@@ -6922,17 +6922,21 @@ html, body {
 
 <script>
 // Order Confirmation Modal Handler
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔥 Order Confirmation Modal Initializing...');
+(function() {
+    'use strict';
+    console.log('🔥 Order Confirmation Modal Script Loading...');
     
-    // Attach event listeners to execute buttons (play icon in Action column) using event delegation
-    document.body.addEventListener('click', function(e) {
-        if (e.target.closest('.execute-btn')) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const btn = e.target.closest('.execute-btn');
-            console.log('🎬 Execute button clicked!', btn.dataset);
+    function initializeOrderModal() {
+        console.log('🔥 Order Confirmation Modal Initializing...');
+        
+        // Attach event listeners to execute buttons (play icon in Action column) using event delegation
+        document.body.addEventListener('click', function(e) {
+            if (e.target.closest('.execute-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const btn = e.target.closest('.execute-btn');
+                console.log('🎬 Execute button clicked!', btn.dataset);
             
             // Get data from button
             const symbol = btn.dataset.symbol;
@@ -7079,6 +7083,14 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     console.log('✅ Order Confirmation Modal initialized');
-});
+    }
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeOrderModal);
+    } else {
+        initializeOrderModal();
+    }
+})();
 </script>
 
