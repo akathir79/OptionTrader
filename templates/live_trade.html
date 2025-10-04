@@ -6010,17 +6010,17 @@ document.addEventListener('DOMContentLoaded', function() {
           <div class="col-md-4">
             <label class="form-label fw-bold">Order Type</label>
             <select class="form-select" id="modalOrderType">
-              <option value="2">Market</option>
+              <option value="2" selected>Market</option>
               <option value="1">Limit</option>
               <option value="3">Stop Loss (SL-M)</option>
               <option value="4">Stop Limit (SL-L)</option>
             </select>
           </div>
-          <div class="col-md-4">
+          <div class="col-md-4" id="limitPriceField" style="display: none;">
             <label class="form-label fw-bold">Limit Price</label>
             <input type="number" class="form-control" id="modalLimitPrice" step="0.05" value="0">
           </div>
-          <div class="col-md-4">
+          <div class="col-md-4" id="stopPriceField" style="display: none;">
             <label class="form-label fw-bold">Stop Price</label>
             <input type="number" class="form-control" id="modalStopPrice" step="0.05" value="0">
           </div>
@@ -6609,6 +6609,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('modalStopLoss').value = stopLoss;
             document.getElementById('modalTrailingStopLoss').checked = trailingSl;
             
+            // Update field visibility based on order type
+            updatePriceFieldsVisibility();
+            
             // Get broker details from selected broker dropdown
             const brokerDropdown = document.getElementById('positionBrokerSelect');
             const userIdDropdown = document.getElementById('positionUserIdSelect');
@@ -6687,6 +6690,40 @@ document.addEventListener('DOMContentLoaded', function() {
         const lots = parseInt(this.value) || 1;
         document.getElementById('modalTotalQty').textContent = lots * 75;
     });
+    
+    // Show/hide price fields based on order type
+    function updatePriceFieldsVisibility() {
+        const orderType = document.getElementById('modalOrderType').value;
+        const limitPriceField = document.getElementById('limitPriceField');
+        const stopPriceField = document.getElementById('stopPriceField');
+        
+        // Hide all by default
+        limitPriceField.style.display = 'none';
+        stopPriceField.style.display = 'none';
+        
+        // Show fields based on order type
+        // 1 = Limit, 2 = Market, 3 = Stop Loss (SL-M), 4 = Stop Limit (SL-L)
+        if (orderType === '1') {
+            // Limit Order: Show limit price only
+            limitPriceField.style.display = 'block';
+        } else if (orderType === '3') {
+            // Stop Loss: Show stop price only
+            stopPriceField.style.display = 'block';
+        } else if (orderType === '4') {
+            // Stop Limit: Show both
+            limitPriceField.style.display = 'block';
+            stopPriceField.style.display = 'block';
+        }
+        // For Market (2), both stay hidden
+        
+        console.log(`📋 Order type changed to ${orderType}, updated field visibility`);
+    }
+    
+    // Attach event listener to order type dropdown
+    document.getElementById('modalOrderType').addEventListener('change', updatePriceFieldsVisibility);
+    
+    // Initialize visibility on page load
+    updatePriceFieldsVisibility();
     
     // Confirm Order Button Handler
     document.getElementById('confirmOrderBtn').addEventListener('click', function() {
