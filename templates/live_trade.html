@@ -6614,6 +6614,19 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedBrokerName = brokerDropdown ? brokerDropdown.value : '';
             const selectedUserId = userIdDropdown ? userIdDropdown.value : '';
             
+            // ===== VALIDATION: Ensure broker and user ID are selected =====
+            if (!selectedBrokerName || selectedBrokerName === 'Select Broker') {
+                alert('⚠️ Please select a broker from the dropdown before placing an order.');
+                console.warn('❌ Order execution cancelled: No broker selected');
+                return;
+            }
+            
+            if (!selectedUserId || selectedUserId === 'Select User ID') {
+                alert('⚠️ Please select a User ID from the dropdown before placing an order.');
+                console.warn('❌ Order execution cancelled: No user ID selected');
+                return;
+            }
+            
             // Find the matching broker setting
             let selectedBroker = null;
             if (selectedBrokerName && selectedUserId) {
@@ -6621,18 +6634,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     b.brokername === selectedBrokerName && b.broker_user_id === selectedUserId
                 );
             }
-            // Fallback to first broker if no selection
+            
+            // Validate broker configuration exists
             if (!selectedBroker) {
-                selectedBroker = brokerSettings[0] || {};
+                alert('⚠️ Broker configuration not found. Please configure broker settings first.');
+                console.error('❌ No broker found for:', {broker: selectedBrokerName, userId: selectedUserId});
+                return;
+            }
+            
+            // Validate broker has necessary credentials
+            if (!selectedBroker.id || !selectedBroker.access_token) {
+                alert('⚠️ Broker credentials incomplete. Please reconfigure broker settings.');
+                console.error('❌ Invalid broker credentials:', selectedBroker);
+                return;
             }
             
             document.getElementById('modalBrokerUserId').textContent = selectedBroker.broker_user_id || 'Not configured';
             
-            // Store position key, entry price, and broker ID for later use
+            // Store position key, entry price, broker info for later use
             document.getElementById('orderConfirmationModal').dataset.positionKey = positionKey;
             document.getElementById('orderConfirmationModal').dataset.entryPrice = entryPrice;
             document.getElementById('orderConfirmationModal').dataset.brokerId = selectedBroker.id || '';
             document.getElementById('orderConfirmationModal').dataset.brokerUserId = selectedBroker.broker_user_id || '';
+            document.getElementById('orderConfirmationModal').dataset.brokerName = selectedBroker.brokername || '';
             
             // Show modal
             const modal = new bootstrap.Modal(document.getElementById('orderConfirmationModal'));
@@ -6671,7 +6695,8 @@ document.addEventListener('DOMContentLoaded', function() {
             validity: document.getElementById('modalValidity').value,
             entryPrice: parseFloat(document.getElementById('orderConfirmationModal').dataset.entryPrice) || 0,
             brokerId: document.getElementById('orderConfirmationModal').dataset.brokerId || '',
-            brokerUserId: document.getElementById('orderConfirmationModal').dataset.brokerUserId || ''
+            brokerUserId: document.getElementById('orderConfirmationModal').dataset.brokerUserId || '',
+            brokerName: document.getElementById('orderConfirmationModal').dataset.brokerName || ''
         };
         
         console.log('📋 Order Data:', orderData);

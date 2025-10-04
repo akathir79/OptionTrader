@@ -631,44 +631,79 @@ def place_real_order():
         # Import BrokerSettings model
         from models import BrokerSettings
         
-        # Get broker credentials from database
+        # ===== GET BROKER CREDENTIALS - SUPPORTS MULTIPLE BROKERS =====
         broker_id = data.get('brokerId')
         broker_user_id = data.get('brokerUserId')
+        broker_name = data.get('brokerName', '')  # e.g., 'FYERS', 'KITE', '5PAISA'
         
-        # Try to get specific broker by ID first
+        # Validate broker parameters
+        if not broker_id and not broker_user_id:
+            return jsonify({
+                'status': 'error',
+                'message': 'Broker ID or User ID required. Please select a broker from the dropdown.'
+            }), 400
+        
+        # Try to get specific broker by ID first (most reliable)
         if broker_id:
             broker = BrokerSettings.query.filter_by(id=broker_id).first()
-        elif broker_user_id:
+        elif broker_user_id and broker_name:
             # Fallback: try to find by user ID and broker name
             broker = BrokerSettings.query.filter_by(
-                brokername='FYERS', 
+                brokername=broker_name.upper(), 
                 broker_user_id=broker_user_id
             ).first()
         else:
-            # Last resort: get first Fyers broker
-            broker = BrokerSettings.query.filter_by(brokername='FYERS').first()
+            broker = None
         
+        # Validate broker found
         if not broker:
             return jsonify({
                 'status': 'error',
-                'message': 'No Fyers broker credentials found. Please configure broker settings first.'
+                'message': f'Broker credentials not found for {broker_name or "selected broker"}. Please configure broker settings first.'
             }), 400
         
+        # Validate broker has necessary credentials
         if not broker.access_token or not broker.clientid:
             return jsonify({
                 'status': 'error',
-                'message': 'Incomplete broker credentials. Please configure access token and client ID.'
+                'message': f'Incomplete {broker.brokername} credentials. Please configure access token and client ID.'
             }), 400
         
-        print(f"🔐 Using broker credentials: Client ID = {broker.clientid}")
+        print(f"🔐 Using {broker.brokername} broker | User: {broker.broker_user_id} | Client ID: {broker.clientid}")
         
-        # Initialize Fyers API client
-        fyers = fyersModel.FyersModel(
-            client_id=broker.clientid,
-            token=broker.access_token,
-            is_async=False,
-            log_path=""
-        )
+        # ===== INITIALIZE BROKER API CLIENT - DYNAMIC BASED ON BROKER TYPE =====
+        broker_type = broker.brokername.upper()
+        
+        if broker_type == 'FYERS':
+            # Initialize Fyers API client
+            fyers = fyersModel.FyersModel(
+                client_id=broker.clientid,
+                token=broker.access_token,
+                is_async=False,
+                log_path=""
+            )
+            broker_client = fyers
+        elif broker_type == 'KITE':
+            # TODO: Initialize Kite Connect client when needed
+            # from kiteconnect import KiteConnect
+            # kite = KiteConnect(api_key=broker.appkey)
+            # kite.set_access_token(broker.access_token)
+            # broker_client = kite
+            return jsonify({
+                'status': 'error',
+                'message': 'Kite broker support coming soon. Currently only Fyers is supported.'
+            }), 400
+        elif broker_type == '5PAISA':
+            # TODO: Initialize 5Paisa client when needed
+            return jsonify({
+                'status': 'error',
+                'message': '5Paisa broker support coming soon. Currently only Fyers is supported.'
+            }), 400
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': f'Unsupported broker type: {broker_type}. Currently only Fyers is supported.'
+            }), 400
         
         # ===== CALCULATE STOP LOSS PRICE FROM PERCENTAGE =====
         entry_price = float(data.get('entryPrice', 0))
@@ -705,12 +740,22 @@ def place_real_order():
         if trailing_sl:
             print(f"⚠️ Note: Trailing Stop Loss requested but not supported in Fyers place_order API. Would require separate monitoring.")
         
-        print(f"📤 Placing order with Fyers: {order_data}")
+        print(f"📤 Placing order with {broker_type}: {order_data}")
         
-        # Place order with Fyers
-        response = fyers.place_order(data=order_data)
+        # ===== PLACE ORDER - BROKER-SPECIFIC API CALL =====
+        if broker_type == 'FYERS':
+            response = broker_client.place_order(data=order_data)
+        # elif broker_type == 'KITE':
+        #     response = broker_client.place_order(variety='regular', exchange='NFO', ...)
+        # elif broker_type == '5PAISA':
+        #     response = broker_client.place_order(...)
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': f'Order placement not implemented for {broker_type}'
+            }), 400
         
-        print(f"📥 Fyers API Response: {response}")
+        print(f"📥 {broker_type} API Response: {response}")
         
         # Check response status
         if response.get('s') == 'ok':
