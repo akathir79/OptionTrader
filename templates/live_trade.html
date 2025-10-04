@@ -2990,8 +2990,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
         let strike = 0;
         if (row) {
-            const strikeTd = row.children[19]; // Strike column
-            strike = parseFloat(strikeTd?.textContent || 0);
+            // Use data-strike attribute which contains the actual strike price (e.g., 24200)
+            // NOT the LTP from a table cell
+            strike = parseFloat(row.dataset.strike || 0);
         }
         
         console.log(`🔥 Strike: ${strike}, Expiry: ${currentExpiry}`);
@@ -3446,8 +3447,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const row = document.querySelector(`#optionChainTable tbody tr:nth-child(${rowIndex + 1})`);
         let strike = 0;
         if (row) {
-            const strikeTd = row.children[19]; // Strike column
-            strike = parseFloat(strikeTd?.textContent || 0);
+            // Use data-strike attribute which contains the actual strike price (e.g., 24200)
+            // NOT the LTP from a table cell
+            strike = parseFloat(row.dataset.strike || 0);
         }
         
         // Find all positions for this strike (across all expiries)
@@ -6753,8 +6755,40 @@ document.addEventListener('DOMContentLoaded', function() {
             // Re-enable button
             this.disabled = false;
             this.innerHTML = '<i class="fas fa-check me-1"></i>Confirm & Execute Order';
+            
+            // Clean up any lingering modal backdrops
+            removeModalBackdrop();
         });
     });
+    
+    // Clean up modal backdrop when modal is hidden
+    document.getElementById('orderConfirmationModal').addEventListener('hidden.bs.modal', function () {
+        console.log('🧹 Modal hidden event fired, cleaning up backdrop');
+        removeModalBackdrop();
+    });
+    
+    // Helper function to remove modal backdrop (scoped to prevent interfering with other modals)
+    function removeModalBackdrop() {
+        // Only clean up if no other modals are open
+        const openModals = document.querySelectorAll('.modal.show');
+        if (openModals.length === 0) {
+            // Remove all modal backdrops only if no modals are open
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(backdrop => {
+                backdrop.remove();
+                console.log('🧹 Removed modal backdrop');
+            });
+            
+            // Remove modal-open class from body only if no modals remain
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            
+            console.log('🧹 Cleaned up modal state');
+        } else {
+            console.log('🔍 Other modals still open, skipping backdrop cleanup');
+        }
+    }
     
     console.log('✅ Order Confirmation Modal initialized');
     }
