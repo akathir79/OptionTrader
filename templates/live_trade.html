@@ -6556,6 +6556,181 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 2500);
     });
     </script>
+
+<script>
+// Order Confirmation Modal Handler
+(function() {
+    'use strict';
+    console.log('🔥 Order Confirmation Modal Script Loading...');
+    
+    function initializeOrderModal() {
+        console.log('🔥 Order Confirmation Modal Initializing...');
+        
+        // Attach event listeners to execute buttons (play icon in Action column) using event delegation
+        document.body.addEventListener('click', function(e) {
+            if (e.target.closest('.execute-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const btn = e.target.closest('.execute-btn');
+                console.log('🎬 Execute button clicked!', btn.dataset);
+            
+            // Get data from button
+            const symbol = btn.dataset.symbol;
+            const strike = btn.dataset.strike;
+            const optionType = btn.dataset.optionType;
+            const action = btn.dataset.action;
+            const lots = parseInt(btn.dataset.lots) || 1;
+            const entryPrice = parseFloat(btn.dataset.entryPrice) || 0;
+            const positionKey = btn.dataset.positionKey;
+            
+            // Get order type and stop loss from the position row
+            const row = btn.closest('tr');
+            const orderTypeSelect = row.querySelector('.order-type-select');
+            const stopLossInput = row.querySelector('.stop-loss-input');
+            const trailingSlCheckbox = row.querySelector('.trailing-sl-checkbox');
+            
+            const orderType = orderTypeSelect ? orderTypeSelect.value : '2'; // Default to Market
+            const stopLoss = stopLossInput ? parseFloat(stopLossInput.value) : 0;
+            const trailingSl = trailingSlCheckbox ? trailingSlCheckbox.checked : false;
+            
+            // Populate modal fields
+            document.getElementById('modalSymbol').value = symbol;
+            document.getElementById('modalStrike').value = strike;
+            document.getElementById('modalOptionType').value = optionType;
+            document.getElementById('modalAction').value = action === 'Buy' ? '1' : '-1';
+            document.getElementById('modalLots').value = lots;
+            document.getElementById('modalTotalQty').textContent = lots * 75;
+            document.getElementById('modalOrderType').value = orderType;
+            document.getElementById('modalStopLoss').value = stopLoss;
+            document.getElementById('modalTrailingStopLoss').checked = trailingSl;
+            
+            // Get broker details from selected broker dropdown
+            const brokerDropdown = document.getElementById('positionBrokerSelect');
+            const userIdDropdown = document.getElementById('positionUserIdSelect');
+            const brokerSettings = window.brokerSettings || [];
+            
+            // Get selected broker and user ID
+            const selectedBrokerName = brokerDropdown ? brokerDropdown.value : '';
+            const selectedUserId = userIdDropdown ? userIdDropdown.value : '';
+            
+            // Find the matching broker setting
+            let selectedBroker = null;
+            if (selectedBrokerName && selectedUserId) {
+                selectedBroker = brokerSettings.find(b => 
+                    b.brokername === selectedBrokerName && b.broker_user_id === selectedUserId
+                );
+            }
+            // Fallback to first broker if no selection
+            if (!selectedBroker) {
+                selectedBroker = brokerSettings[0] || {};
+            }
+            
+            document.getElementById('modalBrokerUserId').textContent = selectedBroker.broker_user_id || 'Not configured';
+            
+            // Store position key, entry price, and broker ID for later use
+            document.getElementById('orderConfirmationModal').dataset.positionKey = positionKey;
+            document.getElementById('orderConfirmationModal').dataset.entryPrice = entryPrice;
+            document.getElementById('orderConfirmationModal').dataset.brokerId = selectedBroker.id || '';
+            document.getElementById('orderConfirmationModal').dataset.brokerUserId = selectedBroker.broker_user_id || '';
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('orderConfirmationModal'));
+            modal.show();
+            
+            console.log('✅ Order Confirmation Modal opened with data:', {
+                symbol, strike, optionType, action, lots, orderType, stopLoss, trailingSl
+            });
+        }
+    });
+    
+    // Update total quantity when lots change
+    document.getElementById('modalLots').addEventListener('input', function() {
+        const lots = parseInt(this.value) || 1;
+        document.getElementById('modalTotalQty').textContent = lots * 75;
+    });
+    
+    // Confirm Order Button Handler
+    document.getElementById('confirmOrderBtn').addEventListener('click', function() {
+        console.log('🚀 Confirming order execution...');
+        
+        // Get all modal values
+        const orderData = {
+            symbol: document.getElementById('modalSymbol').value,
+            strike: document.getElementById('modalStrike').value,
+            optionType: document.getElementById('modalOptionType').value,
+            action: parseInt(document.getElementById('modalAction').value),
+            lots: parseInt(document.getElementById('modalLots').value),
+            qty: parseInt(document.getElementById('modalLots').value) * 75,
+            productType: document.getElementById('modalProductType').value,
+            orderType: parseInt(document.getElementById('modalOrderType').value),
+            limitPrice: parseFloat(document.getElementById('modalLimitPrice').value) || 0,
+            stopPrice: parseFloat(document.getElementById('modalStopPrice').value) || 0,
+            stopLoss: parseFloat(document.getElementById('modalStopLoss').value) || 0,
+            trailingStopLoss: document.getElementById('modalTrailingStopLoss').checked,
+            validity: document.getElementById('modalValidity').value,
+            entryPrice: parseFloat(document.getElementById('orderConfirmationModal').dataset.entryPrice) || 0,
+            brokerId: document.getElementById('orderConfirmationModal').dataset.brokerId || '',
+            brokerUserId: document.getElementById('orderConfirmationModal').dataset.brokerUserId || ''
+        };
+        
+        console.log('📋 Order Data:', orderData);
+        
+        // Disable button to prevent double-click
+        this.disabled = true;
+        this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Executing...';
+        
+        // Send order to backend
+        fetch('/api/place_real_order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(orderData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log('✅ Order API Response:', data);
+            
+            if (data.status === 'success') {
+                // Success - show notification
+                alert(`✅ Order Executed Successfully!\n\nOrder ID: ${data.orderId}\n${data.message}`);
+                
+                // Close modal
+                bootstrap.Modal.getInstance(document.getElementById('orderConfirmationModal')).hide();
+                
+                // Optionally refresh positions
+                if (typeof updateCurrentPositionsTable === 'function') {
+                    updateCurrentPositionsTable();
+                }
+            } else {
+                // Error - show error message
+                alert(`❌ Order Execution Failed!\n\n${data.message || 'Unknown error occurred'}`);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Order execution error:', error);
+            alert(`❌ Order Execution Failed!\n\n${error.message || 'Network error occurred'}`);
+        })
+        .finally(() => {
+            // Re-enable button
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-check me-1"></i>Confirm & Execute Order';
+        });
+    });
+    
+    console.log('✅ Order Confirmation Modal initialized');
+    }
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeOrderModal);
+    } else {
+        initializeOrderModal();
+    }
+})();
+</script>
+
 {% endblock %}
 
 <style>
@@ -6923,174 +7098,3 @@ html, body {
 <script>
 // Order Confirmation Modal Handler
 (function() {
-    'use strict';
-    console.log('🔥 Order Confirmation Modal Script Loading...');
-    
-    function initializeOrderModal() {
-        console.log('🔥 Order Confirmation Modal Initializing...');
-        
-        // Attach event listeners to execute buttons (play icon in Action column) using event delegation
-        document.body.addEventListener('click', function(e) {
-            if (e.target.closest('.execute-btn')) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const btn = e.target.closest('.execute-btn');
-                console.log('🎬 Execute button clicked!', btn.dataset);
-            
-            // Get data from button
-            const symbol = btn.dataset.symbol;
-            const strike = btn.dataset.strike;
-            const optionType = btn.dataset.optionType;
-            const action = btn.dataset.action;
-            const lots = parseInt(btn.dataset.lots) || 1;
-            const entryPrice = parseFloat(btn.dataset.entryPrice) || 0;
-            const positionKey = btn.dataset.positionKey;
-            
-            // Get order type and stop loss from the position row
-            const row = btn.closest('tr');
-            const orderTypeSelect = row.querySelector('.order-type-select');
-            const stopLossInput = row.querySelector('.stop-loss-input');
-            const trailingSlCheckbox = row.querySelector('.trailing-sl-checkbox');
-            
-            const orderType = orderTypeSelect ? orderTypeSelect.value : '2'; // Default to Market
-            const stopLoss = stopLossInput ? parseFloat(stopLossInput.value) : 0;
-            const trailingSl = trailingSlCheckbox ? trailingSlCheckbox.checked : false;
-            
-            // Populate modal fields
-            document.getElementById('modalSymbol').value = symbol;
-            document.getElementById('modalStrike').value = strike;
-            document.getElementById('modalOptionType').value = optionType;
-            document.getElementById('modalAction').value = action === 'Buy' ? '1' : '-1';
-            document.getElementById('modalLots').value = lots;
-            document.getElementById('modalTotalQty').textContent = lots * 75;
-            document.getElementById('modalOrderType').value = orderType;
-            document.getElementById('modalStopLoss').value = stopLoss;
-            document.getElementById('modalTrailingStopLoss').checked = trailingSl;
-            
-            // Get broker details from selected broker dropdown
-            const brokerDropdown = document.getElementById('positionBrokerSelect');
-            const userIdDropdown = document.getElementById('positionUserIdSelect');
-            const brokerSettings = window.brokerSettings || [];
-            
-            // Get selected broker and user ID
-            const selectedBrokerName = brokerDropdown ? brokerDropdown.value : '';
-            const selectedUserId = userIdDropdown ? userIdDropdown.value : '';
-            
-            // Find the matching broker setting
-            let selectedBroker = null;
-            if (selectedBrokerName && selectedUserId) {
-                selectedBroker = brokerSettings.find(b => 
-                    b.brokername === selectedBrokerName && b.broker_user_id === selectedUserId
-                );
-            }
-            // Fallback to first broker if no selection
-            if (!selectedBroker) {
-                selectedBroker = brokerSettings[0] || {};
-            }
-            
-            document.getElementById('modalBrokerUserId').textContent = selectedBroker.broker_user_id || 'Not configured';
-            
-            // Store position key, entry price, and broker ID for later use
-            document.getElementById('orderConfirmationModal').dataset.positionKey = positionKey;
-            document.getElementById('orderConfirmationModal').dataset.entryPrice = entryPrice;
-            document.getElementById('orderConfirmationModal').dataset.brokerId = selectedBroker.id || '';
-            document.getElementById('orderConfirmationModal').dataset.brokerUserId = selectedBroker.broker_user_id || '';
-            
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('orderConfirmationModal'));
-            modal.show();
-            
-            console.log('✅ Order Confirmation Modal opened with data:', {
-                symbol, strike, optionType, action, lots, orderType, stopLoss, trailingSl
-            });
-        }
-    });
-    
-    // Update total quantity when lots change
-    document.getElementById('modalLots').addEventListener('input', function() {
-        const lots = parseInt(this.value) || 1;
-        document.getElementById('modalTotalQty').textContent = lots * 75;
-    });
-    
-    // Confirm Order Button Handler
-    document.getElementById('confirmOrderBtn').addEventListener('click', function() {
-        console.log('🚀 Confirming order execution...');
-        
-        // Get all modal values
-        const orderData = {
-            symbol: document.getElementById('modalSymbol').value,
-            strike: document.getElementById('modalStrike').value,
-            optionType: document.getElementById('modalOptionType').value,
-            action: parseInt(document.getElementById('modalAction').value),
-            lots: parseInt(document.getElementById('modalLots').value),
-            qty: parseInt(document.getElementById('modalLots').value) * 75,
-            productType: document.getElementById('modalProductType').value,
-            orderType: parseInt(document.getElementById('modalOrderType').value),
-            limitPrice: parseFloat(document.getElementById('modalLimitPrice').value) || 0,
-            stopPrice: parseFloat(document.getElementById('modalStopPrice').value) || 0,
-            stopLoss: parseFloat(document.getElementById('modalStopLoss').value) || 0,
-            trailingStopLoss: document.getElementById('modalTrailingStopLoss').checked,
-            validity: document.getElementById('modalValidity').value,
-            entryPrice: parseFloat(document.getElementById('orderConfirmationModal').dataset.entryPrice) || 0,
-            brokerId: document.getElementById('orderConfirmationModal').dataset.brokerId || '',
-            brokerUserId: document.getElementById('orderConfirmationModal').dataset.brokerUserId || ''
-        };
-        
-        console.log('📋 Order Data:', orderData);
-        
-        // Disable button to prevent double-click
-        this.disabled = true;
-        this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Executing...';
-        
-        // Send order to backend
-        fetch('/api/place_real_order', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(orderData)
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log('✅ Order API Response:', data);
-            
-            if (data.status === 'success') {
-                // Success - show notification
-                alert(`✅ Order Executed Successfully!\n\nOrder ID: ${data.orderId}\n${data.message}`);
-                
-                // Close modal
-                bootstrap.Modal.getInstance(document.getElementById('orderConfirmationModal')).hide();
-                
-                // Optionally refresh positions
-                if (typeof updateCurrentPositionsTable === 'function') {
-                    updateCurrentPositionsTable();
-                }
-            } else {
-                // Error - show error message
-                alert(`❌ Order Execution Failed!\n\n${data.message || 'Unknown error occurred'}`);
-            }
-        })
-        .catch(error => {
-            console.error('❌ Order execution error:', error);
-            alert(`❌ Order Execution Failed!\n\n${error.message || 'Network error occurred'}`);
-        })
-        .finally(() => {
-            // Re-enable button
-            this.disabled = false;
-            this.innerHTML = '<i class="fas fa-check me-1"></i>Confirm & Execute Order';
-        });
-    });
-    
-    console.log('✅ Order Confirmation Modal initialized');
-    }
-    
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeOrderModal);
-    } else {
-        initializeOrderModal();
-    }
-})();
-</script>
-
