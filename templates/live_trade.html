@@ -5954,116 +5954,113 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 </div>
 
-<!-- Order Confirmation Modal -->
+<!-- Order Confirmation Modal - Compact Design -->
 <div class="modal fade" id="orderConfirmationModal" tabindex="-1" aria-labelledby="orderConfirmationModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 550px;">
     <div class="modal-content">
-      <div class="modal-header bg-warning bg-opacity-10">
-        <h5 class="modal-title" id="orderConfirmationModalLabel">
-          <i class="fas fa-exclamation-triangle text-warning me-2"></i>
-          Confirm Order Execution with Fyers
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      <div class="modal-header bg-warning bg-opacity-10 py-2">
+        <h6 class="modal-title mb-0" id="orderConfirmationModalLabel">
+          <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+          Confirm Order Execution
+        </h6>
+        <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <div class="alert alert-warning mb-3">
-          <i class="fas fa-info-circle me-2"></i>
-          <strong>Real Order Execution:</strong> This will place a real order with your Fyers account using your selected broker credentials.
+      <div class="modal-body p-3">
+        <div class="alert alert-warning py-2 px-2 mb-2 small">
+          <i class="fas fa-info-circle me-1"></i>
+          <strong>Real Order:</strong> This will execute on your Fyers account.
         </div>
         
-        <!-- Order Details Form -->
-        <div class="row g-3">
-          <div class="col-md-6">
-            <label class="form-label fw-bold">Symbol</label>
-            <input type="text" class="form-control" id="modalSymbol" readonly>
+        <!-- Order Details Form - Compact Layout -->
+        <div class="row g-2">
+          <!-- Row 1: Symbol Info -->
+          <div class="col-8">
+            <label class="form-label small mb-1 fw-bold">Symbol</label>
+            <input type="text" class="form-control form-control-sm" id="modalSymbol" readonly>
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-bold">Strike</label>
-            <input type="text" class="form-control" id="modalStrike" readonly>
+          <div class="col-2">
+            <label class="form-label small mb-1 fw-bold">Strike</label>
+            <input type="text" class="form-control form-control-sm" id="modalStrike" readonly>
           </div>
-          <div class="col-md-3">
-            <label class="form-label fw-bold">Option Type</label>
-            <input type="text" class="form-control" id="modalOptionType" readonly>
+          <div class="col-2">
+            <label class="form-label small mb-1 fw-bold">Type</label>
+            <input type="text" class="form-control form-control-sm" id="modalOptionType" readonly>
           </div>
           
-          <div class="col-md-4">
-            <label class="form-label fw-bold">Action</label>
-            <select class="form-select" id="modalAction">
+          <!-- Row 2: Action, Lots, Product -->
+          <div class="col-4">
+            <label class="form-label small mb-1 fw-bold">Action</label>
+            <select class="form-select form-select-sm" id="modalAction">
               <option value="1">Buy</option>
               <option value="-1">Sell</option>
             </select>
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-bold">Quantity (Lots)</label>
-            <input type="number" class="form-control" id="modalLots" min="1" value="1">
-            <small class="text-muted">Total Qty: <span id="modalTotalQty">75</span></small>
+          <div class="col-4">
+            <label class="form-label small mb-1 fw-bold">Lots</label>
+            <input type="number" class="form-control form-control-sm" id="modalLots" min="1" value="1">
+            <small class="text-muted" style="font-size: 0.7rem;">Qty: <span id="modalTotalQty">75</span></small>
           </div>
-          <div class="col-md-4">
-            <label class="form-label fw-bold">Product Type</label>
-            <select class="form-select" id="modalProductType">
+          <div class="col-4">
+            <label class="form-label small mb-1 fw-bold">Product</label>
+            <select class="form-select form-select-sm" id="modalProductType">
               <option value="INTRADAY">INTRADAY</option>
               <option value="MARGIN">MARGIN</option>
               <option value="CNC">CNC</option>
             </select>
           </div>
           
-          <div class="col-md-4">
-            <label class="form-label fw-bold">Order Type</label>
-            <select class="form-select" id="modalOrderType">
+          <!-- Row 3: Order Type + Dynamic Price Fields -->
+          <div class="col-6">
+            <label class="form-label small mb-1 fw-bold">Order Type</label>
+            <select class="form-select form-select-sm" id="modalOrderType">
               <option value="2" selected>Market</option>
               <option value="1">Limit</option>
               <option value="3">Stop Loss (SL-M)</option>
               <option value="4">Stop Limit (SL-L)</option>
             </select>
           </div>
-          <div class="col-md-4" id="limitPriceField" style="display: none;">
-            <label class="form-label fw-bold">Limit Price</label>
-            <input type="number" class="form-control" id="modalLimitPrice" step="0.05" value="0">
+          <div class="col-3" id="limitPriceField" style="display: none;">
+            <label class="form-label small mb-1 fw-bold">Limit Price</label>
+            <input type="number" class="form-control form-control-sm" id="modalLimitPrice" step="0.05" value="0">
           </div>
-          <div class="col-md-4" id="stopPriceField" style="display: none;">
-            <label class="form-label fw-bold">Stop Price</label>
-            <input type="number" class="form-control" id="modalStopPrice" step="0.05" value="0">
+          <div class="col-3" id="stopPriceField" style="display: none;">
+            <label class="form-label small mb-1 fw-bold">Stop Price</label>
+            <input type="number" class="form-control form-control-sm" id="modalStopPrice" step="0.05" value="0">
           </div>
-          
-          <div class="col-md-6">
-            <label class="form-label fw-bold">Stop Loss %</label>
-            <input type="number" class="form-control" id="modalStopLoss" step="0.1" min="0" max="50" value="0">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-bold">Trailing Stop Loss</label>
-            <div class="form-check form-switch mt-2">
-              <input class="form-check-input" type="checkbox" id="modalTrailingStopLoss">
-              <label class="form-check-label" for="modalTrailingStopLoss">Enable Trailing SL</label>
-            </div>
-          </div>
-          
-          <div class="col-md-6">
-            <label class="form-label fw-bold">Validity</label>
-            <select class="form-select" id="modalValidity">
+          <div class="col-6">
+            <label class="form-label small mb-1 fw-bold">Validity</label>
+            <select class="form-select form-select-sm" id="modalValidity">
               <option value="DAY">DAY</option>
-              <option value="IOC">IOC (Immediate or Cancel)</option>
+              <option value="IOC">IOC</option>
             </select>
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-bold">Broker</label>
-            <input type="text" class="form-control" id="modalBroker" readonly value="FYERS">
+          
+          <!-- Row 4: Stop Loss Settings -->
+          <div class="col-6">
+            <label class="form-label small mb-1 fw-bold">Stop Loss %</label>
+            <input type="number" class="form-control form-control-sm" id="modalStopLoss" step="0.1" min="0" max="50" value="0">
+          </div>
+          <div class="col-6">
+            <label class="form-label small mb-1 fw-bold">Trailing SL</label>
+            <div class="form-check form-switch mt-1">
+              <input class="form-check-input" type="checkbox" id="modalTrailingStopLoss">
+              <label class="form-check-label small" for="modalTrailingStopLoss">Enable</label>
+            </div>
           </div>
         </div>
         
-        <!-- Broker Credentials Info -->
-        <div class="mt-3 p-2 bg-light rounded">
-          <small class="text-muted">
-            <i class="fas fa-user me-1"></i>
-            <strong>Broker User ID:</strong> <span id="modalBrokerUserId">-</span>
-          </small>
+        <!-- Broker Info - Compact -->
+        <div class="mt-2 p-2 bg-light rounded small">
+          <i class="fas fa-user me-1 text-muted"></i>
+          <strong>Broker:</strong> FYERS | <strong>User:</strong> <span id="modalBrokerUserId">-</span>
         </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+      <div class="modal-footer py-2">
+        <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">
           <i class="fas fa-times me-1"></i>Cancel
         </button>
-        <button type="button" class="btn btn-success" id="confirmOrderBtn">
-          <i class="fas fa-check me-1"></i>Confirm & Execute Order
+        <button type="button" class="btn btn-sm btn-success" id="confirmOrderBtn">
+          <i class="fas fa-check me-1"></i>Execute Order
         </button>
       </div>
     </div>
