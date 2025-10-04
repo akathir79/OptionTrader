@@ -5666,7 +5666,8 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     // Broker and User ID Management
-    let brokerSettings = [];
+    // Store in window object so it's accessible to trading_controls.js
+    window.brokerSettings = [];
     
     // Initialize broker dropdown
     function initializeBrokerDropdown() {
@@ -5674,8 +5675,9 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('/api/broker_settings/')
             .then(response => response.json())
             .then(data => {
-                brokerSettings = data;
-                console.log('Broker settings loaded:', brokerSettings);
+                window.brokerSettings = data;
+                console.log('Broker settings loaded:', window.brokerSettings);
+                console.log('✅ window.brokerSettings is now available globally');
                 populateBrokerDropdown();
             })
             .catch(error => {
@@ -5688,7 +5690,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Populate broker dropdown with unique broker names
     function populateBrokerDropdown() {
         const brokerSelect = document.getElementById('positionBrokerSelect');
-        const uniqueBrokers = [...new Set(brokerSettings.map(setting => setting.brokername))];
+        const uniqueBrokers = [...new Set(window.brokerSettings.map(setting => setting.brokername))];
         
         // Clear existing options except the first one
         brokerSelect.innerHTML = '<option value="">Select Broker</option>';
@@ -5706,7 +5708,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Populate User ID dropdown based on selected broker
     function populateUserIdDropdown(selectedBroker) {
         const userIdSelect = document.getElementById('positionUserIdSelect');
-        const userIds = brokerSettings
+        const userIds = window.brokerSettings
             .filter(setting => setting.brokername === selectedBroker)
             .map(setting => setting.broker_user_id);
         
