@@ -70,3 +70,18 @@ Preferred communication style: Simple, everyday language.
     -   **Order Management**: Place Order, Modify Order, Cancel Order, Order Book.
     -   **Portfolio & Positions**: Positions, Holdings, Funds, Tradebook.
 -   **Order Placement Parameters**: Comprehensive parameters for `fyers.place_order()` including `symbol`, `qty`, `type` (Limit, Market, Stop, StopLimit), `side` (Buy/Sell), `productType`, `limitPrice`, `stopPrice`, `validity`, `disclosedQty`, `offlineOrder`, `stopLoss`, `takeProfit`, `orderTag`.
+-   **Symbol Format Specification**: Option symbols must follow exact format `{Ex}:{Ex_UnderlyingSymbol}{YY}{MMM}{Strike}{Opt_Type}` where:
+    -   `{YY}` = 2-digit year (e.g., "25" for 2025)
+    -   `{MMM}` = 3-character uppercase month (JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT, NOV, DEC)
+    -   Example: `NSE:NIFTY25OCT24200CE` for NIFTY 24200 Call expiring in October 2025
+
+## Recent Changes
+
+### October 11, 2025: Fyers API v3 Symbol Format Bug Fix
+-   **Issue**: Frontend was generating incorrect option symbols using YYMMDD format (e.g., "251028") instead of Fyers API v3 required YYMM format (e.g., "25OCT")
+-   **Root Cause**: `formatExpiryForSymbol()` functions in both `templates/live_trade.html` and `static/js/paper_trading.js` were incorrectly formatting the expiry date
+-   **Fix Applied**:
+    -   Updated `formatExpiryForSymbol()` in `templates/live_trade.html` (line 3662) to generate YYMM format
+    -   Updated `formatExpiryForSymbol()` in `static/js/paper_trading.js` to generate YYMM format
+    -   Verified backend receives symbols from Fyers API (already correct) and frontend constructs symbols for order placement (now fixed)
+-   **Impact**: Order placement now uses correct symbol format, ensuring successful execution with Fyers API v3
