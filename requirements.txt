@@ -1,7 +1,7 @@
 flask==3.0.0
 flask-sqlalchemy==3.1.1
 psycopg2-binary==2.9.9
-fyers-apiv3==3.3.0
+fyers-apiv3==3.1.7
 requests==2.31.0
 pytz==2023.3
 gunicorn==21.2.0
@@ -10,17 +10,7 @@ sqlalchemy==2.0.23
 numpy==1.26.2
 email-validator==2.1.0
 trafilatura==1.6.4
-email_validator
-flask
-flask-sqlalchemy
-gunicorn
-psycopg2-binary
-fyers-apiv3
 kiteconnect
-numpy
 py5paisa
-pytz
-requests
 stocknotebridge
-trafilatura
 upstox-python-sdk
