@@ -517,12 +517,11 @@ class PaperTradingSystem {
     }
     
     formatExpiryForSymbol(expiryDate) {
-        // Convert YYYY-MM-DD to DDMMMYY format for symbol
+        // Fyers API v3 Format: {YY}{MMM} - e.g., 25OCT for October 2025
         const date = new Date(expiryDate);
-        const day = date.getDate().toString().padStart(2, '0');
         const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
         const year = date.getFullYear().toString().substring(2);
-        return `${day}${month}${year}`;
+        return `${year}${month}`;
     }
 
     async showPortfolioModal() {

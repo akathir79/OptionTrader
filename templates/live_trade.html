@@ -4193,16 +4193,17 @@ document.addEventListener('DOMContentLoaded', function() {
     };
     
     // Helper function to format expiry for symbol name
+    // Fyers API v3 Format: {YY}{MMM} - e.g., 25OCT for October 2025
     function formatExpiryForSymbol(expiry) {
         if (!expiry) return '';
         try {
             const date = new Date(expiry);
-            const day = date.getDate().toString().padStart(2, '0');
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const month = date.toLocaleString('default', { month: 'short' }).toUpperCase();
             const year = date.getFullYear().toString().slice(-2);
-            return `${year}${month}${day}`;
+            return `${year}${month}`;
         } catch (e) {
-            return expiry.replace(/-/g, '');
+            console.error('Error formatting expiry:', e);
+            return '';
         }
     }
     
