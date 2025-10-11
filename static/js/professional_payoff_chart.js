@@ -536,7 +536,7 @@ class ProfessionalPayoffChart {
     /**
      * Add alternating profit/loss zones between breakeven points
      * This creates the professional alternating green/red zones
-     * Following user's working example: start with first payoff color, then alternate
+     * **FIXED**: Check actual P&L values in each zone, don't just alternate mechanically
      */
     addAlternatingZones(payoffData) {
         if (payoffData.length === 0) return;
@@ -547,10 +547,6 @@ class ProfessionalPayoffChart {
             return;
         }
         
-        // Start with color based on first payoff value (matching user's working example)
-        const firstPayoff = payoffData[0][1];
-        let currentColor = firstPayoff >= 0 ? '#28A745' : '#FF4C4C'; // Green for profit, Red for loss
-        
         // Create boundaries including min/max prices
         const prices = payoffData.map(([price]) => price);
         const minPrice = Math.min(...prices);
@@ -559,7 +555,7 @@ class ProfessionalPayoffChart {
         const sortedBreakevens = [...this.breakEvenPoints].sort((a, b) => a - b);
         const boundaries = [minPrice, ...sortedBreakevens, maxPrice];
         
-        // Create alternating zones between boundaries
+        // Create zones between boundaries
         for (let i = 0; i < boundaries.length - 1; i++) {
             const startPrice = boundaries[i];
             const endPrice = boundaries[i + 1];
@@ -568,12 +564,14 @@ class ProfessionalPayoffChart {
             const zoneData = payoffData.filter(([price]) => price >= startPrice && price <= endPrice);
             
             if (zoneData.length > 0) {
-                // Determine if profit or loss zone based on current color
-                const isProfit = currentColor === '#28A745';
-                this.addProfitLossZone(zoneData, isProfit, i);
+                // **FIX**: Determine profit/loss based on ACTUAL average P&L in this zone
+                // Calculate average P&L for this zone
+                const avgPnL = zoneData.reduce((sum, [, pnl]) => sum + pnl, 0) / zoneData.length;
+                const isProfit = avgPnL >= 0;
                 
-                // Alternate color for next zone
-                currentColor = currentColor === '#28A745' ? '#FF4C4C' : '#28A745';
+                console.log(`📊 Zone ${i}: ${startPrice.toFixed(0)} to ${endPrice.toFixed(0)}, avg P&L: ${avgPnL.toFixed(2)}, isProfit: ${isProfit}`);
+                
+                this.addProfitLossZone(zoneData, isProfit, i);
             }
         }
     }

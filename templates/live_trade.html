@@ -4623,6 +4623,13 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('🔍 window.activeLots:', window.activeLots);
         console.log('🔍 window.activeLots length:', window.activeLots ? window.activeLots.length : 0);
         
+        // **CRITICAL FIX**: Always set strike range from option chain table first
+        // This ensures the chart knows what x-axis range to use
+        if (professionalChart && window.updatePayoffChartStrikeRangeFromTable) {
+            console.log('🔧 Setting payoff chart strike range from option chain table...');
+            window.updatePayoffChartStrikeRangeFromTable();
+        }
+        
         // Use professional chart if available
         if (professionalChart && window.activeLots) {
             console.log('✅ Using professional chart, converting lots...');
